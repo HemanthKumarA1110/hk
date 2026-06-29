@@ -1,0 +1,33 @@
+replicaCount: 2
+
+image:
+  backend:
+    repository: trading-backend
+    tag: latest
+  frontend:
+    repository: trading-proxy
+    tag: latest
+
+postgres:
+  image: postgres:15
+  user: trader
+  password: traderpass
+  db: trading
+  storage: 1Gi
+
+redis:
+  image: redis:7
+
+service:
+  backend:
+    port: 8000
+  proxy:
+    port: 80
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: []

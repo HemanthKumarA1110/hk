@@ -1,0 +1,138 @@
+import axios from 'axios'
+
+const configuredBase = import.meta.env.VITE_API_BASE
+const API_BASE = configuredBase === '' ? '' : (configuredBase ?? 'http://localhost:8000')
+
+const api = axios.create({
+  baseURL: API_BASE ? `${API_BASE.replace(/\/$/, '')}/api/v1` : '/api/v1',
+  timeout: 15000,
+})
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const original = error.config
+    if (error.response?.status === 401 && !original._retry) {
+      original._retry = true
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (refreshToken) {
+        try {
+          const { data } = await axios.post(
+            API_BASE ? `${API_BASE}/api/v1/auth/refresh` : '/api/v1/auth/refresh',
+            {
+              refresh_token: refreshToken,
+            }
+          )
+          localStorage.setItem('access_token', data.access_token)
+          localStorage.setItem('refresh_token', data.refresh_token)
+          original.headers.Authorization = `Bearer ${data.access_token}`
+          return api(original)
+        } catch {
+          localStorage.removeItem('access_token')
+          localStorage.removeItem('refresh_token')
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+export const login = (username, password) =>
+  api.post('/auth/login', { username, password }).then((res) => res.data)
+
+export const register = (payload) =>
+  api.post('/auth/register', payload).then((res) => res.data)
+
+export const fetchMe = () => api.get('/auth/me').then((res) => res.data)
+
+export const saveBrokerCredentials = (payload) =>
+  api.post('/broker/credentials', payload).then((res) => res.data)
+
+export const connectBroker = () => api.post('/broker/connect').then((res) => res.data)
+
+export const fetchBrokerStatus = () => api.get('/broker/status').then((res) => res.data)
+
+export const fetchBrokerFunds = () =>
+  api.get('/broker/funds', { timeout: 45000 }).then((res) => res.data)
+
+export const fetchBrokerAccount = () =>
+  api.get('/broker/account', { timeout: 45000 }).then((res) => res.data)
+
+export const cancelBrokerOrder = (orderId, variety = 'NORMAL') =>
+  api.delete(`/broker/orders/${orderId}`, { params: { variety } }).then((res) => res.data)
+
+export const fetchServices = () => {
+  const servicesUrl = API_BASE ? `${API_BASE}/api/v1/services` : '/api/v1/services'
+  return axios.get(servicesUrl).then((res) => res.data)
+}
+
+export const fetchStreamStatus = () => api.get('/market/stream/status').then((res) => res.data)
+
+export const fetchIndexQuotes = () => api.get('/market/indices/live').then((res) => res.data)
+
+export const fetchLatestScan = () => api.get('/market/scan/latest').then((res) => res.data)
+
+export const fetchOptionChain = (underlying) =>
+  api.get(`/market/option-chain/${underlying}`).then((res) => res.data)
+
+export const startMarketStream = () => api.post('/market/stream/start').then((res) => res.data)
+
+export const fetchScalpingSignals = () => api.get('/strategies/scalping').then((res) => res.data)
+export const fetchIntradaySignals = () => api.get('/strategies/intraday').then((res) => res.data)
+
+export const scanIntradayPicks = () =>
+  api.post('/strategies/intraday/scan', null, { timeout: 120000 }).then((res) => res.data)
+export const fetchSwingSignals = () => api.get('/strategies/swing').then((res) => res.data)
+
+export const scanSwingPicks = () =>
+  api.post('/strategies/swing/scan', null, { timeout: 180000 }).then((res) => res.data)
+export const fetchStrategyStatus = () => api.get('/strategies/status').then((res) => res.data)
+export const runStrategies = () => api.post('/strategies/run').then((res) => res.data)
+
+export const fetchAIDecisions = () => api.get('/ai/decisions').then((res) => res.data)
+export const fetchJournalInsights = () => api.get('/ai/journal/insights').then((res) => res.data)
+export const runAIEvaluation = () => api.post('/ai/evaluate').then((res) => res.data)
+export const fetchAIWeights = () => api.get('/ai/weights').then((res) => res.data)
+
+export const fetchRiskStatus = () => api.get('/risk/status').then((res) => res.data)
+export const fetchRiskLimits = () => api.get('/risk/limits').then((res) => res.data)
+export const updateRiskLimits = (payload) => api.patch('/risk/limits', payload).then((res) => res.data)
+export const evaluateRiskTrade = (payload) => api.post('/risk/evaluate', payload).then((res) => res.data)
+export const resetRiskHalt = () => api.post('/risk/reset-halt').then((res) => res.data)
+
+export const fetchAdminOverview = () => api.get('/admin/overview').then((res) => res.data)
+export const fetchEquityCurve = () => api.get('/admin/equity-curve').then((res) => res.data)
+export const fetchAdminJournal = () => api.get('/admin/journal').then((res) => res.data)
+export const fetchBacktestPreview = () => api.get('/admin/backtest/preview').then((res) => res.data)
+
+export const fetchPortfolioSummary = () => api.get('/portfolio/summary').then((res) => res.data)
+export const fetchAlertsStatus = () => api.get('/alerts/status').then((res) => res.data)
+
+export const fetchBacktestStatus = () => api.get('/backtest/status').then((res) => res.data)
+export const runBacktest = (payload) => api.post('/backtest/run', payload).then((res) => res.data)
+export const fetchBacktestRun = (runId) => api.get(`/backtest/runs/${runId}`).then((res) => res.data)
+export const fetchBacktestRuns = () => api.get('/backtest/runs').then((res) => res.data)
+
+export const fetchOrderStatus = () => api.get('/orders/status').then((res) => res.data)
+export const setTradingMode = (mode) => api.put('/orders/mode', { mode }).then((res) => res.data)
+export const fetchAutoTrading = () => api.get('/orders/auto').then((res) => res.data)
+export const updateAutoTrading = (payload) => api.put('/orders/auto', payload).then((res) => res.data)
+export const runAutoTradingNow = (engine) =>
+  api.post('/orders/auto/run', null, { params: engine ? { engine } : {} }).then((res) => res.data)
+export const fetchPaperPositions = () => api.get('/orders/paper/positions').then((res) => res.data)
+export const placeOrder = (payload) => api.post('/orders', payload).then((res) => res.data)
+export const fetchOrders = () => api.get('/orders').then((res) => res.data)
+export const fetchOrderBook = () => api.get('/orders/book').then((res) => res.data)
+export const fetchOrderTrades = () => api.get('/orders/trades').then((res) => res.data)
+export const cancelOrder = (orderId, variety = 'NORMAL') =>
+  api.delete(`/orders/${orderId}`, { params: { variety } }).then((res) => res.data)
+
+export default api

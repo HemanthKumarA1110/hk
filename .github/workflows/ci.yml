@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  python-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile shared package and services
+        run: |
+          python -m compileall -q services/shared services/api-gateway services/auth-service \
+            services/order-execution-engine services/alert-engine
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npm run build
+        env:
+          VITE_API_BASE: ""
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [python-compile, frontend-build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build critical images
+        run: |
+          docker compose build api-gateway auth-service order-execution-engine alert-engine frontend

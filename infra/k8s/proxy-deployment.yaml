@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trading-proxy
+  labels:
+    app: trading-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trading-proxy
+  template:
+    metadata:
+      labels:
+        app: trading-proxy
+    spec:
+      containers:
+        - name: proxy
+          image: trading-proxy:latest
+          ports:
+            - containerPort: 80

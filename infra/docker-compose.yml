@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: trader
+      POSTGRES_PASSWORD: traderpass
+      POSTGRES_DB: trading
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ../backend
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DATABASE_URL=postgresql://trader:traderpass@db:5432/trading
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+
+  worker:
+    build: ../backend
+    command: celery -A app.tasks.worker.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://trader:traderpass@db:5432/trading
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.proxy
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+
+volumes:
+  db-data:

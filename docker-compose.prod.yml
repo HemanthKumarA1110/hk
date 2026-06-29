@@ -1,0 +1,112 @@
+# Production overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Or run: ./scripts/deploy.sh
+
+x-prod-env: &prod-env
+  ENV: production
+  ALLOW_PUBLIC_REGISTRATION: "false"
+  EXPOSE_SERVICE_REGISTRY: "false"
+  ENABLE_OPENAPI_DOCS: "false"
+
+services:
+  postgres:
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  redis:
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  auth-service:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  market-data-service:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  strategy-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  ai-decision-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  risk-manager:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  order-execution-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  backtesting-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  portfolio-manager:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  alert-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  analytics-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  trade-journal-engine:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  admin-dashboard:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  api-gateway:
+    ports: []
+    environment:
+      <<: *prod-env
+
+  celery-worker:
+    environment:
+      <<: *prod-env
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  celery-beat:
+    environment:
+      <<: *prod-env
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ""
+    ports:
+      - "80:80"
+    environment:
+      <<: *prod-env

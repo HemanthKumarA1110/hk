@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
+          command: ["celery", "-A", "app.tasks.worker.celery_app", "worker", "--loglevel=info"]
+          env:
+            - name: DATABASE_URL
+              value: postgresql://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@postgres:5432/{{ .Values.postgres.db }}
+            - name: REDIS_URL
+              value: redis://redis:6379/0

@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "trading-stack.fullname" . }}-proxy
+  labels:
+    app: {{ include "trading-stack.name" . }}-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "trading-stack.name" . }}-proxy
+  template:
+    metadata:
+      labels:
+        app: {{ include "trading-stack.name" . }}-proxy
+    spec:
+      containers:
+        - name: proxy
+          image: "{{ .Values.image.frontend.repository }}:{{ .Values.image.frontend.tag }}"
+          ports:
+            - containerPort: {{ .Values.service.proxy.port }}
