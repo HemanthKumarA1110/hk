@@ -27,6 +27,10 @@ from app.engine.candle_builder import CandleBuilder
 logger = logging.getLogger(__name__)
 
 
+class StreamStartError(Exception):
+    """Raised when live market stream cannot be started."""
+
+
 class StreamManager:
     _instance: "StreamManager | None" = None
 
@@ -52,33 +56,78 @@ class StreamManager:
         return cls._instance
 
     async def start(self) -> dict[str, Any]:
-        if self._running:
-            return self.status()
+        if self._running and self.stream and self.stream.connected:
+            return self._status_with_message("Live stream already connected")
 
-        await self.scrip_service.refresh()
+        if self._running:
+            await self.stop()
+
+        try:
+            if not self.scrip_service.ensure_loaded():
+                await self.scrip_service.refresh(force=True)
+        except Exception as exc:
+            logger.warning("Scrip master refresh failed during stream start: %s", exc)
+            if not self.scrip_service.ensure_loaded():
+                raise StreamStartError(
+                    "Scrip master unavailable. Retry after broker connect or check network."
+                ) from exc
+
         session = self._load_system_session()
         if not session:
-            logger.warning("Market stream not started: no Angel One session in Redis")
-            self.redis_bus.store_stream_status(self.status())
-            return self.status()
+            raise StreamStartError("No Angel One session found. Connect broker from Live Trading first.")
+        if not session.get("jwt_token"):
+            raise StreamStartError("Broker JWT missing. Reconnect Angel One and try again.")
+        if not session.get("feed_token"):
+            raise StreamStartError(
+                "Feed token missing. Disconnect and reconnect Angel One to enable live streaming."
+            )
+
+        api_key = session.get("api_key") or self.settings.ANGEL_API_KEY
+        if not api_key:
+            raise StreamStartError(
+                "API key missing for websocket. Save broker credentials or set ANGEL_API_KEY."
+            )
 
         nse_cm_tokens, nse_fo_tokens, self._token_symbol_map = self._build_subscription_universe()
-        token_groups = AngelOneWebSocketStream.build_token_groups(nse_cm_tokens, nse_fo_tokens)
+        if not nse_cm_tokens and not nse_fo_tokens:
+            raise StreamStartError("No subscription tokens available from scrip master.")
 
+        token_groups = AngelOneWebSocketStream.build_token_groups(nse_cm_tokens, nse_fo_tokens)
         self.stream = AngelOneWebSocketStream(
             auth_token=session["jwt_token"],
-            api_key=session.get("api_key") or self.settings.ANGEL_API_KEY,
+            api_key=api_key,
             client_code=session["client_code"],
-            feed_token=session.get("feed_token") or "",
+            feed_token=session["feed_token"],
             on_tick=self._handle_tick,
         )
         self.stream.set_subscriptions(token_groups)
-        self.stream.start()
+        try:
+            self.stream.start()
+        except Exception as exc:
+            self.stream = None
+            raise StreamStartError(
+                f"WebSocket failed to start: {exc}. Reconnect Angel One and try again."
+            ) from exc
         self._running = True
         self.scanner_task = asyncio.create_task(self._scanner_loop())
-        status = self.status()
+
+        for _ in range(10):
+            await asyncio.sleep(0.5)
+            if self.stream.connected:
+                break
+
+        status = self._status_with_message(
+            "Live stream connected"
+            if self.stream.connected
+            else "Stream started but websocket not connected yet — check feed token and retry"
+        )
         self.redis_bus.store_stream_status(status)
-        logger.info("Market stream started with %s CM and %s FO tokens", len(nse_cm_tokens), len(nse_fo_tokens))
+        logger.info(
+            "Market stream started connected=%s cm=%s fo=%s",
+            self.stream.connected,
+            len(nse_cm_tokens),
+            len(nse_fo_tokens),
+        )
         return status
 
     async def stop(self) -> dict[str, Any]:
@@ -92,11 +141,14 @@ class StreamManager:
         return status
 
     def status(self) -> dict[str, Any]:
+        return self._status_with_message(None)
+
+    def _status_with_message(self, message: str | None) -> dict[str, Any]:
         subscriptions = 0
         if self.stream and self.stream._subscriptions:
             for group in self.stream._subscriptions:
                 subscriptions += len(group.get("tokens", []))
-        return {
+        payload = {
             "connected": bool(self.stream and self.stream.connected),
             "subscriptions": subscriptions,
             "ticks_received": self.ticks_received,
@@ -104,12 +156,65 @@ class StreamManager:
             "scanner_running": self._running,
             "scrip_master_updated_at": self.redis_raw.get(REDIS_SCRIP_UPDATED_KEY),
         }
+        if message:
+            payload["message"] = message
+        return payload
+
+    def _resolve_user_id(self, client_code: str | None) -> int | None:
+        if not client_code:
+            return None
+        db = SessionLocal()
+        try:
+            from trading_shared.models import BrokerSession
+
+            session = (
+                db.query(BrokerSession)
+                .filter(
+                    BrokerSession.client_code == client_code,
+                    BrokerSession.is_active.is_(True),
+                )
+                .order_by(BrokerSession.created_at.desc())
+                .first()
+            )
+            return session.user_id if session else None
+        finally:
+            db.close()
+
+    def _resolve_api_key(self, user_id: int | None) -> str:
+        if self.settings.ANGEL_API_KEY:
+            return self.settings.ANGEL_API_KEY
+        if not user_id:
+            return ""
+        db = SessionLocal()
+        try:
+            from trading_shared.models import BrokerCredential
+            from trading_shared.security.encryption import decrypt_value
+
+            cred = (
+                db.query(BrokerCredential)
+                .filter(BrokerCredential.user_id == user_id, BrokerCredential.is_active.is_(True))
+                .first()
+            )
+            if cred:
+                return decrypt_value(cred.encrypted_api_key, self.settings.ENCRYPTION_KEY)
+        except Exception:
+            logger.exception("Failed to resolve API key for user_id=%s", user_id)
+        finally:
+            db.close()
+        return ""
 
     def _load_system_session(self) -> dict[str, Any] | None:
         blob = self.redis_raw.get("angel_one:system:session")
         if blob:
             payload = json.loads(blob)
-            payload["api_key"] = self.settings.ANGEL_API_KEY
+            had_api_key = bool(payload.get("api_key") or self.settings.ANGEL_API_KEY)
+            api_key = payload.get("api_key") or self.settings.ANGEL_API_KEY
+            if not api_key:
+                user_id = payload.get("user_id") or self._resolve_user_id(payload.get("client_code"))
+                api_key = self._resolve_api_key(user_id)
+            payload["api_key"] = api_key
+            if api_key and not had_api_key:
+                self.redis_raw.setex("angel_one:system:session", 3600 * 8, json.dumps(payload))
             return payload
 
         db = SessionLocal()
@@ -129,7 +234,7 @@ class StreamManager:
                 "refresh_token": session.refresh_token,
                 "feed_token": session.feed_token,
                 "client_code": session.client_code,
-                "api_key": self.settings.ANGEL_API_KEY,
+                "api_key": self._resolve_api_key(session.user_id),
             }
         finally:
             db.close()
@@ -236,7 +341,18 @@ class StreamManager:
             "total_ce_oi": 0,
             "total_pe_oi": 0,
         }
-        rows = chain.setdefault("rows", {})
+        existing_rows = chain.get("rows")
+        if isinstance(existing_rows, dict):
+            rows = existing_rows
+        elif isinstance(existing_rows, list):
+            rows = {
+                row["symbol"]: row
+                for row in existing_rows
+                if isinstance(row, dict) and row.get("symbol")
+            }
+        else:
+            rows = {}
+        chain["rows"] = rows
         rows[symbol] = {
             "symbol": symbol,
             "token": tick["token"],

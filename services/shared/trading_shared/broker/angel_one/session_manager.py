@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime, timezone
 
@@ -179,28 +180,45 @@ class AngelOneSessionManager:
         creds = self._decrypt_credentials(cred)
         cached = self.redis.get(self._cache_key(user_id))
         if cached:
-            client = AngelOneClient.from_cache_blob(
-                api_key=creds["api_key"],
-                blob=cached,
-                client_code=creds["client_code"],
-                password=creds["password"],
-                totp_secret=creds["totp_secret"],
-                client_local_ip=self.settings.ANGEL_CLIENT_LOCAL_IP,
-                client_public_ip=self.settings.ANGEL_CLIENT_PUBLIC_IP,
-                mac_address=self.settings.ANGEL_MAC_ADDRESS,
-            )
-            await client.ensure_session()
-            self.persist_client_session(user_id, client)
-            return client
+            try:
+                client = AngelOneClient.from_cache_blob(
+                    api_key=creds["api_key"],
+                    blob=cached,
+                    client_code=creds["client_code"],
+                    password=creds["password"],
+                    totp_secret=creds["totp_secret"],
+                    client_local_ip=self.settings.ANGEL_CLIENT_LOCAL_IP,
+                    client_public_ip=self.settings.ANGEL_CLIENT_PUBLIC_IP,
+                    mac_address=self.settings.ANGEL_MAC_ADDRESS,
+                )
+            except (json.JSONDecodeError, ValueError, KeyError) as exc:
+                logger.warning("Invalid Angel One session cache for user_id=%s: %s", user_id, exc)
+                self.redis.delete(self._cache_key(user_id))
+            else:
+                try:
+                    await client.ensure_session()
+                    self.persist_client_session(user_id, client)
+                    self.clear_session_stale(user_id)
+                    return client
+                except AngelOneAuthError as exc:
+                    logger.warning(
+                        "Cached Angel One session invalid for user_id=%s, re-logging in: %s",
+                        user_id,
+                        exc,
+                    )
+                    self.redis.delete(self._cache_key(user_id))
+                    self.mark_session_stale(user_id, str(exc))
 
         client = self._build_client(creds)
         logger.info("Angel One session login starting for user_id=%s client_code=%s", user_id, creds["client_code"])
         try:
             login_result = await client.login()
         except AngelOneAuthError as exc:
-            logger.error("Angel One session login failed for user_id=%s: %s", user_id, exc)
-            raise
+            friendly = AngelOneClient._friendly_auth_error(exc)
+            logger.error("Angel One session login failed for user_id=%s: %s", user_id, friendly)
+            raise AngelOneAuthError(friendly) from exc
         logger.info("Angel One session login succeeded for user_id=%s", user_id)
+        self.clear_session_stale(user_id)
         self.persist_client_session(user_id, client, login_result)
         return client
 
@@ -227,6 +245,14 @@ class AngelOneSessionManager:
             )
             self.db.commit()
         self.redis.setex(self._cache_key(user_id), 3600 * 8, client.to_cache_blob())
+        system_blob = json.loads(client.to_cache_blob())
+        system_blob["user_id"] = user_id
+        cred = self.get_broker_credential(user_id)
+        if cred:
+            system_blob["api_key"] = self._decrypt_credentials(cred)["api_key"]
+        elif self.settings.ANGEL_API_KEY:
+            system_blob["api_key"] = self.settings.ANGEL_API_KEY
+        self.redis.setex("angel_one:system:session", 3600 * 8, json.dumps(system_blob))
 
     def mark_session_stale(self, user_id: int, reason: str = "") -> None:
         key = f"{self.SESSION_STALE_PREFIX}{user_id}"

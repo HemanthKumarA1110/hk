@@ -305,6 +305,7 @@ services:
     depends_on:
       - auth-service
       - market-data-service
+      - strategy-engine
       - risk-manager
       - admin-dashboard
       - order-execution-engine
@@ -353,7 +354,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE: http://localhost:8000
+        VITE_API_BASE: ""
     container_name: trading-frontend
     restart: unless-stopped
     depends_on:

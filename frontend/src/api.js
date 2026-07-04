@@ -1,11 +1,13 @@
 import axios from 'axios'
 
 const configuredBase = import.meta.env.VITE_API_BASE
-const API_BASE = configuredBase === '' ? '' : (configuredBase ?? 'http://localhost:8000')
+// Same-origin /api/v1 in Docker (nginx proxy). localhost:8000 only when explicitly set.
+const API_BASE =
+  configuredBase && configuredBase !== 'undefined' ? String(configuredBase).replace(/\/$/, '') : ''
 
 const api = axios.create({
-  baseURL: API_BASE ? `${API_BASE.replace(/\/$/, '')}/api/v1` : '/api/v1',
-  timeout: 15000,
+  baseURL: API_BASE ? `${API_BASE}/api/v1` : '/api/v1',
+  timeout: 60000,
 })
 
 api.interceptors.request.use((config) => {
@@ -80,20 +82,61 @@ export const fetchIndexQuotes = () => api.get('/market/indices/live').then((res)
 
 export const fetchLatestScan = () => api.get('/market/scan/latest').then((res) => res.data)
 
+export const searchSymbols = (query, exchange = 'NSE', limit = 15) =>
+  api
+    .get('/market/symbols/search', { params: { q: query, exchange, limit } })
+    .then((res) => res.data)
+
 export const fetchOptionChain = (underlying) =>
   api.get(`/market/option-chain/${underlying}`).then((res) => res.data)
 
 export const startMarketStream = () => api.post('/market/stream/start').then((res) => res.data)
 
 export const fetchScalpingSignals = () => api.get('/strategies/scalping').then((res) => res.data)
+
+export const fetchScalpingDesk = (instrument) =>
+  api.get(`/strategies/scalping/desk/${instrument}`, { timeout: 90000 }).then((res) => res.data)
+export const fetchScalpingStrategies = (instrument) =>
+  api.get(`/strategies/scalping/desk/${instrument}/strategies`).then((res) => res.data)
+export const evaluateScalpingDesk = (instrument) =>
+  api.post(`/strategies/scalping/desk/${instrument}/evaluate`, null, { timeout: 90000 }).then((res) => res.data)
+export const saveScalpingDeskConfig = (instrument, config) =>
+  api.put(`/strategies/scalping/desk/${instrument}/config`, config).then((res) => res.data)
+export const toggleScalpingAutoTrading = (instrument, enabled) =>
+  api.post(`/strategies/scalping/desk/${instrument}/auto-trading`, { enabled }).then((res) => res.data)
+export const runScalpingDeskBacktest = (instrument, payload) =>
+  api.post(`/strategies/scalping/desk/${instrument}/backtest`, payload, { timeout: 300000 }).then((res) => res.data)
+export const optimizeScalpingDesk = (instrument, summary) =>
+  api.post(`/strategies/scalping/desk/${instrument}/optimize`, { backtest_summary: summary }).then((res) => res.data)
+export const runWeeklyParameterTune = (instrument, payload = {}) =>
+  api.post(`/strategies/scalping/desk/${instrument}/weekly-tune`, payload).then((res) => res.data)
+
 export const fetchIntradaySignals = () => api.get('/strategies/intraday').then((res) => res.data)
+export const fetchIntradayStrategies = () => api.get('/strategies/intraday/strategies').then((res) => res.data)
 
 export const scanIntradayPicks = () =>
-  api.post('/strategies/intraday/scan', null, { timeout: 120000 }).then((res) => res.data)
+  api.post('/strategies/intraday/scan', null, { timeout: 300000 }).then((res) => res.data)
+export const fetchIntradayDesk = () =>
+  api.get('/strategies/intraday/desk', { timeout: 90000 }).then((res) => res.data)
+export const saveIntradayDeskConfig = (config) =>
+  api.put('/strategies/intraday/desk/config', config).then((res) => res.data)
+export const toggleIntradayAutoTrading = (enabled) =>
+  api.post('/strategies/intraday/desk/auto-trading', { enabled }).then((res) => res.data)
+export const evaluateIntradayDesk = () =>
+  api.post('/strategies/intraday/desk/evaluate', null, { timeout: 120000 }).then((res) => res.data)
 export const fetchSwingSignals = () => api.get('/strategies/swing').then((res) => res.data)
+export const fetchSwingStrategies = () => api.get('/strategies/swing/strategies').then((res) => res.data)
 
 export const scanSwingPicks = () =>
   api.post('/strategies/swing/scan', null, { timeout: 180000 }).then((res) => res.data)
+export const fetchSwingDesk = () =>
+  api.get('/strategies/swing/desk', { timeout: 90000 }).then((res) => res.data)
+export const saveSwingDeskConfig = (config) =>
+  api.put('/strategies/swing/desk/config', config).then((res) => res.data)
+export const toggleSwingAutoTrading = (enabled) =>
+  api.post('/strategies/swing/desk/auto-trading', { enabled }).then((res) => res.data)
+export const evaluateSwingDesk = () =>
+  api.post('/strategies/swing/desk/evaluate', null, { timeout: 120000 }).then((res) => res.data)
 export const fetchStrategyStatus = () => api.get('/strategies/status').then((res) => res.data)
 export const runStrategies = () => api.post('/strategies/run').then((res) => res.data)
 
@@ -110,7 +153,11 @@ export const resetRiskHalt = () => api.post('/risk/reset-halt').then((res) => re
 
 export const fetchAdminOverview = () => api.get('/admin/overview').then((res) => res.data)
 export const fetchEquityCurve = () => api.get('/admin/equity-curve').then((res) => res.data)
-export const fetchAdminJournal = () => api.get('/admin/journal').then((res) => res.data)
+export const fetchAdminJournal = (params) =>
+  api.get('/admin/journal', { params }).then((res) => res.data)
+
+export const exportAdminJournal = (params) =>
+  api.get('/admin/journal/export', { params, responseType: 'blob' }).then((res) => res.data)
 export const fetchBacktestPreview = () => api.get('/admin/backtest/preview').then((res) => res.data)
 
 export const fetchPortfolioSummary = () => api.get('/portfolio/summary').then((res) => res.data)
@@ -121,6 +168,15 @@ export const runBacktest = (payload) => api.post('/backtest/run', payload).then(
 export const fetchBacktestRun = (runId) => api.get(`/backtest/runs/${runId}`).then((res) => res.data)
 export const fetchBacktestRuns = () => api.get('/backtest/runs').then((res) => res.data)
 
+export const fetchBacktestResults = (params) =>
+  api.get('/backtest/results', { params }).then((res) => res.data)
+
+export const exportBacktestResults = (params) =>
+  api.get('/backtest/results/export', { params, responseType: 'blob' }).then((res) => res.data)
+
+export const clearBacktestResults = (params) =>
+  api.delete('/backtest/results', { params }).then((res) => res.data)
+
 export const fetchOrderStatus = () => api.get('/orders/status').then((res) => res.data)
 export const setTradingMode = (mode) => api.put('/orders/mode', { mode }).then((res) => res.data)
 export const fetchAutoTrading = () => api.get('/orders/auto').then((res) => res.data)
@@ -128,6 +184,10 @@ export const updateAutoTrading = (payload) => api.put('/orders/auto', payload).t
 export const runAutoTradingNow = (engine) =>
   api.post('/orders/auto/run', null, { params: engine ? { engine } : {} }).then((res) => res.data)
 export const fetchPaperPositions = () => api.get('/orders/paper/positions').then((res) => res.data)
+export const fetchPaperOrderHistory = (limit = 100) =>
+  api.get('/orders/paper/history', { params: { limit } }).then((res) => res.data)
+export const fetchScalpingPaperTrades = (limit = 100) =>
+  api.get('/strategies/scalping/desk/paper-trades', { params: { limit } }).then((res) => res.data)
 export const placeOrder = (payload) => api.post('/orders', payload).then((res) => res.data)
 export const fetchOrders = () => api.get('/orders').then((res) => res.data)
 export const fetchOrderBook = () => api.get('/orders/book').then((res) => res.data)

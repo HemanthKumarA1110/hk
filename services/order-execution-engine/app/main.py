@@ -185,6 +185,24 @@ def paper_positions(
     return {"positions": paper.list_positions(), "mode": "paper"}
 
 
+@router.get("/paper/history")
+def paper_order_history(
+    limit: int = 100,
+    db=Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    paper = PaperTradeExecutor(db, user.id)
+    orders = paper.list_all_orders(limit=limit)
+    filled = sum(1 for o in orders if o.get("status") == "filled")
+    rejected = sum(1 for o in orders if o.get("status") == "rejected_by_risk")
+    return {
+        "orders": orders,
+        "count": len(orders),
+        "mode": "paper",
+        "summary": {"filled": filled, "rejected": rejected},
+    }
+
+
 @router.get("/book")
 async def order_book(
     db=Depends(get_db),

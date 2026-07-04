@@ -55,6 +55,74 @@ class BacktestDataLoader:
                 return inst.token, inst.symbol
         return "99926000" if clean == "NIFTY" else "1", symbol
 
+    async def load_candles_async(
+        self,
+        user_id: int,
+        symbol: str,
+        token: str | None,
+        exchange: str,
+        interval: str,
+        from_date: str,
+        to_date: str,
+    ) -> tuple[pd.DataFrame, str]:
+        """Async candle load for use inside running event loops."""
+        token, symbol = self.resolve_token(symbol, token)
+        db_df = self._load_from_db(token, interval, from_date, to_date)
+        if len(db_df) >= 30:
+            return db_df, "database"
+
+        try:
+            angel_df = await self._load_from_angel_async(user_id, exchange, token, interval, from_date, to_date)
+            if len(angel_df) >= 30:
+                return angel_df, "angel_one"
+        except Exception:
+            logger.exception("Angel One historical fetch failed for %s", symbol)
+
+        return self._generate_demo(symbol, interval, from_date, to_date), "demo"
+
+    async def _load_from_angel_async(
+        self,
+        user_id: int,
+        exchange: str,
+        token: str,
+        interval: str,
+        from_date: str,
+        to_date: str,
+    ) -> pd.DataFrame:
+        import redis
+
+        redis_client = redis.from_url(self.settings.REDIS_URL, decode_responses=True)
+        manager = AngelOneSessionManager(self.db, redis_client)
+        client = await manager.get_client_for_user(user_id)
+        response = await client.get_candles(
+            CandleRequest(
+                exchange=exchange,
+                symboltoken=token,
+                interval=INTERVAL_MAP.get(interval, "FIVE_MINUTE"),
+                fromdate=f"{from_date} 09:15",
+                todate=f"{to_date} 15:30",
+            )
+        )
+        candles = response.get("data") or []
+        if not candles:
+            return pd.DataFrame()
+
+        records = []
+        for row in candles:
+            if not isinstance(row, (list, tuple)) or len(row) < 6:
+                continue
+            records.append(
+                {
+                    "timestamp": pd.to_datetime(row[0]),
+                    "open": float(row[1]),
+                    "high": float(row[2]),
+                    "low": float(row[3]),
+                    "close": float(row[4]),
+                    "volume": float(row[5]),
+                }
+            )
+        return pd.DataFrame(records)
+
     def load(
         self,
         user_id: int,

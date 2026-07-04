@@ -28,6 +28,7 @@ class BacktestSimulator:
         max_daily_loss_pct: float = 5.0,
         max_trades_per_day: int = 10,
         signal_fn: Callable | None = None,
+        confirmation_filter: str | None = None,
     ) -> dict:
         if len(df) < self.WARMUP + 5:
             raise ValueError(f"Insufficient bars ({len(df)}). Need at least {self.WARMUP + 5}.")
@@ -61,7 +62,7 @@ class BacktestSimulator:
                 if signal_fn:
                     signals = signal_fn(provider)
                 else:
-                    signals = evaluate_engine(engine, provider)
+                    signals = evaluate_engine(engine, provider, confirmation_filter=confirmation_filter)
 
                 if not signals:
                     equity_curve.append(capital)

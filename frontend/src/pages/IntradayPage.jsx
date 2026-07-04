@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchIntradaySignals, fetchOrderStatus, scanIntradayPicks } from '../api'
+import { fetchIntradaySignals, fetchIntradayStrategies, fetchOrderStatus, scanIntradayPicks } from '../api'
 import AngelOneAccountPanel from '../components/AngelOneAccountPanel'
+import DeskBacktestModule from '../components/DeskBacktestModule'
+import IntradayAutoTradingPanel from '../components/IntradayAutoTradingPanel'
+import IntradayStrategyPanel from '../components/IntradayStrategyPanel'
 import SwingOrderCell from '../components/SwingOrderCell'
 import TradingModeToggle from '../components/TradingModeToggle'
 import TradingViewChart from '../components/TradingViewChart'
+import { useDeskBacktest } from '../hooks/useDeskBacktest'
+import { filterStrategiesForDesk } from '../utils/strategyFilters'
 
 function tvSymbol(symbol) {
   const base = (symbol || '').replace('-EQ', '').split('-')[0]
@@ -28,10 +33,12 @@ const REFRESH_MS = 60_000
 
 export default function IntradayPage() {
   const [payload, setPayload] = useState({ signals: [] })
+  const [strategies, setStrategies] = useState([])
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
   const [orderStatus, setOrderStatus] = useState(null)
+  const backtest = useDeskBacktest('intraday')
 
   const applyPayload = useCallback((data) => {
     const signals = data?.signals || []
@@ -39,14 +46,40 @@ export default function IntradayPage() {
     setSelected((prev) => prev || signals[0] || null)
   }, [])
 
-  const load = useCallback(() => {
-    fetchIntradaySignals().then(applyPayload).catch(() => null)
+  const load = useCallback(async () => {
+    try {
+      const data = await fetchIntradaySignals()
+      applyPayload(data)
+      return data
+    } catch {
+      return null
+    }
   }, [applyPayload])
 
   useEffect(() => {
-    load()
+    let cancelled = false
+    ;(async () => {
+      const data = await load()
+      if (cancelled || data?.signals?.length) return
+      setScanning(true)
+      setError('')
+      try {
+        const scanned = await scanIntradayPicks()
+        if (!cancelled) applyPayload(scanned)
+      } catch (err) {
+        if (!cancelled) setError(formatApiError(err, 'Intraday scan failed. Please try again.'))
+      } finally {
+        if (!cancelled) setScanning(false)
+      }
+    })()
     fetchOrderStatus().then(setOrderStatus).catch(() => null)
-  }, [load])
+    fetchIntradayStrategies()
+      .then((data) => setStrategies(filterStrategiesForDesk('intraday', data?.strategies || [])))
+      .catch(() => null)
+    return () => {
+      cancelled = true
+    }
+  }, [applyPayload, load])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -86,8 +119,7 @@ export default function IntradayPage() {
           <p className="text-cyan-400 text-xs uppercase tracking-widest">Intraday Desk</p>
           <h2 className="text-3xl font-bold mt-1">Live Intraday Setups</h2>
           <p className="text-slate-400 mt-1">
-            Top 10 picks filtered by intraday strategy · scanner hits + momentum confirmations ·
-            auto-refresh every 60s
+            ORB · VWAP trend · EMA+RSI · all positions exit by 3:15 PM IST · auto-refresh every 60s
           </p>
           {payload.generated_at && (
             <p className="text-xs text-slate-500 mt-2">
@@ -95,7 +127,8 @@ export default function IntradayPage() {
               {payload.source ? ` · ${payload.source}` : ''}
               {payload.scan_hits != null ? ` · ${payload.scan_hits} scanner hits` : ''}
               {payload.universe_size != null ? ` · ${payload.universe_size} stocks screened` : ''}
-              {payload.history_loaded != null ? ` · ${payload.history_loaded} with live ticks` : ''}
+              {payload.history_loaded != null ? ` · ${payload.history_loaded} live quotes` : ''}
+              {payload.candles_loaded != null ? ` · ${payload.candles_loaded} with 5m history` : ''}
               {payload.min_score != null ? ` · min score ${payload.min_score}` : ''}
             </p>
           )}
@@ -125,13 +158,18 @@ export default function IntradayPage() {
         <h3 className="font-semibold mb-3">Top 10 Intraday Picks</h3>
         {signals.length === 0 && !scanning && (
           <p className="text-sm text-slate-500">
-            No intraday setups yet. Click <strong>Scan Top 10 Picks</strong> to run the market scanner and
-            intraday strategy filters.
+            No intraday setups yet. Click <strong>Scan Top 10 Picks</strong> to fetch Angel One live quotes
+            and 5m candles for Nifty 50 (takes up to 2 minutes).
+            {payload.history_loaded === 0 && payload.generated_at ? (
+              <span className="block mt-1 text-amber-400/90">
+                Last scan had no live data — ensure broker is connected and run scan again during market hours.
+              </span>
+            ) : null}
           </p>
         )}
         {scanning && signals.length === 0 && (
           <p className="text-sm text-slate-400">
-            Scanning Nifty 50 live ticks, applying relative volume, breakout, gap, and momentum filters…
+            Fetching Angel One live quotes and 5m candles for Nifty 50, then applying intraday filters…
           </p>
         )}
         {signals.length > 0 && (
@@ -215,6 +253,20 @@ export default function IntradayPage() {
       </section>
 
       <AngelOneAccountPanel />
+
+      <IntradayAutoTradingPanel strategies={strategies} isPaper={isPaper} />
+
+      <div className="grid gap-4 lg:grid-cols-2 mb-6">
+        <IntradayStrategyPanel strategies={strategies} />
+        <DeskBacktestModule
+          engine="intraday"
+          accent="cyan"
+          title="Intraday Strategy Backtest"
+          defaultInterval="5m"
+          strategies={strategies}
+          backtest={backtest}
+        />
+      </div>
 
       <div className="mb-6">
         <TradingViewChart symbol={chartSymbol} interval="5" height={400} />

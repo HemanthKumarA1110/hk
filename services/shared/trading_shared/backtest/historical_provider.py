@@ -116,7 +116,12 @@ class HistoricalDataProvider:
         return {"NIFTY": (self._token, self._symbol)}
 
 
-def evaluate_engine(engine: str, provider: HistoricalDataProvider) -> list[StrategySignalCandidate]:
+def evaluate_engine(
+    engine: str,
+    provider: HistoricalDataProvider,
+    *,
+    confirmation_filter: str | None = None,
+) -> list[StrategySignalCandidate]:
     from trading_shared.strategies.intraday_engine import IntradayEngine
     from trading_shared.strategies.scalping_engine import ScalpingEngine
     from trading_shared.strategies.swing_engine import SwingEngine
@@ -124,7 +129,7 @@ def evaluate_engine(engine: str, provider: HistoricalDataProvider) -> list[Strat
     if engine == "scalping":
         return ScalpingEngine(provider).evaluate()
     if engine == "intraday":
-        return IntradayEngine(provider).evaluate(limit=1)
+        return IntradayEngine(provider).evaluate(limit=1, confirmation_filter=confirmation_filter)
     if engine == "swing":
-        return SwingEngine(provider).evaluate(limit=1)
+        return SwingEngine(provider).evaluate(limit=1, confirmation_filter=confirmation_filter)
     raise ValueError(f"Unknown engine: {engine}")

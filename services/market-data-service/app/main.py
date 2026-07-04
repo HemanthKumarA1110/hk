@@ -7,7 +7,7 @@ from trading_shared.db.session import init_db
 from trading_shared.service_factory import create_service_app, register_ready_health
 
 from app.api.routes.market import router as market_router
-from app.engine.stream_manager import StreamManager
+from app.engine.stream_manager import StreamManager, StreamStartError
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -36,8 +36,15 @@ async def on_startup() -> None:
 
 async def _auto_start_stream() -> None:
     await asyncio.sleep(5)
-    try:
-        status = await StreamManager.get().start()
-        logger.info("Auto-started market stream: %s", status)
-    except Exception:
-        logger.exception("Failed to auto-start market stream")
+    manager = StreamManager.get()
+    while True:
+        try:
+            status = manager.status()
+            if not status.get("connected"):
+                status = await manager.start()
+                logger.info("Market stream start attempt: connected=%s ticks=%s", status.get("connected"), status.get("ticks_received"))
+        except StreamStartError as exc:
+            logger.warning("Market stream not started: %s", exc)
+        except Exception:
+            logger.exception("Failed to start market stream")
+        await asyncio.sleep(60)

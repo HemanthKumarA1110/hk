@@ -36,5 +36,13 @@ celery_app.conf.update(
             "task": "auto_trading.run",
             "schedule": 75.0,
         },
+        "intraday-desk-every-minute": {
+            "task": "intraday_desk.run",
+            "schedule": 60.0,
+        },
+        "swing-desk-every-minute": {
+            "task": "swing_desk.run",
+            "schedule": 60.0,
+        },
     },
 )

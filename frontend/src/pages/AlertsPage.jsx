@@ -18,10 +18,10 @@ export default function AlertsPage() {
 
       <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
         <p className="text-slate-400 text-sm mb-4">
-          Alert engine is wired to the platform gateway. Full rule builder and push notifications ship in Phase 6.
+          Alert engine is wired to the platform gateway. Custom rule builder and push notifications are coming soon.
         </p>
         <div className="rounded-lg bg-slate-950/50 p-4 font-mono text-xs text-slate-500">
-          Service status: {status?.status || 'unknown'} · Phase {status?.phase ?? 6}
+          Service status: {status?.status || 'unknown'}
         </div>
       </section>
     </div>

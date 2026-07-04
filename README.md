@@ -282,7 +282,59 @@ to connect using environment-level credentials.
 | 6 | Backtesting engine |
 | 7 | Order execution & live trading |
 | 8 | Production deployment hardening | **Current** |
+| — | Nifty / Bank Nifty scalping desks | Dedicated pages with AI auto-trading |
 | — | Paper trading (pre–Angel One) | Simulated orders, default mode |
+
+## Scalping Desk Pages (Nifty 50 & Bank Nifty)
+
+Two dedicated scalping desks share one React component (`ScalpingDeskPage`) with an `instrument` prop:
+
+| Route | Instrument | Lot size |
+|-------|------------|----------|
+| `/scalping/nifty50` | NIFTY index options | 25 |
+| `/scalping/banknifty` | BANKNIFTY index options | 15 |
+
+### Features
+
+- **Live data** — Angel One REST + existing market-data WebSocket (`/api/v1/market/ws`)
+- **1m / 3m chart** — `lightweight-charts` candlestick view with timeframe toggle
+- **Strategy** — EMA 9/21, RSI 14, VWAP, Supertrend (ATR 10×3), volume spike (1.5× avg)
+- **AI layer** — DecisionEngine scores each signal; entries require confidence ≥ 70
+- **Trade config** — capital, min profit target, max daily loss, max trades, auto lot sizing
+- **Auto trading** — OFF by default (paper mode); confirmation modal before live orders
+- **Safety guards** — daily loss cap, trade count cap, 5‑minute gap, 3:15 PM IST force exit
+- **Backtest** — historical replay + AI parameter optimization suggestions
+
+### API (strategy-engine)
+
+```
+GET  /api/v1/strategies/scalping/desk/{nifty50|banknifty}
+POST /api/v1/strategies/scalping/desk/{instrument}/evaluate
+PUT  /api/v1/strategies/scalping/desk/{instrument}/config
+POST /api/v1/strategies/scalping/desk/{instrument}/auto-trading
+POST /api/v1/strategies/scalping/desk/{instrument}/backtest
+POST /api/v1/strategies/scalping/desk/{instrument}/optimize
+```
+
+### Frontend env (optional)
+
+```bash
+# Optional — OpenAI direct calls from browser (not required; backend AI engine is used by default)
+VITE_AI_API_KEY=
+```
+
+### File layout
+
+```
+frontend/src/
+  pages/NiftyScalping.jsx
+  pages/BankNiftyScalping.jsx
+  components/scalping/ScalpingPage.jsx   # shared desk UI
+  hooks/useAngelOneWebSocket.js
+  hooks/useScalpingStrategy.js
+  services/angelOneApi.js
+services/shared/trading_shared/strategies/scalping_desk/
+```
 
 ## Security
 

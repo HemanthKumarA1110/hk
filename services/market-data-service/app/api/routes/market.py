@@ -13,10 +13,10 @@ from trading_shared.db.session import get_db
 from trading_shared.market.constants import PUBSUB_OPTION_CHAIN, PUBSUB_SCAN, PUBSUB_TICKS
 from trading_shared.middleware.auth import get_current_user, require_roles
 from trading_shared.models import User, UserRole
-from trading_shared.schemas.market import IndexQuotesResponse, OptionChainResponse, ScanResponse, StreamStatusResponse, TickSnapshot
+from trading_shared.schemas.market import IndexQuotesResponse, OptionChainResponse, ScanResponse, StreamStatusResponse, SymbolSearchResponse, TickSnapshot
 
 from trading_shared.market.redis_bus import MarketRedisBus
-from app.engine.stream_manager import StreamManager
+from app.engine.stream_manager import StreamManager, StreamStartError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/market", tags=["market"])
@@ -132,6 +132,66 @@ async def search_scrip(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.get("/symbols/search", response_model=SymbolSearchResponse)
+async def search_symbols(
+    q: str = Query(..., min_length=1),
+    exchange: str = Query("NSE"),
+    limit: int = Query(15, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    import redis
+
+    from trading_shared.market.scrip_master import ScripMasterService
+
+    query = q.strip().upper().replace("-EQ", "")
+    results: list[dict] = []
+    seen: set[str] = set()
+
+    def add_hit(symbol: str, token: str, name: str, source: str) -> None:
+        sym = symbol.strip().upper()
+        if not sym or sym in seen:
+            return
+        seen.add(sym)
+        results.append(
+            {
+                "symbol": sym,
+                "token": str(token),
+                "name": name or sym.replace("-EQ", ""),
+                "exchange": exchange,
+                "source": source,
+            }
+        )
+
+    try:
+        manager = AngelOneSessionManager(db)
+        client = await manager.get_client_for_user(current_user.id)
+        response = await client.search_scrip(SearchScripRequest(exchange=exchange, searchscrip=query))
+        rows = response.get("data") or []
+        for row in rows:
+            symbol = str(row.get("tradingsymbol") or "")
+            if exchange == "NSE" and symbol and not symbol.endswith("-EQ"):
+                continue
+            add_hit(symbol, str(row.get("symboltoken") or ""), str(row.get("name") or symbol), "angel_one")
+    except AngelOneAuthError:
+        logger.debug("Angel One symbol search unavailable for user_id=%s", current_user.id)
+
+    try:
+        redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
+        scrip = ScripMasterService(redis_client)
+        if scrip.ensure_loaded():
+            for inst in scrip.search_equity(query, exchange=exchange, limit=limit):
+                add_hit(inst.symbol, inst.token, inst.name, "scrip_master")
+    except Exception:
+        logger.debug("Scrip master symbol search failed for query=%s", query)
+
+    eq_first = sorted(
+        results,
+        key=lambda item: (0 if item["symbol"].endswith("-EQ") else 1, item["symbol"]),
+    )
+    return {"query": q, "results": eq_first[:limit]}
+
+
 @router.get("/tick/{exchange_type}/{token}", response_model=TickSnapshot)
 def get_cached_tick(exchange_type: int, token: str, _: User = Depends(get_current_user)) -> dict:
     bus = get_redis_bus()
@@ -213,16 +273,25 @@ def option_chain(underlying: str, _: User = Depends(get_current_user)) -> dict:
 
 @router.get("/stream/status", response_model=StreamStatusResponse)
 def stream_status(_: User = Depends(get_current_user)) -> dict:
+    manager = StreamManager.get()
+    live = manager.status()
     bus = get_redis_bus()
     cached = bus.get_stream_status()
-    if cached:
+    if live.get("connected"):
+        return live
+    if cached and cached.get("ticks_received", 0) > live.get("ticks_received", 0):
+        cached["connected"] = live.get("connected", False)
+        cached["scanner_running"] = live.get("scanner_running", False)
         return cached
-    return StreamManager.get().status()
+    return live
 
 
 @router.post("/stream/start")
-async def start_stream(_: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER))) -> dict:
-    return await StreamManager.get().start()
+async def start_stream(_: User = Depends(get_current_user)) -> dict:
+    try:
+        return await StreamManager.get().start()
+    except StreamStartError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.post("/stream/stop")

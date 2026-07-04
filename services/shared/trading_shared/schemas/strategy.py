@@ -39,5 +39,6 @@ class EngineSignalsResponse(BaseModel):
     universe_size: int | None = None
     history_loaded: int | None = None
     scan_hits: int | None = None
+    candles_loaded: int | None = None
     min_score: float | None = None
     signals: list[StrategySignalSchema] = Field(default_factory=list)

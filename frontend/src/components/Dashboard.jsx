@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { fetchBrokerFunds, fetchBrokerStatus, fetchServices } from '../api'
 import { useAuth } from '../context/AuthContext'
+import BrandLogo from './BrandLogo'
+import { APP_NAME } from '../config/brand'
 import BrokerStatus from './BrokerStatus'
 import MarketLivePanel from './MarketLivePanel'
 import StrategySignalsPanel from './StrategySignalsPanel'
@@ -35,9 +37,8 @@ export default function Dashboard() {
     <div className="max-w-7xl mx-auto p-6">
       <header className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <p className="text-emerald-400 text-xs uppercase tracking-widest">Phase 4 Platform</p>
-          <h1 className="text-3xl font-bold mt-1">Trading Command Center</h1>
-          <p className="text-slate-400 mt-1">
+          <BrandLogo size="lg" showTagline />
+          <p className="text-slate-400 mt-3">
             Signed in as {user?.username} ({user?.role})
           </p>
         </div>
@@ -84,7 +85,7 @@ export default function Dashboard() {
       </div>
 
       <div className="mb-6">
-        <AIReasoningPanel />
+        <AIReasoningPanel compact />
       </div>
 
       <div className="mb-6">
@@ -96,9 +97,9 @@ export default function Dashboard() {
       </div>
 
       <section className="p-4 rounded-xl border border-slate-800 bg-slate-900/60">
-        <h2 className="text-xl font-semibold mb-2">Roadmap</h2>
+        <h2 className="text-xl font-semibold mb-2">Platform</h2>
         <p className="text-slate-400 text-sm">
-          Phase 5 delivers the full institutional dashboard with TradingView charts, backtesting, and advanced risk controls.
+          {APP_NAME} — TradingView charts, multi-desk backtesting, live trading, and risk controls.
         </p>
       </section>
     </div>

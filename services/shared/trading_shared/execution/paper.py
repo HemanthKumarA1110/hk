@@ -120,19 +120,48 @@ class PaperTradeExecutor:
             .limit(limit)
             .all()
         )
-        return [
-            {
-                "symbol": row.symbol,
-                "side": row.side,
-                "qty": row.qty,
-                "price": row.price,
-                "status": "executed",
-                "timestamp": row.created_at.isoformat() if row.created_at else None,
-                "order_id": row.broker_order_id,
-                "mode": "paper",
-            }
-            for row in rows
-        ]
+        return [self._serialize_paper_row(row) for row in rows]
+
+    def list_all_orders(self, limit: int = 100) -> list[dict]:
+        """All paper orders including rejected — for audit/history views."""
+        rows = (
+            self.db.query(BrokerOrder)
+            .filter(
+                BrokerOrder.user_id == self.user_id,
+                BrokerOrder.execution_mode == "paper",
+            )
+            .order_by(BrokerOrder.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [self._serialize_paper_row(row) for row in rows]
+
+    @staticmethod
+    def _serialize_paper_row(row: BrokerOrder) -> dict:
+        pnl = None
+        result = row.status
+        if row.status == "filled":
+            result = "filled"
+        elif row.status == "rejected_by_risk":
+            result = "rejected"
+        return {
+            "source": "live_trading",
+            "order_id": row.broker_order_id or str(row.id),
+            "symbol": row.symbol,
+            "side": row.side,
+            "qty": row.qty,
+            "price": row.price,
+            "entry": row.price,
+            "exit": None,
+            "pnl": pnl,
+            "status": row.status,
+            "result": result,
+            "risk_approved": row.risk_approved,
+            "risk_reason": row.risk_reason,
+            "timestamp": row.created_at.isoformat() if row.created_at else None,
+            "mode": "paper",
+            "instrument": row.exchange,
+        }
 
     def list_positions(self) -> list[dict]:
         rows = (

@@ -220,45 +220,86 @@ class AngelOneClient:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._refresh_sync)
 
+    @staticmethod
+    def _friendly_auth_error(exc: Exception, fallback: str = "Angel One authentication failed") -> str:
+        message = str(exc)
+        if isinstance(exc, TypeError) and "indices must be integers" in message:
+            return "Angel One session expired (invalid refresh token). Reconnect broker in Settings."
+        lowered = message.lower()
+        if "invalid token" in lowered or "ag8001" in lowered:
+            return "Angel One session expired. Reconnect broker in Settings."
+        if "refresh token" in lowered and "unavailable" in lowered:
+            return "Angel One session expired. Reconnect broker in Settings."
+        return message or fallback
+
     def _refresh_sync(self) -> dict[str, Any]:
         logger.info("Angel One token refresh starting for client_code=%s", self.client_code)
-        smart = self._ensure_smart_connect()
+        if not self.refresh_token:
+            raise AngelOneAuthError("Angel One session expired. Reconnect broker in Settings.")
+
+        url = f"{ROOT_URL}{ROUTES['refresh_token']}"
+        headers = self._base_headers(authenticated=False)
         try:
-            result = smart.generateToken(self.refresh_token)
+            with httpx.Client(timeout=30.0) as http:
+                response = http.post(url, headers=headers, json={"refreshToken": self.refresh_token})
+            payload = response.json() if response.content else {}
         except Exception as exc:
             logger.error(
-                "Angel One token refresh exception for client_code=%s: %s",
+                "Angel One token refresh HTTP error for client_code=%s: %s",
                 self.client_code,
                 exc,
             )
-            raise AngelOneAuthError(str(exc)) from exc
-        if not isinstance(result, dict):
-            raise AngelOneAuthError("Token refresh failed")
-        if result.get("success") is False or result.get("status") is False:
-            raise AngelOneAuthError(result.get("message", "Token refresh failed"))
+            raise AngelOneAuthError(self._friendly_auth_error(exc)) from exc
 
-        data = result.get("data")
+        if not isinstance(payload, dict):
+            raise AngelOneAuthError("Angel One session expired. Reconnect broker in Settings.")
+        if payload.get("success") is False or payload.get("status") is False:
+            raise AngelOneAuthError(
+                payload.get("message") or "Angel One session expired. Reconnect broker in Settings."
+            )
+
+        data = payload.get("data")
         if not isinstance(data, dict) or not data.get("jwtToken"):
-            raise AngelOneAuthError(result.get("message", "Token refresh response missing jwtToken"))
+            raise AngelOneAuthError(
+                payload.get("message") or "Angel One session expired. Reconnect broker in Settings."
+            )
+
         logger.info(
             "Angel One token refresh response for client_code=%s: jwt_present=%s refresh_present=%s",
             self.client_code,
             bool(data.get("jwtToken")),
             bool(data.get("refreshToken")),
         )
+        smart = self._ensure_smart_connect()
         self.jwt_token = self._normalize_bearer_token(data["jwtToken"])
         self.refresh_token = data.get("refreshToken", self.refresh_token)
         smart.setAccessToken(self.jwt_token)
         smart.setRefreshToken(self.refresh_token)
+        self._session_expires_at = datetime.now(timezone.utc).replace(hour=18, minute=30, second=0, microsecond=0)
+        if self._session_expires_at <= datetime.now(timezone.utc):
+            self._session_expires_at += timedelta(days=1)
         return {"status": True, "jwt_token": self.jwt_token, "refresh_token": self.refresh_token}
 
     async def ensure_session(self) -> None:
         if self.jwt_token and self._session_expires_at and datetime.now(timezone.utc) < self._session_expires_at:
             return
         if self.refresh_token:
-            await self.refresh_session()
+            try:
+                await self.refresh_session()
+                return
+            except AngelOneAuthError as exc:
+                logger.warning(
+                    "Angel One refresh failed for client_code=%s: %s — attempting full login",
+                    self.client_code,
+                    exc,
+                )
+                self.jwt_token = None
+                self.refresh_token = None
+                self.reset_smart_connect()
+        if self.client_code and self.password and self.totp_secret:
+            await self.login()
             return
-        await self.login()
+        raise AngelOneAuthError("Angel One session expired. Reconnect broker in Settings.")
 
     @staticmethod
     def _is_api_error(payload: dict[str, Any]) -> bool:
@@ -359,7 +400,17 @@ class AngelOneClient:
                     else:
                         response = await client.post(url, headers=headers, json=json_body or params)
 
-                payload = response.json() if response.content else {}
+                payload: dict[str, Any] = {}
+                if response.content:
+                    try:
+                        payload = response.json()
+                    except ValueError as exc:
+                        snippet = response.text[:200] if response.text else ""
+                        raise AngelOneAPIError(
+                            f"Angel One returned non-JSON response (HTTP {response.status_code})",
+                            status_code=response.status_code,
+                            payload={"raw": snippet},
+                        ) from exc
                 if response.status_code >= 400:
                     raise AngelOneAPIError(
                         payload.get("message", f"HTTP {response.status_code}"),

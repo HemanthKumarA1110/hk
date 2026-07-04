@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import redis
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from trading_shared.ai.constants import REDIS_AI_DECISIONS_KEY
 from trading_shared.ai.journal_analyzer import JournalAnalyzer
 from trading_shared.ai.orchestrator import AIOrchestrator
 from trading_shared.config import get_settings
+from trading_shared.journal.aggregator import JournalAggregator
 from trading_shared.market.redis_bus import MarketRedisBus
 from trading_shared.models import TradeJournalEntry
 from trading_shared.risk.manager import RiskManager
@@ -93,14 +94,25 @@ class AdminOverviewAggregator:
             )
         return {"points": points, "current_equity": round(base_equity + cumulative, 2)}
 
-    def journal_entries(self, limit: int = 50) -> dict:
-        rows = (
-            self.db.query(TradeJournalEntry)
-            .order_by(TradeJournalEntry.created_at.desc())
-            .limit(limit)
-            .all()
+    def journal_entries(
+        self,
+        user_id: int | None = None,
+        *,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        engine: str | None = None,
+        status: str | None = None,
+        profitable: bool | None = None,
+        limit: int = 500,
+    ) -> dict:
+        return JournalAggregator(self.db, user_id).list_trades(
+            from_date=from_date,
+            to_date=to_date,
+            engine=engine,
+            status=status,
+            profitable=profitable,
+            limit=limit,
         )
-        return {"entries": [self._serialize_trade(r) for r in rows]}
 
     def backtest_preview(self) -> dict:
         return {

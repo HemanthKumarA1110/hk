@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchOrderStatus, fetchSwingSignals, scanSwingPicks } from '../api'
+import { fetchOrderStatus, fetchSwingSignals, fetchSwingStrategies, scanSwingPicks } from '../api'
 import AngelOneAccountPanel from '../components/AngelOneAccountPanel'
+import DeskBacktestModule from '../components/DeskBacktestModule'
+import SwingAutoTradingPanel from '../components/SwingAutoTradingPanel'
+import SwingStrategyPanel from '../components/SwingStrategyPanel'
 import SwingOrderCell from '../components/SwingOrderCell'
 import TradingModeToggle from '../components/TradingModeToggle'
 import TradingViewChart from '../components/TradingViewChart'
+import { useDeskBacktest } from '../hooks/useDeskBacktest'
+import { filterStrategiesForDesk } from '../utils/strategyFilters'
 
 function tvSymbol(symbol) {
   const base = (symbol || '').replace('-EQ', '').split('-')[0]
@@ -26,10 +31,12 @@ function formatPrice(value) {
 
 export default function SwingPage() {
   const [payload, setPayload] = useState({ signals: [] })
+  const [strategies, setStrategies] = useState([])
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
   const [orderStatus, setOrderStatus] = useState(null)
+  const backtest = useDeskBacktest('swing')
 
   const applyPayload = useCallback((data) => {
     const signals = data?.signals || []
@@ -44,6 +51,9 @@ export default function SwingPage() {
   useEffect(() => {
     load()
     fetchOrderStatus().then(setOrderStatus).catch(() => null)
+    fetchSwingStrategies()
+      .then((data) => setStrategies(filterStrategiesForDesk('swing', data?.strategies || [])))
+      .catch(() => null)
   }, [load])
 
   const handleTradingModeChange = useCallback((status) => {
@@ -196,6 +206,20 @@ export default function SwingPage() {
       </section>
 
       <AngelOneAccountPanel />
+
+      <SwingAutoTradingPanel strategies={strategies} isPaper={isPaper} />
+
+      <div className="grid gap-4 lg:grid-cols-2 mb-6">
+        <SwingStrategyPanel strategies={strategies} />
+        <DeskBacktestModule
+          engine="swing"
+          accent="violet"
+          title="Swing Strategy Backtest"
+          defaultInterval="1d"
+          strategies={strategies}
+          backtest={backtest}
+        />
+      </div>
 
       <div className="mb-6">
         <TradingViewChart symbol={chartSymbol} interval="D" height={400} />

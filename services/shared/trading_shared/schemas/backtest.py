@@ -15,6 +15,12 @@ class BacktestRunRequest(BaseModel):
     max_daily_loss_pct: float = 5.0
     max_trades_per_day: int = 10
     use_demo_data: bool = False
+    strategy_code: str | None = Field(default=None, description="Optional INTRA-* / SWING-* catalog code")
+    auto_pick_universe: bool = Field(default=False, description="Intraday/swing: screen Nifty 50 universe")
+    top_n: int = Field(default=10, ge=1, le=20, description="Intraday: top symbols to backtest individually")
+    max_open_positions: int = Field(default=5, ge=1, le=10, description="Swing: max concurrent portfolio positions")
+    ai_entry: bool = Field(default=False, description="Apply AI entry confirmation filter")
+    ai_exit: bool = Field(default=False, description="Apply AI dynamic exit on open trades")
 
 
 class BacktestRunCreated(BaseModel):

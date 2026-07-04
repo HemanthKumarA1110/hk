@@ -131,6 +131,15 @@ async def service_registry() -> dict:
     }
 
 
+def _proxy_timeout(path: str) -> httpx.Timeout:
+    """Upstream read timeouts — long jobs must not hit gateway ReadTimeout."""
+    if path.startswith("/api/v1/strategies/"):
+        return httpx.Timeout(connect=30.0, read=1800.0, write=1800.0, pool=30.0)
+    if "/backtest" in path or "/smc/" in path:
+        return httpx.Timeout(connect=30.0, read=1800.0, write=1800.0, pool=30.0)
+    return httpx.Timeout(connect=15.0, read=120.0, write=120.0, pool=15.0)
+
+
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
 async def proxy(full_path: str, request: Request) -> Response:
     path = f"/{full_path}"
@@ -146,14 +155,28 @@ async def proxy(full_path: str, request: Request) -> Response:
     headers = {key: value for key, value in request.headers.items() if key.lower() != "host"}
     body = await request.body()
 
-    scan_paths = ("/api/v1/strategies/swing/scan", "/api/v1/strategies/intraday/scan")
-    timeout = 180.0 if path.startswith(scan_paths) else 60.0
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        upstream_response = await client.request(
-            request.method,
-            target_url,
-            headers=headers,
-            content=body,
+    timeout = _proxy_timeout(path)
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            upstream_response = await client.request(
+                request.method,
+                target_url,
+                headers=headers,
+                content=body,
+            )
+    except httpx.ReadTimeout:
+        logger.error("Gateway read timeout proxying %s %s", request.method, path)
+        return Response(
+            content='{"detail":"Upstream request timed out. Long backtests run as background jobs — poll job status."}',
+            status_code=504,
+            media_type="application/json",
+        )
+    except httpx.RequestError as exc:
+        logger.error("Gateway upstream error for %s %s: %s", request.method, path, exc)
+        return Response(
+            content=f'{{"detail":"Upstream unavailable: {exc}"}}',
+            status_code=502,
+            media_type="application/json",
         )
 
     excluded_headers = {"content-encoding", "content-length", "transfer-encoding", "connection"}

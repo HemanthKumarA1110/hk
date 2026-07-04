@@ -9,6 +9,7 @@ import MarketLivePanel from '../components/MarketLivePanel'
 import MetricCard from '../components/MetricCard'
 import RiskMeter from '../components/RiskMeter'
 import { formatAvailableMargin } from '../utils/brokerFunds'
+import { APP_NAME } from '../config/brand'
 
 export default function OverviewPage() {
   const [overview, setOverview] = useState(null)
@@ -47,7 +48,7 @@ export default function OverviewPage() {
   return (
     <div>
       <header className="mb-6">
-        <p className="text-emerald-400 text-xs uppercase tracking-widest">Institutional Dashboard</p>
+        <p className="text-emerald-400 text-xs uppercase tracking-widest">{APP_NAME}</p>
         <h2 className="text-3xl font-bold mt-1">Overview</h2>
         <p className="text-slate-400 mt-1">Live P&L, risk controls, equity curve, and platform health</p>
       </header>

@@ -76,6 +76,7 @@ class StreamStatusResponse(BaseModel):
     last_tick_at: str | None = None
     scanner_running: bool
     scrip_master_updated_at: str | None = None
+    message: str | None = None
 
 
 class IndexQuote(BaseModel):
@@ -97,3 +98,16 @@ class IndexQuote(BaseModel):
 class IndexQuotesResponse(BaseModel):
     generated_at: str
     indices: list[IndexQuote]
+
+
+class SymbolSearchHit(BaseModel):
+    symbol: str
+    token: str
+    name: str
+    exchange: str = "NSE"
+    source: str | None = None
+
+
+class SymbolSearchResponse(BaseModel):
+    query: str
+    results: list[SymbolSearchHit] = Field(default_factory=list)
