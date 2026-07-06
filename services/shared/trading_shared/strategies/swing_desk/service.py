@@ -271,7 +271,11 @@ class SwingDeskService:
 
             try:
                 if trading_mode == MODE_PAPER:
-                    order = await PaperTradeExecutor(self.db, self.user_id).place_order(payload)
+                    order = await PaperTradeExecutor(self.db, self.user_id).place_order(
+                        payload,
+                        desk="swing",
+                        strategy_code=code,
+                    )
                 else:
                     order = await OrderExecutor(self.db, self.user_id).place_order(payload)
 
@@ -504,7 +508,11 @@ class SwingDeskService:
                     product="DELIVERY",
                 )
                 if trading_mode == MODE_PAPER:
-                    await PaperTradeExecutor(self.db, self.user_id).place_order(payload)
+                    await PaperTradeExecutor(self.db, self.user_id).close_open_order(
+                        symbol=symbol,
+                        exit_price=exit_price,
+                        reason=exit_reason,
+                    )
                 else:
                     await OrderExecutor(self.db, self.user_id).place_order(payload)
 

@@ -8,11 +8,14 @@ from typing import Any
 
 import pandas as pd
 
+from trading_shared.market.scrip_master import parse_option_strike_symbol
 from trading_shared.strategies.scalping_desk.constants import (
     OPTION_DELTA_EST,
     PREMIUM_SL_PCT,
     PREMIUM_TGT_PCT,
     RISK_PROFILES,
+    option_contract_suffix,
+    validate_option_buy_contract,
 )
 from trading_shared.strategies.ta import ema, rsi, supertrend, vwap
 
@@ -90,14 +93,21 @@ def enrich_candles(df: pd.DataFrame) -> pd.DataFrame:
     out["ema21"] = ema(out["close"], 21)
     out["rsi14"] = rsi(out["close"], 14)
     tp = (out["high"] + out["low"] + out["close"]) / 3
-    # Angel One NSE index candles often report zero volume — use range as activity proxy.
+    # Angel One NSE index candles often report zero volume — use range + body as activity proxy.
     if float(out["volume"].sum()) <= 0:
-        out["activity"] = (out["high"] - out["low"]).abs()
-        out["vol_avg20"] = out["activity"].rolling(20, min_periods=1).mean()
-        out["volume_ratio"] = out["activity"] / out["vol_avg20"].replace(0, 1)
-        out["vol_spike"] = out["volume_ratio"] > 1.3
+        body = (out["close"] - out["open"]).abs()
+        out["activity"] = (out["high"] - out["low"]).abs() + body * 0.5
+        out["vol_avg20"] = out["activity"].rolling(20, min_periods=5).mean()
+        out["vol_std20"] = out["activity"].rolling(20, min_periods=5).std().fillna(0)
+        base = out["vol_avg20"].replace(0, 1)
+        out["volume_ratio"] = out["activity"] / base
+        out["vol_spike"] = (out["volume_ratio"] > 1.2) | (
+            out["activity"] > out["vol_avg20"] + out["vol_std20"] * 0.5
+        )
+        out["volume_proxy"] = True
         out["vwap"] = tp.expanding().mean()
     else:
+        out["volume_proxy"] = False
         out["vwap"] = vwap(out["high"], out["low"], out["close"], out["volume"])
         out["vol_avg20"] = out["volume"].rolling(20, min_periods=1).mean()
         out["volume_ratio"] = out["volume"] / out["vol_avg20"].replace(0, 1)
@@ -157,9 +167,22 @@ def evaluate_scalp(
     )
 
 
+def estimate_option_mark_premium(
+    entry_premium: float,
+    signal_type: str,
+    entry_spot: float,
+    spot: float,
+) -> float:
+    """Mark long CE/PE premium from index move (backtest / fallback LTP)."""
+    move = spot - entry_spot
+    if str(signal_type).upper() == "PUT":
+        move = -move
+    return max(0.05, float(entry_premium) + move * OPTION_DELTA_EST)
+
+
 def pick_strike(chain: dict[str, Any], spot: float, signal_type: str) -> dict[str, Any] | None:
-    """Pick ATM option strike from chain rows."""
-    suffix = "CE" if signal_type == "CALL" else "PE"
+    """Pick ATM option to BUY (CE for CALL, PE for PUT)."""
+    suffix = option_contract_suffix(signal_type)
     rows = chain.get("rows") or []
     if isinstance(rows, dict):
         rows = list(rows.values())
@@ -186,7 +209,10 @@ def pick_strike(chain: dict[str, Any], spot: float, signal_type: str) -> dict[st
         }
 
     candidates.sort(key=lambda r: abs(float(r["strike"]) - spot))
-    return candidates[0]
+    best = candidates[0]
+    if not validate_option_buy_contract(str(best.get("symbol") or ""), signal_type):
+        return None
+    return best
 
 
 def classify_strikes(chain: dict[str, Any], spot: float) -> dict[str, Any]:
@@ -235,14 +261,7 @@ def classify_strikes(chain: dict[str, Any], spot: float) -> dict[str, Any]:
 
 
 def _parse_strike(symbol: str) -> float | None:
-    digits = "".join(ch for ch in symbol if ch.isdigit())
-    if not digits:
-        return None
-    try:
-        val = float(digits)
-        return val / 100 if val > 100000 else val
-    except ValueError:
-        return None
+    return parse_option_strike_symbol(symbol)
 
 
 def should_exit_index(

@@ -193,14 +193,25 @@ def paper_order_history(
 ) -> dict:
     paper = PaperTradeExecutor(db, user.id)
     orders = paper.list_all_orders(limit=limit)
-    filled = sum(1 for o in orders if o.get("status") == "filled")
+    open_count = sum(1 for o in orders if o.get("status") == "open")
+    closed_count = sum(1 for o in orders if o.get("status") == "closed")
     rejected = sum(1 for o in orders if o.get("status") == "rejected_by_risk")
     return {
         "orders": orders,
         "count": len(orders),
         "mode": "paper",
-        "summary": {"filled": filled, "rejected": rejected},
+        "summary": {"open": open_count, "closed": closed_count, "rejected": rejected},
     }
+
+
+@router.post("/paper/reset")
+def reset_paper_trading(
+    db=Depends(get_db),
+    user: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER)),
+) -> dict:
+    from trading_shared.execution.paper_reset import reset_paper_trading_session
+
+    return reset_paper_trading_session(db, user.id)
 
 
 @router.get("/book")

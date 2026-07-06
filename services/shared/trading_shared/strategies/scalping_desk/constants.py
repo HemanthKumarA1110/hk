@@ -56,4 +56,18 @@ OPTION_DELTA_EST = 0.45
 PREMIUM_SL_PCT = 0.12
 PREMIUM_TGT_PCT = 0.08
 
+# Desk only opens long options: BUY CE on CALL setups, BUY PE on PUT setups (no writing).
+SCALP_EXECUTION_POLICY = "option_buy_only"
+
+
+def option_contract_suffix(signal_type: str) -> str:
+    return "CE" if str(signal_type or "").upper() == "CALL" else "PE"
+
+
+def validate_option_buy_contract(symbol: str, signal_type: str) -> bool:
+    sym = str(symbol or "").upper().strip()
+    if not sym or sym.endswith("FUT") or "FUT" in sym:
+        return False
+    return sym.endswith(option_contract_suffix(signal_type))
+
 INTERVAL_MAP = {"1m": "ONE_MINUTE", "3m": "THREE_MINUTE"}

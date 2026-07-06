@@ -4,8 +4,11 @@ import {
   fetchBacktestRun,
   fetchBacktestRuns,
   fetchIntradayStrategies,
+  fetchScalpingDesk,
   fetchScalpingStrategies,
   fetchSwingStrategies,
+  fetchIntradayDesk,
+  fetchSwingDesk,
 } from '../api'
 import DeskBacktestModule from '../components/DeskBacktestModule'
 import EquityCurveChart from '../components/EquityCurveChart'
@@ -35,6 +38,10 @@ export default function BacktestPage() {
   const [swingStrategies, setSwingStrategies] = useState([])
   const [niftyStrategies, setNiftyStrategies] = useState([])
   const [bankStrategies, setBankStrategies] = useState([])
+  const [niftyCapital, setNiftyCapital] = useState(null)
+  const [bankCapital, setBankCapital] = useState(null)
+  const [intradayCapital, setIntradayCapital] = useState(null)
+  const [swingCapital, setSwingCapital] = useState(null)
   const [history, setHistory] = useState([])
   const [historyRun, setHistoryRun] = useState(null)
   const [historyBusy, setHistoryBusy] = useState(false)
@@ -57,6 +64,18 @@ export default function BacktestPage() {
     fetchScalpingStrategies('banknifty')
       .then((d) => setBankStrategies(d?.strategies || []))
       .catch(() => setBankStrategies([]))
+    fetchScalpingDesk('nifty50')
+      .then((d) => setNiftyCapital(d?.config?.capital))
+      .catch(() => null)
+    fetchScalpingDesk('banknifty')
+      .then((d) => setBankCapital(d?.config?.capital))
+      .catch(() => null)
+    fetchIntradayDesk()
+      .then((d) => setIntradayCapital(d?.config?.capital))
+      .catch(() => null)
+    fetchSwingDesk()
+      .then((d) => setSwingCapital(d?.config?.capital))
+      .catch(() => null)
     fetchBacktestRuns()
       .then(setHistory)
       .catch(() => setHistory([]))
@@ -135,15 +154,29 @@ export default function BacktestPage() {
           <BacktestModule
             instrument="nifty50"
             backtest={niftyBacktest}
-            onRun={(form) => niftyBacktest.run(form)}
+            onRun={(form) =>
+              niftyBacktest.run({
+                ...form,
+                capital: niftyCapital,
+                capital_utilization_pct: 0.95,
+              })
+            }
             strategies={niftyStrategies}
+            deskCapital={niftyCapital}
             defaultOpen
           />
           <BacktestModule
             instrument="banknifty"
             backtest={bankBacktest}
-            onRun={(form) => bankBacktest.run(form)}
+            onRun={(form) =>
+              bankBacktest.run({
+                ...form,
+                capital: bankCapital,
+                capital_utilization_pct: 0.95,
+              })
+            }
             strategies={bankStrategies}
+            deskCapital={bankCapital}
             defaultOpen
           />
         </div>
@@ -165,6 +198,7 @@ export default function BacktestPage() {
             defaultInterval="5m"
             strategies={intradayStrategies}
             backtest={intradayBacktest}
+            deskCapital={intradayCapital}
             defaultOpen
           />
         </div>
@@ -186,6 +220,7 @@ export default function BacktestPage() {
             defaultInterval="1d"
             strategies={swingStrategies}
             backtest={swingBacktest}
+            deskCapital={swingCapital}
             defaultOpen
           />
         </div>

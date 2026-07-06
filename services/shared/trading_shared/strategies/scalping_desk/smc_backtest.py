@@ -10,7 +10,13 @@ from typing import Any
 
 import pandas as pd
 
-from trading_shared.strategies.scalping_desk.engine import enrich_candles, max_hold_bars, should_exit_index
+from trading_shared.strategies.scalping_desk.engine import (
+    enrich_candles,
+    estimate_option_mark_premium,
+    max_hold_bars,
+    should_exit,
+    should_exit_index,
+)
 from trading_shared.strategies.scalping_desk.smc_scalping_engine import (
     DEFAULT_SMC_PARAMS,
     SMC_EVALUATORS,
@@ -19,6 +25,11 @@ from trading_shared.strategies.scalping_desk.smc_scalping_engine import (
     mtf_context_at,
     prepare_mtf_frames,
 )
+from trading_shared.strategies.scalping_desk.capital_utilization import (
+    backtest_option_trade_pnl,
+    backtest_size_for_bar,
+)
+from trading_shared.strategies.scalping_desk.option_execution import OPTION_EXECUTION_BUY_ONLY
 
 SMC_MAX_BARS = 7500  # ~20 trading days — balances coverage vs runtime
 BACKTEST_LOOKBACK = 90
@@ -55,31 +66,56 @@ def _run_single_strategy(
     params: dict[str, Any] | None = None,
     max_loss_per_day: float = 5000,
     max_trades_per_day: int = 8,
+    capital_utilization_pct: float = 0.95,
+    max_lots_per_trade: int = 0,
+    option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
 ) -> dict[str, Any]:
     """Replay one SMC strategy on historical 1m candles."""
     if candles.empty or len(candles) < 60:
-        return _empty(strategy_id, "Insufficient candles")
+        return _empty(strategy_id, "Insufficient candles", capital=capital)
 
     frame = candles.reset_index(drop=True)
-    if len(frame) > SMC_MAX_BARS:
-        frame = frame.tail(SMC_MAX_BARS).reset_index(drop=True)
+    max_bars = int((params or {}).get("smc_max_bars", SMC_MAX_BARS))
+    if instrument_key == "banknifty" and strategy_id == "smc_fvg_ob_bos":
+        from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
+
+        max_bars = int(merge_smc_fvg_ob_bos_params(params).get("smc_max_bars", SMC_MAX_BARS))
+    elif instrument_key == "banknifty" and strategy_id == "smc_orb_fvg":
+        from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
+
+        max_bars = int(merge_smc_orb_fvg_params(params).get("smc_max_bars", SMC_MAX_BARS))
+    if len(frame) > max_bars:
+        frame = frame.tail(max_bars).reset_index(drop=True)
 
     data = enrich_candles(frame)
     pre = prepare_mtf_frames(data)
-    merged = {**DEFAULT_SMC_PARAMS, **(params or {})}
+    if instrument_key == "banknifty" and strategy_id == "smc_fvg_ob_bos":
+        from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
+
+        merged = merge_smc_fvg_ob_bos_params(params)
+    elif instrument_key == "banknifty" and strategy_id == "smc_orb_fvg":
+        from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
+
+        merged = merge_smc_orb_fvg_params(params)
+    else:
+        merged = {**DEFAULT_SMC_PARAMS, **(params or {})}
     evaluator = SMC_EVALUATORS.get(strategy_id)
     if not evaluator:
-        return _empty(strategy_id, f"Unknown strategy {strategy_id}")
+        return _empty(strategy_id, f"Unknown strategy {strategy_id}", capital=capital)
 
+    entry_scan = int(merged.get("smc_entry_scan_every", ENTRY_SCAN_EVERY))
+    min_between = int(merged.get("smc_min_bars_between", MIN_BARS_BETWEEN_TRADES))
     trades: list[SMCTrade] = []
     equity = capital
     equity_curve = [{"index": 0, "equity": equity, "date": str(data.iloc[0].get("timestamp", 0))}]
     active = None
-    last_exit = -MIN_BARS_BETWEEN_TRADES
+    last_exit = -min_between
     day_pnl: dict[str, float] = {}
     day_trades: dict[str, int] = {}
     hold_limit = int(merged.get("max_hold_bars", max_hold_bars(instrument_key)))
     trailing_mult = float(merged.get("trailing_atr_mult", 0.75))
+    max_lots = int(max_lots_per_trade or 0)
+    bankrupt = False
 
     for i in range(BACKTEST_LOOKBACK, len(data)):
         row = data.iloc[i]
@@ -90,35 +126,61 @@ def _run_single_strategy(
 
         if active:
             bars_held = i - active["entry_index"]
-            trail_stop = active.get("trail_stop_pts")
-            if active["signal_type"] == "CALL" and spot > active.get("peak_spot", spot):
-                active["peak_spot"] = spot
-                trail_stop = max(trail_stop or 0, (spot - active["entry_spot"]) * trailing_mult)
-                active["trail_stop_pts"] = trail_stop
-            elif active["signal_type"] == "PUT" and spot < active.get("trough_spot", spot):
-                active["trough_spot"] = spot
-                trail_stop = max(trail_stop or 0, (active["entry_spot"] - spot) * trailing_mult)
-                active["trail_stop_pts"] = trail_stop
+            trail_floor = None
+            if trailing_mult > 0:
+                if active["signal_type"] == "CALL":
+                    peak = float(active.get("peak_spot", spot))
+                    if spot > peak:
+                        active["peak_spot"] = spot
+                        peak = spot
+                    peak_move = peak - active["entry_spot"]
+                    if peak_move > 0:
+                        trail_floor = peak_move * trailing_mult
+                else:
+                    trough = float(active.get("trough_spot", spot))
+                    if spot < trough:
+                        active["trough_spot"] = spot
+                        trough = spot
+                    peak_move = active["entry_spot"] - trough
+                    if peak_move > 0:
+                        trail_floor = peak_move * trailing_mult
 
-            effective_stop = active["stop_pts"]
-            if trail_stop and trail_stop > 0:
-                effective_stop = min(effective_stop, trail_stop)
-
-            exit_hit, reason = should_exit_index(
-                active["signal_type"],
-                spot,
-                active["entry_spot"],
-                active["target_pts"],
-                effective_stop,
-                bars_held=bars_held,
-                max_hold=active.get("max_hold_bars") or hold_limit,
+            entry_premium = float(active.get("entry") or 0)
+            entry_spot = float(active.get("entry_spot") or spot)
+            current_premium = estimate_option_mark_premium(
+                entry_premium, active["signal_type"], entry_spot, spot
             )
+            exit_hit, reason = should_exit(
+                active["signal_type"],
+                current_premium,
+                entry_premium,
+                float(active.get("target") or entry_premium * 1.08),
+                float(active.get("stoploss") or entry_premium * 0.88),
+                active.get("indicators") or {},
+            )
+            if not exit_hit:
+                exit_hit, reason = should_exit_index(
+                    active["signal_type"],
+                    spot,
+                    entry_spot,
+                    active["target_pts"],
+                    active["stop_pts"],
+                    bars_held=bars_held,
+                    max_hold=active.get("max_hold_bars") or hold_limit,
+                    trail_floor_move=trail_floor,
+                )
             if exit_hit or reason:
-                move = spot - active["entry_spot"]
-                pnl = move * lot_size
-                if active["signal_type"] == "PUT":
-                    pnl = -move * lot_size
+                trade_lots = int(active.get("lots") or 1)
+                pnl = backtest_option_trade_pnl(
+                    entry_premium,
+                    current_premium,
+                    lot_size,
+                    trade_lots,
+                )
                 equity += pnl
+                equity = max(0.0, equity)
+                if equity <= 0:
+                    bankrupt = True
                 day_pnl[day] = day_pnl.get(day, 0.0) + pnl
                 day_trades[day] = day_trades.get(day, 0) + 1
                 rr = active["target_pts"] / max(active["stop_pts"], 0.01)
@@ -143,8 +205,10 @@ def _run_single_strategy(
         daily_pnl = day_pnl.get(day, 0.0)
         if (
             active is None
-            and (i - BACKTEST_LOOKBACK) % ENTRY_SCAN_EVERY == 0
-            and i - last_exit >= MIN_BARS_BETWEEN_TRADES
+            and not bankrupt
+            and equity > 0
+            and (i - BACKTEST_LOOKBACK) % entry_scan == 0
+            and i - last_exit >= min_between
             and daily_pnl > -abs(max_loss_per_day)
             and day_trades.get(day, 0) < max_trades_per_day
         ):
@@ -153,11 +217,25 @@ def _run_single_strategy(
             if setup:
                 stop_pts = setup.stop_pts or atr * float(merged["stop_atr_mult"])
                 target_pts = setup.target_pts or atr * float(merged["target_atr_mult"])
+                lots, _, premium = backtest_size_for_bar(
+                    initial_capital=capital,
+                    instrument_key=instrument_key,
+                    spot=spot,
+                    day=day,
+                    day_pnl=day_pnl,
+                    utilization_pct=capital_utilization_pct,
+                    max_lots=max_lots,
+                    current_equity=equity,
+                )
+                if lots < 1:
+                    continue
                 active = {
                     "signal_type": setup.signal_type,
                     "entry_time": ts,
                     "entry_index": i,
                     "entry_spot": spot,
+                    "lots": lots,
+                    "capital_deployed": round(lots * premium * lot_size, 2),
                     "stop_pts": stop_pts,
                     "target_pts": target_pts,
                     "max_hold_bars": hold_limit,
@@ -182,6 +260,9 @@ def run_single_smc_backtest(
     params: dict[str, Any] | None = None,
     max_loss_per_day: float = 5000,
     max_trades_per_day: int = 8,
+    capital_utilization_pct: float = 0.95,
+    max_lots_per_trade: int = 0,
+    option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
 ) -> dict[str, Any]:
     """Public wrapper — backtest one SMC strategy by internal id."""
     return _run_single_strategy(
@@ -193,6 +274,9 @@ def run_single_smc_backtest(
         params=params,
         max_loss_per_day=max_loss_per_day,
         max_trades_per_day=max_trades_per_day,
+        capital_utilization_pct=capital_utilization_pct,
+        max_lots_per_trade=max_lots_per_trade,
+        option_execution_mode=option_execution_mode,
     )
 
 
@@ -206,7 +290,7 @@ def _summarize(
 ) -> dict[str, Any]:
     label = SMC_REGISTRY.get(strategy_id, {}).get("label", strategy_id)
     if not trades:
-        empty = _empty(strategy_id, "No trades generated", bars_processed)
+        empty = _empty(strategy_id, "No trades generated", bars_processed, capital=capital)
         empty["params"] = params
         return empty
 
@@ -230,11 +314,14 @@ def _summarize(
         max_dd = max(max_dd, peak - eq)
 
     consistency = win_rate * 0.4 + min(profit_factor, 3) / 3 * 30 + (100 - min(max_dd / max(capital * 0.01, 1), 100)) * 0.3
+    final_equity = equity_curve[-1]["equity"] if equity_curve else capital + total_pnl
 
     return {
         "status": "completed",
         "strategy_id": strategy_id,
         "strategy_label": label,
+        "initial_capital": round(capital, 2),
+        "final_capital": round(max(0.0, final_equity), 2),
         "total_trades": len(trades),
         "win_rate": round(win_rate, 2),
         "total_pnl": round(total_pnl, 2),
@@ -242,6 +329,7 @@ def _summarize(
         "profit_factor": round(profit_factor, 2),
         "avg_profit_win": round(avg_win, 2),
         "avg_loss_loss": round(avg_loss, 2),
+        "avg_trade_pnl": round(total_pnl / len(trades), 2),
         "avg_risk_reward": round(avg_rr, 2),
         "avg_trade_duration_bars": round(avg_hold, 1),
         "avg_hold_minutes": round(avg_hold, 1),
@@ -268,12 +356,14 @@ def _summarize(
     }
 
 
-def _empty(strategy_id: str, message: str, bars_processed: int = 0) -> dict[str, Any]:
+def _empty(strategy_id: str, message: str, bars_processed: int = 0, capital: float = 0) -> dict[str, Any]:
     return {
         "status": "completed",
         "message": message,
         "strategy_id": strategy_id,
         "strategy_label": SMC_REGISTRY.get(strategy_id, {}).get("label", strategy_id),
+        "initial_capital": round(capital, 2),
+        "final_capital": round(capital, 2),
         "total_trades": 0,
         "win_rate": 0,
         "total_pnl": 0,

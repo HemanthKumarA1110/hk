@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchOrderStatus, fetchSwingSignals, fetchSwingStrategies, scanSwingPicks } from '../api'
+import { fetchOrderStatus, fetchSwingSignals, fetchSwingStrategies, fetchSwingDesk, scanSwingPicks } from '../api'
 import AngelOneAccountPanel from '../components/AngelOneAccountPanel'
 import DeskBacktestModule from '../components/DeskBacktestModule'
 import SwingAutoTradingPanel from '../components/SwingAutoTradingPanel'
@@ -36,6 +36,7 @@ export default function SwingPage() {
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
   const [orderStatus, setOrderStatus] = useState(null)
+  const [deskConfig, setDeskConfig] = useState(null)
   const backtest = useDeskBacktest('swing')
 
   const applyPayload = useCallback((data) => {
@@ -51,6 +52,7 @@ export default function SwingPage() {
   useEffect(() => {
     load()
     fetchOrderStatus().then(setOrderStatus).catch(() => null)
+    fetchSwingDesk().then((d) => setDeskConfig(d?.config || null)).catch(() => null)
     fetchSwingStrategies()
       .then((data) => setStrategies(filterStrategiesForDesk('swing', data?.strategies || [])))
       .catch(() => null)
@@ -218,6 +220,7 @@ export default function SwingPage() {
           defaultInterval="1d"
           strategies={strategies}
           backtest={backtest}
+          deskCapital={deskConfig?.capital}
         />
       </div>
 

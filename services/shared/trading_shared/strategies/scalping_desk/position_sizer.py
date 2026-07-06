@@ -10,6 +10,10 @@ from __future__ import annotations
 from typing import Any
 
 from trading_shared.strategies.scalping_desk.constants import INSTRUMENTS
+from trading_shared.strategies.scalping_desk.capital_utilization import (
+    is_index_scalp_desk,
+    size_index_scalp_from_context,
+)
 
 POSITION_SIZER_PROMPT = """You are a risk manager for an algorithmic trading bot. Calculate the optimal position size for this trade.
 
@@ -192,8 +196,17 @@ def size_from_signal_context(
     state: dict[str, Any],
     config: dict[str, Any],
     targets: dict[str, Any] | None = None,
+    *,
+    capital_info: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build sizer inputs from desk signal + state."""
+    if is_index_scalp_desk(instrument_key):
+        if capital_info is None:
+            _, capital_info = ensure_session_capital(state, config)
+        return size_index_scalp_from_context(
+            instrument_key, signal, state, config, capital_info
+        )
+
     ind = signal.get("indicators") or {}
     capital = float(config.get("capital") or 100_000)
     entry = float(signal.get("entry") or ind.get("spot") or 0)

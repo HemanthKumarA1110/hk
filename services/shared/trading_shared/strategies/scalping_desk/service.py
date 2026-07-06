@@ -17,10 +17,15 @@ from sqlalchemy.orm import Session
 from trading_shared.backtest.data_loader import BacktestDataLoader
 from trading_shared.backtest.data_loader import INTERVAL_MAP as LOADER_INTERVAL_MAP
 from trading_shared.broker.angel_one.exceptions import AngelOneAPIError, AngelOneAuthError
+from trading_shared.broker.angel_one.funds import parse_rms_funds
 from trading_shared.broker.angel_one.schemas import CandleRequest
 from trading_shared.broker.angel_one.session_manager import AngelOneSessionManager
 from trading_shared.config import get_settings
 from trading_shared.db.session import SessionLocal
+from trading_shared.execution.trading_mode import MODE_PAPER, TradingModeStore
+from trading_shared.execution.paper import PaperTradeExecutor
+from trading_shared.execution.executor import OrderExecutor, OrderRejectedError
+from trading_shared.schemas.order import OrderCreateRequest
 from trading_shared.market.redis_bus import MarketRedisBus
 from trading_shared.market.scrip_master import ScripMasterService
 from trading_shared.strategies.data_provider import StrategyDataProvider
@@ -81,18 +86,28 @@ from trading_shared.strategies.scalping_desk.constants import (
     AI_CONFIDENCE_ENTER,
     INSTRUMENTS,
     REDIS_DESK_PREFIX,
+    SCALP_EXECUTION_POLICY,
     STRATEGY_LABEL,
     STRATEGY_VERSION,
+    validate_option_buy_contract,
 )
 from trading_shared.strategies.scalping_desk.engine import (
     classify_strikes,
     compute_scalp_risk,
     enrich_candles,
+    estimate_option_mark_premium,
     max_hold_bars,
     risk_profile,
+    should_exit,
     should_exit_index,
 )
+from trading_shared.strategies.scalping_desk.option_execution import ensure_buy_only_signal
 from trading_shared.strategies.scalping_desk.guards import guard_status
+from trading_shared.strategies.scalping_desk.capital_utilization import (
+    compute_utilization_lots,
+    ensure_session_capital,
+    is_index_scalp_desk,
+)
 from trading_shared.strategies.scalping_desk.strategy_selector import (
     all_strategy_families,
     registry_for_api,
@@ -103,6 +118,7 @@ from trading_shared.strategies.scalping_desk.strategy_catalog import (
     CATALOG_VERSION,
     catalog_for_api,
     default_strategy_settings,
+    default_fixed_strategy_code,
     normalize_desk_config,
     resolve_strategy_code,
     strategy_setting,
@@ -110,12 +126,37 @@ from trading_shared.strategies.scalping_desk.strategy_catalog import (
 from trading_shared.strategies.strategy_code_validation import filter_catalog_for_engine, validate_strategy_code_for_engine
 from trading_shared.strategies.scalping_desk.smc_backtest import run_full_smc_pipeline
 from trading_shared.strategies.scalping_desk.smc_scalping_engine import DEFAULT_SMC_PARAMS
+from trading_shared.strategies.scalping_desk.orb_breakout_tuning import ORB_BREAKOUT_BANK_DEFAULTS
+from trading_shared.strategies.scalping_desk.ema_crossover_tuning import EMA_CROSSOVER_BANK_DEFAULTS
+from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import SMC_FVG_OB_BOS_BANK_DEFAULTS
+from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import SMC_ORB_FVG_BANK_DEFAULTS
 from trading_shared.strategies.scalping_desk.backtest import run_backtest, run_strategy_backtest
 
 logger = logging.getLogger(__name__)
 
 SMC_JOB_TTL = 7200
 DESK_JOB_TTL = 7200
+BACKTEST_MAX_DAYS = 60
+BACKTEST_MIN_BARS = 30
+BACKTEST_CHUNK_DAYS = 5
+BACKTEST_CHUNK_DELAY_SEC = 0.45
+BACKTEST_CHUNK_RETRIES = 3
+BACKTEST_MIN_COVERAGE_RATIO = 0.25
+BARS_PER_TRADING_DAY_1M = 375
+
+
+def _expected_backtest_bars(from_date: str, to_date: str, timeframe: str) -> int:
+    """Rough minimum bars for a meaningful replay (session-filtered 1m scalping)."""
+    if timeframe != "1m":
+        return BACKTEST_MIN_BARS
+    try:
+        start = datetime.strptime(from_date[:10], "%Y-%m-%d").date()
+        end = datetime.strptime(to_date[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return BACKTEST_MIN_BARS
+    calendar_days = max(1, (end - start).days + 1)
+    trading_days = max(1, int(calendar_days * 5 / 7))
+    return trading_days * BARS_PER_TRADING_DAY_1M
 
 
 def _desk_job_key(user_id: int, job_id: str) -> str:
@@ -270,6 +311,12 @@ def _execute_desk_backtest_ctx(instrument_key: str, ctx: dict[str, Any]) -> dict
         }
 
     evaluation_days = ctx.get("evaluation_days")
+    utilization_pct = float(config.get("capital_utilization_pct") or 0.95)
+    max_lots = int(config.get("backtest_max_lots") or 0)
+    desk_params = dict(config.get("params") or {})
+    smc_params = config.get("smc_params") or {}
+    if smc_params:
+        desk_params = {**desk_params, "smc_params": smc_params, **smc_params}
     common = dict(
         candles=df,
         timeframe=timeframe,
@@ -278,8 +325,10 @@ def _execute_desk_backtest_ctx(instrument_key: str, ctx: dict[str, Any]) -> dict
         max_loss_per_day=float(config.get("max_loss_per_day", 5000)),
         max_trades_per_day=int(config.get("max_trades_per_day", 5)),
         instrument_key=instrument_key,
-        params=config.get("params"),
+        params=desk_params,
         evaluation_days=evaluation_days,
+        capital_utilization_pct=utilization_pct,
+        max_lots_per_trade=max_lots,
     )
     if strategy_code:
         result = run_strategy_backtest(
@@ -304,6 +353,29 @@ def _execute_desk_backtest_ctx(instrument_key: str, ctx: dict[str, Any]) -> dict
         )
     result["instrument"] = instrument_key
     result["bars_loaded"] = len(df)
+    result["data_source"] = ctx.get("data_source")
+    result["date_range"] = {
+        "from": str(ctx.get("from_date", ""))[:10],
+        "to": str(ctx.get("to_date", ""))[:10],
+    }
+    result["load_notes"] = ctx.get("load_notes") or []
+    if ctx.get("data_source") == "angel_one":
+        result["data_label"] = f"Angel One {timeframe} · up to {BACKTEST_MAX_DAYS} days"
+    elif ctx.get("data_source") == "database":
+        result["warning"] = (
+            "Used cached database candles — Angel One live fetch was unavailable for this run."
+        )
+    if ctx.get("data_insufficient"):
+        coverage = ctx.get("coverage_pct")
+        expected = ctx.get("expected_bars")
+        loaded = result.get("bars_loaded")
+        sparse = (
+            f"Only {loaded:,} bars loaded"
+            + (f" (~{coverage}% of ~{expected:,} expected)" if coverage is not None and expected else "")
+            + " — trade count will be much lower than a full 60-day Angel One run."
+        )
+        result["warning"] = f"{result.get('warning', '')} {sparse}".strip()
+        result["data_insufficient"] = True
     if ctx.get("range_capped"):
         result["note"] = ctx.get("range_note")
     return result
@@ -323,18 +395,32 @@ def default_config(instrument_key: str) -> dict[str, Any]:
         "strategy_mode": "auto",
         "strategy_family": "battle",
         "fixed_strategy_id": "ema_crossover_rsi",
-        "fixed_strategy_code": "SCALP-BT-001",
+        "fixed_strategy_code": default_fixed_strategy_code(instrument_key),
         "catalog_version": CATALOG_VERSION,
         "strategy_settings": default_strategy_settings(instrument_key),
         "risk_per_trade_pct": 1.0,
         "max_daily_loss_pct": 5.0,
         "max_lots_per_trade": 2,
-        "smc_params": {},
+        "auto_capital_from_broker": True,
+        "capital_utilization_pct": 0.95,
+        "smc_params": (
+            {**SMC_FVG_OB_BOS_BANK_DEFAULTS, **SMC_ORB_FVG_BANK_DEFAULTS}
+            if instrument_key == "banknifty"
+            else {}
+        ),
         "params": {
             **risk_profile(instrument_key),
             "volume_spike_ratio": 1.3,
             "rsi_call_min": 40,
             "rsi_call_max": 68,
+            **(
+                {
+                    "orb_breakout": dict(ORB_BREAKOUT_BANK_DEFAULTS),
+                    "ema_crossover": dict(EMA_CROSSOVER_BANK_DEFAULTS),
+                }
+                if instrument_key == "banknifty"
+                else {}
+            ),
         },
     }
 
@@ -374,6 +460,52 @@ class ScalpingDeskService:
         self.data_provider = StrategyDataProvider(self.bus, self.scrip)
         self.config_key, self.state_key = _redis_keys(user_id, instrument_key)
 
+    def get_trading_mode(self) -> str:
+        return TradingModeStore(self.settings.REDIS_URL).get(self.user_id)
+
+    def resolve_execution_mode(self, strategy_mode: str) -> str:
+        """Global paper mode overrides per-strategy live settings."""
+        if self.get_trading_mode() == MODE_PAPER:
+            return "paper"
+        return strategy_mode if strategy_mode in ("paper", "live") else "paper"
+
+    async def _fetch_broker_available_cash(self) -> float | None:
+        config = self.get_config()
+        if not config.get("auto_capital_from_broker", True):
+            return None
+        db = SessionLocal()
+        try:
+            manager = AngelOneSessionManager(db, self.redis)
+            if not manager.get_connection_status(self.user_id).get("connected"):
+                return None
+            client = await manager.get_client_for_user(self.user_id)
+            raw = await client.get_rms_limits()
+            parsed = parse_rms_funds(raw)
+            if not parsed.get("status"):
+                return None
+            cash = (parsed.get("data") or {}).get("availablecash")
+            return float(cash) if cash not in (None, "") else None
+        except (AngelOneAuthError, AngelOneAPIError, TypeError, ValueError):
+            return None
+        except Exception:
+            logger.debug("Broker cash fetch failed for user=%s", self.user_id, exc_info=True)
+            return None
+        finally:
+            db.close()
+
+    def _sync_capital_context(
+        self,
+        state: dict[str, Any],
+        config: dict[str, Any],
+        *,
+        broker_cash: float | None = None,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        if not is_index_scalp_desk(self.instrument_key):
+            return state, {}
+        state, info = ensure_session_capital(state, config, broker_cash=broker_cash)
+        self._save_state(state)
+        return state, info
+
     def get_config(self) -> dict[str, Any]:
         raw = self.redis.get(self.config_key)
         if raw:
@@ -386,7 +518,11 @@ class ScalpingDeskService:
             if "min_profit_target_inr" in cfg:
                 cfg.pop("min_profit_target_inr", None)
                 self.save_config(cfg)
-            return normalize_desk_config(cfg, self.instrument_key)
+            prev_version = int(cfg.get("catalog_version") or 0)
+            normalized = normalize_desk_config(cfg, self.instrument_key)
+            if prev_version < int(normalized.get("catalog_version") or 0):
+                self.save_config(normalized)
+            return normalized
         cfg = default_config(self.instrument_key)
         self.save_config(cfg)
         return normalize_desk_config(cfg, self.instrument_key)
@@ -441,6 +577,21 @@ class ScalpingDeskService:
             pnl = -pnl
         return pnl
 
+    def _option_pnl(self, trade: dict[str, Any], exit_premium: float) -> float:
+        entry = float(trade.get("entry") or 0)
+        qty = self.meta["lot_size"] * self._trade_lot_multiplier(trade)
+        return (float(exit_premium) - entry) * qty
+
+    async def _resolve_option_mark_price(self, trade: dict[str, Any], spot: float) -> float:
+        token = trade.get("option_token")
+        if token:
+            tick = self.bus.get_tick(2, str(token))
+            if tick and tick.get("ltp"):
+                return float(tick["ltp"])
+        entry = float(trade.get("entry") or 0)
+        entry_spot = float(trade.get("entry_spot") or trade.get("indicators", {}).get("spot") or spot)
+        return estimate_option_mark_premium(entry, trade.get("signal_type"), entry_spot, spot)
+
     def _resolve_desk_lots(
         self,
         config: dict[str, Any],
@@ -449,10 +600,40 @@ class ScalpingDeskService:
         signal: dict[str, Any] | None = None,
         spot: float = 0,
         option_ltp: float = 100,
+        capital_info: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        if is_index_scalp_desk(self.instrument_key):
+            if capital_info is None:
+                _, capital_info = ensure_session_capital(state, config)
+            deployable = float(capital_info.get("deployable_capital") or 0)
+            premium = option_ltp
+            if signal:
+                ind = signal.get("indicators") or {}
+                premium = float(
+                    signal.get("entry")
+                    or ind.get("option_ltp")
+                    or ind.get("entry_premium")
+                    or option_ltp
+                    or 0
+                )
+            return compute_utilization_lots(
+                self.instrument_key,
+                deployable,
+                premium,
+                config=config,
+                state=state,
+            )
+
         if signal:
             targets = (signal.get("ai") or {}).get("targets")
-            return size_from_signal_context(self.instrument_key, signal, state, config, targets)
+            return size_from_signal_context(
+                self.instrument_key,
+                signal,
+                state,
+                config,
+                targets,
+                capital_info=capital_info,
+            )
         stop_pts = float((config.get("params") or {}).get("stop_pts") or 7)
         if self.instrument_key == "banknifty":
             stop_pts = 72.0
@@ -577,6 +758,8 @@ class ScalpingDeskService:
         config = self.get_config()
         state = self.get_state()
         state["stream_connected"] = self._stream_connected()
+        broker_cash = await self._fetch_broker_available_cash()
+        state, capital_info = self._sync_capital_context(state, config, broker_cash=broker_cash)
 
         timeframe = config.get("timeframe", "1m")
         candles = await self._fetch_redis_candles_only(timeframe)
@@ -601,7 +784,13 @@ class ScalpingDeskService:
         atm_ce = strikes.get("atm_ce") or {}
         atm_pe = strikes.get("atm_pe") or {}
         option_ltp = float(atm_ce.get("ltp") or atm_pe.get("ltp") or 100)
-        sizing = self._resolve_desk_lots(config, state, signal=latest_signal, option_ltp=option_ltp)
+        sizing = self._resolve_desk_lots(
+            config,
+            state,
+            signal=latest_signal,
+            option_ltp=option_ltp,
+            capital_info=capital_info,
+        )
         lots = int(sizing.get("lots") or 0)
 
         return {
@@ -618,6 +807,8 @@ class ScalpingDeskService:
             "active_trades": active_trades,
             "trade_history": state.get("trade_history", [])[-50:],
             "config": config,
+            "execution_policy": SCALP_EXECUTION_POLICY,
+            "option_execution_policy": config.get("option_execution_policy", "buy_only"),
             "guards": guards,
             "daily_summary": self._daily_summary(state),
             "daily_stop": daily_stop,
@@ -649,7 +840,11 @@ class ScalpingDeskService:
                 strategy_selection,
                 config,
             ),
+            "trading_mode": self.get_trading_mode(),
+            "capital_info": capital_info,
             "snapshot": True,
+            "last_stream_eval_at": state.get("last_stream_eval_at"),
+            "stream_status": self._build_stream_status(state, config),
         }
 
     def _refresh_active_trades_spot(self, active: list[dict], spot: float) -> list[dict]:
@@ -658,18 +853,114 @@ class ScalpingDeskService:
         updated = []
         for trade in active:
             entry_spot = float(trade.get("entry_spot") or trade.get("indicators", {}).get("spot") or spot)
-            pnl = self._index_pnl(trade, spot, entry_spot)
-            updated.append({**trade, "current_ltp": spot, "unrealized_pnl": round(pnl, 2)})
+            token = trade.get("option_token")
+            option_ltp = None
+            if token:
+                tick = self.bus.get_tick(2, str(token))
+                if tick and tick.get("ltp"):
+                    option_ltp = float(tick["ltp"])
+            if option_ltp is None:
+                option_ltp = estimate_option_mark_premium(
+                    float(trade.get("entry") or 0),
+                    trade.get("signal_type"),
+                    entry_spot,
+                    spot,
+                )
+            pnl = self._option_pnl(trade, option_ltp)
+            updated.append(
+                {
+                    **trade,
+                    "current_ltp": round(option_ltp, 2),
+                    "unrealized_pnl": round(pnl, 2),
+                }
+            )
         return updated
 
-    async def evaluate_desk(self) -> dict[str, Any]:
+    async def _fetch_stream_candles(
+        self,
+        timeframe: str,
+        state: dict[str, Any],
+        *,
+        bars: int = 120,
+    ) -> list[dict[str, Any]]:
+        """Fast path for 1s stream cycles — cache history, refresh last bar from live tick."""
+        refresh_sec = int(getattr(self.settings, "SCALPING_CANDLE_CACHE_SEC", 30))
+        cached = state.get("_stream_candles_cache")
+        cached_at = state.get("_stream_candles_at")
+        use_cache = False
+        if cached and cached_at:
+            try:
+                ts = datetime.fromisoformat(str(cached_at))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                use_cache = datetime.now(timezone.utc) - ts < timedelta(seconds=refresh_sec)
+            except ValueError:
+                use_cache = False
+
+        candles = list(cached) if use_cache and isinstance(cached, list) else await self.fetch_candles(timeframe, bars)
+        if not candles:
+            candles = await self._fetch_redis_candles_only(timeframe, bars)
+
+        inst = self.scrip.index_token(self.meta["underlying"])
+        tick = self.bus.get_tick(1, inst.token) if inst else None
+        if tick and candles:
+            ltp = float(tick.get("ltp") or 0)
+            if ltp > 0:
+                last = dict(candles[-1])
+                last["close"] = ltp
+                last["high"] = max(float(last.get("high") or ltp), ltp)
+                last["low"] = min(float(last.get("low") or ltp), ltp)
+                candles = candles[:-1] + [last]
+        elif tick and not candles:
+            candles = self._tick_to_candles(tick, min(bars, 40))
+
+        state["_stream_candles_cache"] = candles[-bars:]
+        state["_stream_candles_at"] = datetime.now(timezone.utc).isoformat()
+        return candles
+
+    async def _resolve_broker_cash(
+        self,
+        state: dict[str, Any],
+        *,
+        stream_cycle: bool,
+    ) -> float | None:
+        refresh_sec = int(getattr(self.settings, "SCALPING_BROKER_CASH_REFRESH_SEC", 60))
+        if stream_cycle:
+            cached_at = state.get("broker_cash_fetched_at")
+            cached_cash = state.get("broker_cash_cached")
+            if cached_at is not None and cached_cash is not None:
+                try:
+                    ts = datetime.fromisoformat(str(cached_at))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    if datetime.now(timezone.utc) - ts < timedelta(seconds=refresh_sec):
+                        return float(cached_cash)
+                except (ValueError, TypeError):
+                    pass
+        cash = await self._fetch_broker_available_cash()
+        if cash is not None:
+            state["broker_cash_cached"] = cash
+            state["broker_cash_fetched_at"] = datetime.now(timezone.utc).isoformat()
+        return cash
+
+    async def evaluate_desk(self, *, stream_cycle: bool = False) -> dict[str, Any]:
         """Run full desk evaluation cycle."""
         config = self.get_config()
         state = self.get_state()
         state["stream_connected"] = self._stream_connected()
+        broker_cash = await self._resolve_broker_cash(state, stream_cycle=stream_cycle)
+        state, capital_info = self._sync_capital_context(state, config, broker_cash=broker_cash)
+        if self.get_trading_mode() == MODE_PAPER:
+            try:
+                await PaperTradeExecutor(self.db, self.user_id).refresh_open_orders()
+            except Exception:
+                logger.debug("Paper quote refresh skipped for user=%s", self.user_id, exc_info=True)
 
         timeframe = config.get("timeframe", "1m")
-        candles = await self.fetch_candles(timeframe)
+        if stream_cycle:
+            candles = await self._fetch_stream_candles(timeframe, state)
+        else:
+            candles = await self.fetch_candles(timeframe)
         df = pd.DataFrame(candles) if candles else pd.DataFrame()
 
         inst = self.scrip.index_token(self.meta["underlying"])
@@ -758,18 +1049,20 @@ class ScalpingDeskService:
         )
 
         if signal_obj and can_evaluate:
-            signal = signal_obj.to_dict()
+            signal = ensure_buy_only_signal(signal_obj.to_dict())
             selection = strategy_selection or {}
             context = {
                 "underlying": self.meta["underlying"],
                 "recent_candles": candles[-10:],
                 "market_context": selection.get("market_context") or {},
                 "strategy_selection": selection,
-                "capital": config.get("capital"),
+                "capital": capital_info.get("deployable_capital") or config.get("capital"),
+                "capital_info": capital_info,
                 "lot_size": self.meta["lot_size"],
                 "current_pnl": state.get("daily_pnl", 0),
                 "trades_today": state.get("trades_today", 0),
                 "consecutive_losses": state.get("consecutive_losses", 0),
+                "active_trades": state.get("active_trades", []),
                 "max_loss_per_day": config.get("max_loss_per_day"),
                 "max_trades_per_day": config.get("max_trades_per_day"),
                 "max_daily_loss_pct": config.get("max_daily_loss_pct"),
@@ -821,23 +1114,28 @@ class ScalpingDeskService:
 
             if signal["status"] == "approved":
                 state["signals"] = ([signal] + state.get("signals", []))[:20]
-                code = resolve_strategy_code(selection=strategy_selection, signal=signal, config=config)
+                code = resolve_strategy_code(
+                    selection=strategy_selection,
+                    signal=signal,
+                    config=config,
+                    instrument_key=self.instrument_key,
+                )
                 if code:
                     setting = strategy_setting(config, code, self.instrument_key)
                     if setting.get("enabled"):
-                        mode = setting.get("execution_mode", "paper")
+                        mode = self.resolve_execution_mode(setting.get("execution_mode", "paper"))
                         if mode == "paper" and guards.get("can_enter_paper"):
-                            entry = self.enter_trade_from_signal(
+                            entry = await self.enter_trade_from_signal(
                                 signal, config, execution_mode="paper", strategy_code=code
                             )
                             signal["trade_entry"] = entry
                         elif mode == "live" and guards.get("can_enter"):
-                            entry = self.enter_trade_from_signal(
+                            entry = await self.enter_trade_from_signal(
                                 signal, config, execution_mode="live", strategy_code=code
                             )
                             signal["trade_entry"] = entry
 
-        state["active_trades"] = self._update_active_trades(state.get("active_trades", []), df, config)
+        state["active_trades"] = await self._update_active_trades(state.get("active_trades", []), df, config)
         if strategy_selection:
             state["last_strategy_selection"] = strategy_selection
         if market_ctx:
@@ -851,12 +1149,20 @@ class ScalpingDeskService:
         if expiry_handler:
             state["last_expiry_handler"] = expiry_handler
         eod_review = self._maybe_auto_eod_review(state, config)
+        if stream_cycle:
+            self._record_stream_eval(state)
         self._save_state(state)
 
         atm_ce = strikes.get("atm_ce") or {}
         atm_pe = strikes.get("atm_pe") or {}
         option_ltp = float(atm_ce.get("ltp") or atm_pe.get("ltp") or 100)
-        sizing = self._resolve_desk_lots(config, state, signal=signal, option_ltp=option_ltp)
+        sizing = self._resolve_desk_lots(
+            config,
+            state,
+            signal=signal,
+            option_ltp=option_ltp,
+            capital_info=capital_info,
+        )
         lots = int((signal or {}).get("lots") or sizing.get("lots") or 0)
 
         return {
@@ -873,6 +1179,8 @@ class ScalpingDeskService:
             "active_trades": state.get("active_trades", []),
             "trade_history": state.get("trade_history", [])[-50:],
             "config": config,
+            "execution_policy": SCALP_EXECUTION_POLICY,
+            "option_execution_policy": config.get("option_execution_policy", "buy_only"),
             "guards": guards,
             "daily_summary": self._daily_summary(state),
             "daily_stop": daily_stop,
@@ -900,7 +1208,87 @@ class ScalpingDeskService:
             "desk": "scalping",
             "strategy_families": all_strategy_families(),
             "smc_dashboard": self._smc_dashboard(state, strategy_selection, config),
+            "trading_mode": self.get_trading_mode(),
+            "capital_info": capital_info,
             "snapshot": False,
+            "stream_cycle": stream_cycle,
+            "last_stream_eval_at": state.get("last_stream_eval_at"),
+            "stream_status": self._build_stream_status(state, config),
+        }
+
+    def _age_seconds(self, iso: str | None) -> float | None:
+        if not iso:
+            return None
+        try:
+            ts = datetime.fromisoformat(str(iso))
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            return max(0.0, (datetime.now(timezone.utc) - ts).total_seconds())
+        except ValueError:
+            return None
+
+    def _record_stream_eval(self, state: dict[str, Any]) -> None:
+        now = datetime.now(timezone.utc)
+        now_iso = now.isoformat()
+        cutoff = now - timedelta(seconds=120)
+        history: list[str] = []
+        for raw in state.get("stream_eval_history") or []:
+            try:
+                ts = datetime.fromisoformat(str(raw))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if ts >= cutoff:
+                    history.append(str(raw))
+            except ValueError:
+                continue
+        history.append(now_iso)
+        state["stream_eval_history"] = history[-120:]
+        state["last_stream_eval_at"] = now_iso
+
+    def _evals_per_minute(self, state: dict[str, Any]) -> int:
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(seconds=60)
+        count = 0
+        for raw in state.get("stream_eval_history") or []:
+            try:
+                ts = datetime.fromisoformat(str(raw))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if ts >= cutoff:
+                    count += 1
+            except ValueError:
+                continue
+        return count
+
+    def _build_stream_status(self, state: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+        stream = self.bus.get_stream_status() or {}
+        inst = self.scrip.index_token(self.meta["underlying"])
+        tick = self.bus.get_tick(1, inst.token) if inst else None
+        last_tick_at = stream.get("last_tick_at")
+        last_eval = state.get("last_stream_eval_at")
+        eval_age = self._age_seconds(last_eval)
+        tick_age = self._age_seconds(last_tick_at)
+        interval = max(float(getattr(self.settings, "SCALPING_STREAM_INTERVAL_SEC", 1.0)), 0.5)
+        market_connected = bool(stream.get("connected"))
+        desk_connected = bool(state.get("stream_connected"))
+        worker_active = eval_age is not None and eval_age <= interval * 3
+        return {
+            "instrument": self.instrument_key,
+            "underlying": self.meta["underlying"],
+            "market_stream_connected": market_connected,
+            "desk_stream_connected": desk_connected,
+            "stream_ready": market_connected and desk_connected,
+            "stream_worker_active": worker_active,
+            "auto_trading_enabled": bool(config.get("auto_trading_enabled")),
+            "last_tick_at": last_tick_at,
+            "tick_age_sec": round(tick_age, 1) if tick_age is not None else None,
+            "last_stream_eval_at": last_eval,
+            "eval_age_sec": round(eval_age, 1) if eval_age is not None else None,
+            "evals_per_minute": self._evals_per_minute(state),
+            "target_evals_per_minute": int(round(60 / interval)),
+            "stream_interval_sec": interval,
+            "ticks_received": int(stream.get("ticks_received") or 0),
+            "spot_ltp": float(tick.get("ltp") or 0) if tick else None,
         }
 
     def _spot_change(self, tick: dict | None) -> float:
@@ -910,7 +1298,7 @@ class ScalpingDeskService:
         ltp = float(tick.get("ltp") or 0)
         return round((ltp - prev) / prev * 100, 2) if prev else 0.0
 
-    def _update_active_trades(
+    async def _update_active_trades(
         self,
         active: list[dict],
         df: pd.DataFrame,
@@ -949,16 +1337,27 @@ class ScalpingDeskService:
             ai_exit = evaluate_ai_exit(
                 trade, spot, bars_held, trailing=trailing, df=data, vwap=float(row.get("vwap") or spot)
             )
-            exit_hit, reason = should_exit_index(
+            option_ltp = await self._resolve_option_mark_price(trade, spot)
+            entry_premium = float(trade.get("entry") or 0)
+            exit_hit, reason = should_exit(
                 trade["signal_type"],
-                spot,
-                entry_spot,
-                target_pts,
-                stop_pts,
-                bars_held=bars_held,
-                max_hold=hold_limit,
-                trail_floor_move=float(trail_floor) if trail_floor is not None else None,
+                option_ltp,
+                entry_premium,
+                float(trade.get("target") or entry_premium * 1.08),
+                float(trade.get("stoploss") or entry_premium * 0.88),
+                trade.get("indicators") or {},
             )
+            if not exit_hit:
+                exit_hit, reason = should_exit_index(
+                    trade["signal_type"],
+                    spot,
+                    entry_spot,
+                    target_pts,
+                    stop_pts,
+                    bars_held=bars_held,
+                    max_hold=hold_limit,
+                    trail_floor_move=float(trail_floor) if trail_floor is not None else None,
+                )
             if trailing.get("action") == "EXIT":
                 exit_hit = True
                 reason = trailing.get("reason") or "trail_stop"
@@ -967,10 +1366,20 @@ class ScalpingDeskService:
                 reason = ai_exit.get("mode") or "ai_quick_exit"
 
             if exit_hit:
-                pnl = self._index_pnl(trade, spot, entry_spot)
+                try:
+                    await self._close_scalping_option_position(
+                        trade,
+                        exit_premium=option_ltp,
+                        reason=reason or "exit",
+                    )
+                except Exception:
+                    logger.exception("Option close failed for scalping order %s", trade.get("order_id"))
+
+                pnl = self._option_pnl(trade, option_ltp)
                 closed = {
                     **trade,
-                    "exit": spot,
+                    "exit": round(option_ltp, 2),
+                    "exit_premium": round(option_ltp, 2),
                     "pnl": round(pnl, 2),
                     "exit_reason": reason,
                     "status": "closed",
@@ -1028,8 +1437,8 @@ class ScalpingDeskService:
                 stop_decision = evaluate_ai_daily_stop(state, config, market_ctx)
                 apply_daily_stop(state, stop_decision)
             else:
-                unrealized = self._index_pnl(trade, spot, entry_spot)
-                trade["current_ltp"] = spot
+                unrealized = self._option_pnl(trade, option_ltp)
+                trade["current_ltp"] = round(option_ltp, 2)
                 trade["entry_spot"] = entry_spot
                 trade["stop_pts"] = stop_pts
                 trade["target_pts"] = target_pts
@@ -1191,7 +1600,7 @@ class ScalpingDeskService:
             "strategy_id": (selection or {}).get("selected_strategy") or config.get("fixed_strategy_id"),
             "market_bias": bias,
             "strategy_family": config.get("strategy_family", "adaptive"),
-            "paper_mode": not config.get("auto_trading_enabled", False),
+            "paper_mode": self.get_trading_mode() == MODE_PAPER,
         }
 
     async def _load_smc_backtest_candles(
@@ -1260,6 +1669,8 @@ class ScalpingDeskService:
         return {
             "df": df,
             "config": config,
+            "execution_policy": SCALP_EXECUTION_POLICY,
+            "option_execution_policy": config.get("option_execution_policy", "buy_only"),
             "data_source": data_source,
             "load_notes": load_notes,
             "smc_params": smc_params,
@@ -1277,57 +1688,113 @@ class ScalpingDeskService:
         ctx = await self._prepare_smc_backtest_run(payload)
         return self._execute_smc_backtest_prepared(ctx)
 
+    async def _load_desk_backtest_candles(
+        self,
+        from_date: str,
+        to_date: str,
+        timeframe: str = "1m",
+    ) -> tuple[pd.DataFrame, str, list[str]]:
+        """Load desk backtest candles from Angel One (chunked) with DB cache fallback — no demo."""
+        notes: list[str] = []
+        inst = self.scrip.index_token(self.meta["underlying"])
+        if not inst:
+            raise AngelOneAuthError(
+                f"{self.meta['underlying']} index token unavailable. Connect Angel One broker and retry."
+            )
+
+        try:
+            df = await self._fetch_angel_candles_range(inst.token, timeframe, from_date, to_date)
+            if len(df) >= BACKTEST_MIN_BARS:
+                return df, "angel_one", notes
+            if not df.empty:
+                notes.append(f"Angel One returned only {len(df)} bars for the requested range")
+        except AngelOneAuthError:
+            raise
+        except (AngelOneAPIError, json.JSONDecodeError, ValueError) as exc:
+            notes.append(f"Angel One fetch failed: {exc}")
+            logger.warning("Desk backtest Angel fetch failed for %s: %s", self.instrument_key, exc)
+        except Exception as exc:
+            notes.append(f"Angel One fetch error: {exc}")
+            logger.exception("Desk backtest unexpected Angel fetch error for %s", self.instrument_key)
+
+        loader = BacktestDataLoader(self.db)
+        db_df = loader._load_from_db(inst.token, timeframe, from_date[:10], to_date[:10])
+        expected_bars = _expected_backtest_bars(from_date, to_date, timeframe)
+        if len(db_df) >= BACKTEST_MIN_BARS:
+            notes.append("Using cached database candles (Angel One live fetch unavailable)")
+            if len(db_df) < expected_bars * BACKTEST_MIN_COVERAGE_RATIO:
+                notes.append(
+                    f"Sparse cache: {len(db_df):,} bars for ~{expected_bars:,} expected — reconnect Angel One and retry"
+                )
+            return db_df, "database", notes
+
+        detail = (
+            f"Angel One historical data unavailable for the last {BACKTEST_MAX_DAYS} days. "
+            "Connect broker, verify session, and retry."
+        )
+        if notes:
+            detail = f"{detail} ({'; '.join(notes)})"
+        raise AngelOneAuthError(detail)
+
     async def _prepare_desk_backtest_run(self, payload: dict[str, Any]) -> dict[str, Any]:
         timeframe = payload.get("timeframe") or "1m"
         from_date = payload.get("from_date")
         to_date = payload.get("to_date")
-        if not from_date or not to_date:
-            raise AngelOneAuthError("from_date and to_date are required for backtest")
 
-        start = datetime.strptime(from_date[:10], "%Y-%m-%d").date()
-        end = datetime.strptime(to_date[:10], "%Y-%m-%d").date()
+        end = date.today()
+        if not from_date or not to_date:
+            start = end - timedelta(days=BACKTEST_MAX_DAYS)
+            from_date = start.isoformat()
+            to_date = end.isoformat()
+        else:
+            start = datetime.strptime(from_date[:10], "%Y-%m-%d").date()
+            end = datetime.strptime(to_date[:10], "%Y-%m-%d").date()
+
         requested_start = start
-        max_days = 60
-        range_capped = (end - start).days > max_days
+        range_capped = (end - start).days > BACKTEST_MAX_DAYS
         if range_capped:
-            start = end - timedelta(days=max_days)
+            start = end - timedelta(days=BACKTEST_MAX_DAYS)
             from_date = start.isoformat()
 
         config = self.get_config()
-        inst = self.scrip.index_token(self.meta["underlying"])
-        df = pd.DataFrame()
-        if inst:
-            try:
-                df = await self._fetch_angel_candles_range(inst.token, timeframe, from_date, to_date)
-            except Exception as exc:
-                logger.warning("Adaptive backtest Angel fetch failed: %s", exc)
+        if payload.get("capital") is not None:
+            config = {**config, "capital": float(payload["capital"])}
+        if payload.get("max_loss_per_day") is not None:
+            config = {**config, "max_loss_per_day": float(payload["max_loss_per_day"])}
+        if payload.get("capital_utilization_pct") is not None:
+            config = {**config, "capital_utilization_pct": float(payload["capital_utilization_pct"])}
 
-        if df.empty or len(df) < 30:
-            loader = BacktestDataLoader(self.db)
-            df, _ = await loader.load_candles_async(
-                self.user_id,
-                self.meta["underlying"],
-                inst.token if inst else None,
-                "NSE",
-                timeframe,
-                from_date[:10],
-                to_date[:10],
-            )
+        df, data_source, load_notes = await self._load_desk_backtest_candles(from_date, to_date, timeframe)
+        expected_bars = _expected_backtest_bars(from_date, to_date, timeframe)
+        coverage_pct = round(len(df) / max(expected_bars, 1) * 100, 1) if expected_bars else None
+        data_insufficient = bool(expected_bars and len(df) < expected_bars * BACKTEST_MIN_COVERAGE_RATIO)
 
         range_note = None
         if range_capped:
-            range_note = f"Date range capped to {max_days} days (requested {(end - requested_start).days + 1} days)"
+            range_note = (
+                f"Date range capped to {BACKTEST_MAX_DAYS} days "
+                f"(requested {(end - requested_start).days + 1} days)"
+            )
 
         return {
             "df": df,
             "config": config,
+            "execution_policy": SCALP_EXECUTION_POLICY,
+            "option_execution_policy": config.get("option_execution_policy", "buy_only"),
             "timeframe": timeframe,
             "range_capped": range_capped,
             "range_note": range_note,
             "strategy_code": payload.get("strategy_code"),
-            "evaluation_days": payload.get("evaluation_days") or 60,
+            "evaluation_days": payload.get("evaluation_days"),
             "ai_entry": bool(payload.get("ai_entry")),
             "ai_exit": bool(payload.get("ai_exit")),
+            "data_source": data_source,
+            "load_notes": load_notes,
+            "from_date": from_date,
+            "to_date": to_date,
+            "expected_bars": expected_bars,
+            "coverage_pct": coverage_pct,
+            "data_insufficient": data_insufficient,
         }
 
     async def run_backtest(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -1360,17 +1827,18 @@ class ScalpingDeskService:
     ) -> pd.DataFrame:
         start = datetime.strptime(from_date[:10], "%Y-%m-%d").date()
         end = datetime.strptime(to_date[:10], "%Y-%m-%d").date()
-        chunk_days = 5
         frames: list[pd.DataFrame] = []
         cur = start
         while cur <= end:
-            chunk_end = min(cur + timedelta(days=chunk_days - 1), end)
-            chunk_df = await self._fetch_angel_candles_once(
+            chunk_end = min(cur + timedelta(days=BACKTEST_CHUNK_DAYS - 1), end)
+            chunk_df = await self._fetch_angel_candles_chunk_with_retry(
                 token, timeframe, cur.isoformat(), chunk_end.isoformat()
             )
             if not chunk_df.empty:
                 frames.append(chunk_df)
             cur = chunk_end + timedelta(days=1)
+            if cur <= end:
+                await asyncio.sleep(BACKTEST_CHUNK_DELAY_SEC)
         if not frames:
             return pd.DataFrame()
         merged = pd.concat(frames, ignore_index=True)
@@ -1378,6 +1846,29 @@ class ScalpingDeskService:
         return merged.dropna(subset=["timestamp"]).drop_duplicates(subset=["timestamp"]).sort_values(
             "timestamp"
         ).reset_index(drop=True)
+
+    async def _fetch_angel_candles_chunk_with_retry(
+        self, token: str, timeframe: str, from_date: str, to_date: str
+    ) -> pd.DataFrame:
+        last_exc: Exception | None = None
+        for attempt in range(BACKTEST_CHUNK_RETRIES):
+            try:
+                return await self._fetch_angel_candles_once(token, timeframe, from_date, to_date)
+            except AngelOneAPIError as exc:
+                last_exc = exc
+                if exc.status_code == 403 and attempt < BACKTEST_CHUNK_RETRIES - 1:
+                    await asyncio.sleep(0.9 * (attempt + 1))
+                    continue
+                raise
+            except Exception as exc:
+                last_exc = exc
+                if attempt < BACKTEST_CHUNK_RETRIES - 1:
+                    await asyncio.sleep(0.5 * (attempt + 1))
+                    continue
+                raise
+        if last_exc:
+            raise last_exc
+        return pd.DataFrame()
 
     async def _fetch_angel_candles_once(
         self, token: str, timeframe: str, from_date: str, to_date: str
@@ -1430,7 +1921,96 @@ class ScalpingDeskService:
         self.save_config(config)
         return {"auto_trading_enabled": enabled, "paper_mode": not enabled}
 
-    def enter_trade_from_signal(
+    async def _resolve_option_exit_price(self, trade: dict[str, Any]) -> float | None:
+        token = trade.get("option_token")
+        if token:
+            tick = self.bus.get_tick(2, str(token))
+            if tick and tick.get("ltp"):
+                return float(tick["ltp"])
+        entry = trade.get("entry")
+        return float(entry) if entry else None
+
+    async def _place_scalping_option_buy(
+        self,
+        signal: dict[str, Any],
+        trade: dict[str, Any],
+        *,
+        execution_mode: str,
+    ) -> dict[str, Any]:
+        """BUY CE (CALL) or BUY PE (PUT) — long options only."""
+        symbol = str(signal.get("option_symbol") or "")
+        if not validate_option_buy_contract(symbol, str(signal.get("signal_type") or "")):
+            return {
+                "ok": False,
+                "reason": [f"Buy-only desk: need CE/PE contract, got {symbol or 'missing'}"],
+            }
+
+        lots = int(trade.get("lots") or 1)
+        qty = lots * self.meta["lot_size"]
+        payload = OrderCreateRequest(
+            symbol=symbol,
+            symboltoken=str(signal.get("option_token") or ""),
+            exchange=self.meta.get("option_exchange") or "NFO",
+            side="BUY",
+            qty=qty,
+            order_type="MARKET",
+            price=float(signal.get("entry") or 0),
+            stoploss=float(signal.get("stoploss") or 0),
+            product="INTRADAY",
+        )
+        try:
+            if execution_mode == "paper":
+                order = await PaperTradeExecutor(self.db, self.user_id).place_order(
+                    payload,
+                    desk=f"scalping:{self.instrument_key}",
+                    strategy_code=str(signal.get("strategy_code") or ""),
+                )
+            else:
+                order = await OrderExecutor(self.db, self.user_id).place_order(payload)
+            return {
+                "ok": True,
+                "order_id": order.get("broker_order_id") or order.get("order_id") or order.get("id"),
+                "db_id": order.get("id"),
+                "entry": order.get("entry") or order.get("price") or payload.price,
+            }
+        except OrderRejectedError as exc:
+            return {"ok": False, "reason": [str(exc)]}
+
+    async def _close_scalping_option_position(
+        self,
+        trade: dict[str, Any],
+        *,
+        exit_premium: float | None,
+        reason: str,
+    ) -> None:
+        if trade.get("execution_mode") == "paper" and trade.get("order_id"):
+            exit_price = exit_premium or await self._resolve_option_exit_price(trade)
+            await PaperTradeExecutor(self.db, self.user_id).close_open_order(
+                broker_order_id=str(trade.get("order_id")),
+                exit_price=exit_price,
+                reason=reason,
+            )
+            return
+
+        if trade.get("execution_mode") != "live" or not trade.get("order_id"):
+            return
+
+        symbol = str(trade.get("option_symbol") or "")
+        lots = int(trade.get("lots") or 1)
+        qty = lots * self.meta["lot_size"]
+        payload = OrderCreateRequest(
+            symbol=symbol,
+            symboltoken=str(trade.get("option_token") or ""),
+            exchange=self.meta.get("option_exchange") or "NFO",
+            side="SELL",
+            qty=qty,
+            order_type="MARKET",
+            price=float(exit_premium or trade.get("entry") or 0),
+            product="INTRADAY",
+        )
+        await OrderExecutor(self.db, self.user_id).place_order(payload)
+
+    async def enter_trade_from_signal(
         self,
         signal: dict[str, Any],
         config: dict[str, Any],
@@ -1440,6 +2020,9 @@ class ScalpingDeskService:
     ) -> dict[str, Any]:
         """Record paper/live trade entry when a strategy signal is approved."""
         state = self.get_state()
+        if state.get("active_trades"):
+            return {"ok": False, "reason": ["Open trade active — next entry only after exit"]}
+
         daily_stop = evaluate_ai_daily_stop(state, config, state.get("last_market_context") or {})
         expiry_handler = state.get("last_expiry_handler")
         guards = guard_status(state, config, daily_stop=daily_stop, expiry_handler=expiry_handler)
@@ -1453,6 +2036,7 @@ class ScalpingDeskService:
             **signal,
             "status": "open",
             "execution_mode": execution_mode,
+            "execution_policy": SCALP_EXECUTION_POLICY,
             "strategy_code": strategy_code,
             "lots": int(signal.get("lots") or (signal.get("ai") or {}).get("lots") or 1),
             "original_stop_pts": ind.get("index_stop_pts") or signal.get("stop_pts"),
@@ -1465,6 +2049,14 @@ class ScalpingDeskService:
             "ai_extended": False,
             "order_id": f"{prefix}-{int(datetime.now(timezone.utc).timestamp())}",
         }
+
+        buy = await self._place_scalping_option_buy(signal, trade, execution_mode=execution_mode)
+        if not buy.get("ok"):
+            return buy
+        trade["order_id"] = buy.get("order_id") or trade["order_id"]
+        if buy.get("entry"):
+            trade["entry"] = buy["entry"]
+
         state["active_trades"] = state.get("active_trades", []) + [trade]
         state["last_trade_at"] = datetime.now(timezone.utc).isoformat()
         self._save_state(state)
@@ -1589,6 +2181,56 @@ def _smc_backtest_worker(user_id: int, instrument_key: str, job_id: str, payload
                 "progress": 100,
             },
         )
+
+
+def iter_auto_enabled_desks(redis_url: str) -> list[tuple[int, str]]:
+    """Return (user_id, instrument_key) pairs with auto_trading_enabled in desk config."""
+    client = redis.from_url(redis_url, decode_responses=True)
+    desks: list[tuple[int, str]] = []
+    for key in client.scan_iter(f"{REDIS_DESK_PREFIX}:*:{REDIS_CONFIG_SUFFIX}"):
+        parts = key.split(":")
+        if len(parts) != 5 or parts[0] != "scalping" or parts[1] != "desk":
+            continue
+        instrument_key = parts[3]
+        if instrument_key not in INSTRUMENTS:
+            continue
+        try:
+            user_id = int(parts[2])
+        except ValueError:
+            continue
+        raw = client.get(key)
+        if raw and json.loads(raw).get("auto_trading_enabled"):
+            desks.append((user_id, instrument_key))
+    return desks
+
+
+def run_scalping_desk_auto_sync(
+    db: Session,
+    user_id: int,
+    instrument_key: str,
+    *,
+    stream_cycle: bool = False,
+) -> dict[str, Any]:
+    """Background auto-trading cycle — same logic as POST /evaluate when auto is ON."""
+    service = ScalpingDeskService(db, user_id, instrument_key)
+    cfg = service.get_config()
+    if not cfg.get("auto_trading_enabled"):
+        return {"skipped": ["Auto trading disabled"], "instrument": instrument_key}
+    _release_request_db(db)
+    payload = asyncio.run(service.evaluate_desk(stream_cycle=stream_cycle))
+    signal = payload.get("signal") or {}
+    trade_entry = signal.get("trade_entry")
+    summary = payload.get("daily_summary") or {}
+    return {
+        "instrument": instrument_key,
+        "signal_status": signal.get("status"),
+        "trade_entry": trade_entry,
+        "active_trades": len(payload.get("active_trades") or []),
+        "daily_pnl": summary.get("daily_pnl"),
+        "guards": payload.get("guards"),
+        "skipped_alerts": (payload.get("guards") or {}).get("alerts") or [],
+        "last_stream_eval_at": payload.get("last_stream_eval_at"),
+    }
 
 
 def run_desk_evaluate(db: Session, user_id: int, instrument_key: str) -> dict[str, Any]:

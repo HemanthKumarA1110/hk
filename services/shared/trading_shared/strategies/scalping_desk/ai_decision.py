@@ -199,6 +199,8 @@ def evaluate_ai_decision(
         "daily_pnl": context.get("current_pnl", 0),
         "trades_today": context.get("trades_today", 0),
         "consecutive_losses": context.get("consecutive_losses", 0),
+        "active_trades": context.get("active_trades") or [],
+        "session_start_capital": (context.get("capital_info") or {}).get("session_start_capital"),
     }
     pseudo_config = {
         "capital": context.get("capital"),
@@ -214,6 +216,7 @@ def evaluate_ai_decision(
         pseudo_state,
         pseudo_config,
         targets,
+        capital_info=context.get("capital_info"),
     )
 
     if regime_result:

@@ -136,7 +136,7 @@ export default function IntradayAutoTradingPanel({ strategies = [], isPaper = tr
             <h3 className="font-semibold text-lg mt-1">Intraday Bot</h3>
             <p className="text-xs text-slate-500 mt-1">
               AI picks top Nifty 50 stocks · enters & exits · flat by 3:15 PM IST ·{' '}
-              {isPaper ? 'paper' : 'live'} orders
+              {isPaper ? 'paper' : 'live'} orders · background ~60s
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

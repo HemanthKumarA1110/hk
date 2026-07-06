@@ -186,6 +186,7 @@ export const runAutoTradingNow = (engine) =>
 export const fetchPaperPositions = () => api.get('/orders/paper/positions').then((res) => res.data)
 export const fetchPaperOrderHistory = (limit = 100) =>
   api.get('/orders/paper/history', { params: { limit } }).then((res) => res.data)
+export const resetPaperTrading = () => api.post('/orders/paper/reset').then((res) => res.data)
 export const fetchScalpingPaperTrades = (limit = 100) =>
   api.get('/strategies/scalping/desk/paper-trades', { params: { limit } }).then((res) => res.data)
 export const placeOrder = (payload) => api.post('/orders', payload).then((res) => res.data)

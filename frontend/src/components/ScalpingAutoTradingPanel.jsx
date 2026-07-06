@@ -7,6 +7,7 @@ import {
 } from '../api'
 import { INSTRUMENT_META } from '../types/scalping.types'
 import ScalpingStrategySelector from './ScalpingStrategySelector'
+import StreamStatusPanel from './scalping/StreamStatusPanel'
 
 function formatApiError(err, fallback) {
   const detail = err.response?.data?.detail
@@ -118,7 +119,7 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
             <p className="text-amber-400 text-xs uppercase tracking-widest">Scalping · {meta.underlying}</p>
             <h3 className="font-semibold text-lg mt-1">{meta.label}</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Index options · AI adaptive entries · {isPaper ? 'paper' : 'live'} · 1m desk
+              Index options · AI adaptive entries · {isPaper ? 'paper' : 'live'} · live stream ~1s
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -155,6 +156,8 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
 
         {error && <p className="text-rose-400 text-sm mb-3">{error}</p>}
         {message && <p className="text-emerald-400 text-sm mb-3">{message}</p>}
+
+        <StreamStatusPanel deskStatus={desk?.stream_status} compact onStreamStarted={load} />
 
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 mb-4">
           <label className="block text-sm">
@@ -255,7 +258,7 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
           <div className="max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6">
             <h3 className="text-lg font-semibold text-amber-300">Enable {meta.underlying} scalping?</h3>
             <p className="text-sm text-slate-400 mt-3">
-              Places {isPaper ? 'paper' : 'live'} index option orders when AI confidence passes filters.
+              Places {isPaper ? 'paper orders at live Angel One prices' : 'live Angel One orders'} when AI confidence passes filters.
               Review capital and max loss before enabling.
             </p>
             <div className="flex gap-3 mt-6">

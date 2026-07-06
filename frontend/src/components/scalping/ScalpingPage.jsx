@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { fetchOrderStatus } from '../../api'
 import { useAngelOneWebSocket } from '../../hooks/useAngelOneWebSocket'
 import { useScalpingStrategy } from '../../hooks/useScalpingStrategy'
 import { useAIDecision } from '../../hooks/useAIDecision'
@@ -17,6 +18,8 @@ import BacktestModule from './BacktestModule'
 import SMCBacktestPanel from './SMCBacktestPanel'
 import AIOptimizationPanel from './AIOptimizationPanel'
 import StrategySelectorPanel from './StrategySelectorPanel'
+import StreamStatusPanel from './StreamStatusPanel'
+import TradingModeToggle from '../TradingModeToggle'
 import { filterStrategiesForDesk } from '../../utils/strategyFilters'
 
 /**
@@ -33,7 +36,7 @@ export default function ScalpingDeskPage({ instrument }) {
     lastWsRefresh.current = now
     refresh()
   }, [refresh])
-  const { connected: wsConnected } = useAngelOneWebSocket(debouncedRefresh)
+  useAngelOneWebSocket(debouncedRefresh)
   const ai = useAIDecision(desk)
   const backtest = useBacktest(instrument)
   const smcBacktest = useSMCBacktest(instrument)
@@ -41,6 +44,11 @@ export default function ScalpingDeskPage({ instrument }) {
   const [config, setConfig] = useState(null)
   const [toast, setToast] = useState('')
   const [optimization, setOptimization] = useState(null)
+  const [orderStatus, setOrderStatus] = useState(null)
+
+  useEffect(() => {
+    fetchOrderStatus().then(setOrderStatus).catch(() => null)
+  }, [])
 
   useEffect(() => {
     if (desk?.config) setConfig(desk.config)
@@ -55,6 +63,17 @@ export default function ScalpingDeskPage({ instrument }) {
     setToast(msg)
     setTimeout(() => setToast(''), 4000)
   }, [])
+
+  const handleTradingModeChange = useCallback(
+    (status) => {
+      setOrderStatus(status)
+      showToast(status?.trading_mode === 'live' ? 'Live trading mode enabled' : 'Paper trading mode active')
+      refresh()
+    },
+    [refresh, showToast]
+  )
+
+  const isPaper = (orderStatus?.trading_mode || desk?.trading_mode || 'paper') === 'paper'
 
   useEffect(() => {
     if (desk?.signal?.status === 'approved') showToast(`Signal: ${desk.signal.signal_type} · AI ${desk.signal.ai?.confidence}%`)
@@ -77,7 +96,7 @@ export default function ScalpingDeskPage({ instrument }) {
   const handleAutoToggle = async (enabled) => {
     try {
       await toggleScalpingAutoTrading(instrument, enabled)
-      showToast(enabled ? 'AI Auto Trading enabled' : 'Paper mode active')
+      showToast(enabled ? 'AI Auto Trading enabled' : 'AI Auto Trading disabled')
       refresh()
     } catch {
       showToast('Failed to toggle auto trading')
@@ -85,7 +104,12 @@ export default function ScalpingDeskPage({ instrument }) {
   }
 
   const handleBacktest = async (form) => {
-    const data = await backtest.run(form)
+    const data = await backtest.run({
+      ...form,
+      capital: cfg.capital,
+      max_loss_per_day: cfg.max_loss_per_day,
+      capital_utilization_pct: cfg.capital_utilization_pct ?? 0.95,
+    })
     if (data?.total_trades != null) {
       showToast(`Backtest complete: ${data.total_trades} trades`)
       backtest.optimize(data).then((opt) => {
@@ -127,11 +151,16 @@ export default function ScalpingDeskPage({ instrument }) {
           <p className="text-amber-400 text-xs uppercase tracking-widest">Scalping Desk</p>
           <h2 className="text-3xl font-bold mt-1">{meta.label}</h2>
           <p className="text-slate-400 mt-1">
-            9 strategies · unique codes · per-strategy paper or live auto-trading
+            9 strategies · buy CE/PE only · per-strategy paper or live auto-trading
           </p>
+          {orderStatus && (
+            <p className="text-xs mt-2 text-slate-500">
+              Desk orders use {isPaper ? 'paper (live Angel One quotes, dummy orders in app)' : 'live'} execution
+              {!isPaper ? ' · turn on AI Auto Trading for live entries' : ''}
+            </p>
+          )}
           <p className="text-xs text-slate-500 mt-2">
             Spot ₹{Number(desk?.spot || 0).toLocaleString('en-IN')} ({desk?.spot_change_pct ?? 0}%)
-            · Stream {wsConnected || desk?.guards?.stream_connected ? '●' : '○'}
             · {desk?.strategy_label || 'AI Adaptive Scalp'} v{desk?.strategy_version || 4}
             {desk?.strategy_selection?.regime && ` · ${desk.strategy_selection.regime}`}
           </p>
@@ -147,6 +176,10 @@ export default function ScalpingDeskPage({ instrument }) {
       </header>
 
       {error && <p className="text-rose-400 text-sm">{error}</p>}
+
+      <TradingModeToggle onChange={handleTradingModeChange} />
+
+      <StreamStatusPanel deskStatus={desk?.stream_status} onStreamStarted={refresh} />
 
       <DailyPnLBar summary={desk?.daily_summary} guards={desk?.guards} dailyStop={desk?.daily_stop} />
       <SMCDashboardBar stats={desk?.smc_dashboard} />
@@ -225,7 +258,7 @@ export default function ScalpingDeskPage({ instrument }) {
           <AIAutoToggle
             enabled={Boolean(cfg.auto_trading_enabled)}
             onToggle={handleAutoToggle}
-            paperMode={!cfg.auto_trading_enabled}
+            isPaper={isPaper}
           />
           <StrategySelectorPanel
             selection={desk?.strategy_selection}
@@ -243,6 +276,7 @@ export default function ScalpingDeskPage({ instrument }) {
             lastWinReinforcement={desk?.last_win_reinforcement}
             config={cfg}
             onChange={persistConfig}
+            globalPaperMode={isPaper}
           />
           <TradeConfigPanel
             instrument={instrument}
@@ -250,6 +284,8 @@ export default function ScalpingDeskPage({ instrument }) {
             onChange={persistConfig}
             optionLtp={optionLtp}
             computedLots={desk?.computed_lots}
+            capitalInfo={desk?.capital_info}
+            positionSizing={desk?.position_sizing}
           />
         </div>
       </div>
@@ -259,6 +295,8 @@ export default function ScalpingDeskPage({ instrument }) {
         backtest={backtest}
         onRun={handleBacktest}
         strategies={scalpingStrategies}
+        deskCapital={cfg.capital}
+        capitalUtilizationPct={cfg.capital_utilization_pct ?? 0.95}
       />
       <SMCBacktestPanel
         instrument={instrument}

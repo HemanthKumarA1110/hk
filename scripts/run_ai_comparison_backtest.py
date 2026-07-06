@@ -18,17 +18,11 @@ from datetime import date, timedelta
 
 import pandas as pd
 
-SCALP_CODES = (
-    "SCALP-BT-001",
-    "SCALP-BT-002",
-    "SCALP-AD-001",
-    "SCALP-AD-002",
-    "SCALP-AD-003",
-    "SCALP-AD-004",
-)
+from trading_shared.strategies.scalping_desk.strategy_catalog import catalog_for_instrument
+
+SCALP_INSTRUMENTS = (("nifty50", "NIFTY"), ("banknifty", "BANKNIFTY"))
 INTRADAY_CODES = ("INTRA-ORB", "INTRA-VWAP", "INTRA-EMA-RSI")
 SWING_CODES = ("SWING-EMA", "SWING-RSI", "SWING-BO-ATR")
-SCALP_INSTRUMENTS = (("nifty50", "NIFTY"), ("banknifty", "BANKNIFTY"))
 
 
 def _delta(base: dict, ai: dict) -> str:
@@ -88,7 +82,7 @@ async def run_scalping(db, loader, user_id, days, capital) -> list[tuple[str, st
         if candles.empty:
             continue
         lot = int(INSTRUMENTS[inst_key]["lot_size"])
-        for code in SCALP_CODES:
+        for code in [m["code"] for m in catalog_for_instrument(inst_key) if m.get("family") != "smc"]:
             entry = catalog_entry(code)
             if not entry or inst_key not in entry.get("instruments", []):
                 continue

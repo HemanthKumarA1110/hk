@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { fetchIntradaySignals, fetchIntradayStrategies, fetchOrderStatus, scanIntradayPicks } from '../api'
+import { fetchIntradaySignals, fetchIntradayStrategies, fetchIntradayDesk, fetchOrderStatus, scanIntradayPicks } from '../api'
 import AngelOneAccountPanel from '../components/AngelOneAccountPanel'
 import DeskBacktestModule from '../components/DeskBacktestModule'
 import IntradayAutoTradingPanel from '../components/IntradayAutoTradingPanel'
@@ -38,6 +38,7 @@ export default function IntradayPage() {
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
   const [orderStatus, setOrderStatus] = useState(null)
+  const [deskConfig, setDeskConfig] = useState(null)
   const backtest = useDeskBacktest('intraday')
 
   const applyPayload = useCallback((data) => {
@@ -73,6 +74,7 @@ export default function IntradayPage() {
       }
     })()
     fetchOrderStatus().then(setOrderStatus).catch(() => null)
+    fetchIntradayDesk().then((d) => setDeskConfig(d?.config || null)).catch(() => null)
     fetchIntradayStrategies()
       .then((data) => setStrategies(filterStrategiesForDesk('intraday', data?.strategies || [])))
       .catch(() => null)
@@ -265,6 +267,7 @@ export default function IntradayPage() {
           defaultInterval="5m"
           strategies={strategies}
           backtest={backtest}
+          deskCapital={deskConfig?.capital}
         />
       </div>
 

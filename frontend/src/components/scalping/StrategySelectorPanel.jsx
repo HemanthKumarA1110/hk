@@ -35,6 +35,7 @@ export default function StrategySelectorPanel({
   lastPattern,
   lastLossAutopsy,
   lastWinReinforcement,
+  globalPaperMode = true,
 }) {
   if (!selection && !config) return null
 
@@ -126,10 +127,11 @@ export default function StrategySelectorPanel({
                         <button
                           key={m}
                           type="button"
-                          disabled={!sCfg.enabled}
+                          disabled={!sCfg.enabled || (globalPaperMode && m === 'live')}
                           onClick={() => updateStrategy(s.code, { execution_mode: m })}
+                          title={globalPaperMode && m === 'live' ? 'Switch to Live trading mode above first' : undefined}
                           className={`rounded px-2 py-1 capitalize ${
-                            !sCfg.enabled
+                            !sCfg.enabled || (globalPaperMode && m === 'live')
                               ? 'opacity-30 border border-slate-800 text-slate-600'
                               : sCfg.execution_mode === m
                                 ? m === 'paper'
@@ -191,7 +193,9 @@ export default function StrategySelectorPanel({
       )}
 
       <p className="text-xs text-slate-500">
-        Paper strategies auto-enter simulated trades when AI approves. Live strategies require the master AI Auto Trading toggle ON.
+        {globalPaperMode
+          ? 'Platform is in paper mode — all desk entries are simulated. Switch to Live above, then enable live per strategy.'
+          : 'Paper strategies auto-enter simulated trades when AI approves. Live strategies require the master AI Auto Trading toggle ON.'}
       </p>
 
       <div className="grid grid-cols-2 gap-2 text-xs">

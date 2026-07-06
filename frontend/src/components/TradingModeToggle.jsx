@@ -46,7 +46,7 @@ export default function TradingModeToggle({ onChange }) {
           </h3>
           <p className="text-sm text-slate-400 mt-1">
             {isPaper
-              ? 'Simulated fills with risk checks — no Angel One connection required.'
+              ? 'Same live Angel One data as live mode — dummy orders in HK Quant, filled & marked from real quotes.'
               : 'Real orders via Angel One SmartAPI.'}
           </p>
         </div>

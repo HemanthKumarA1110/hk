@@ -332,7 +332,7 @@ class BacktestOrchestrator:
                 from_date=from_day,
                 to_date=to_day,
                 status="completed" if str(result.get("status", "completed")) != "failed" else "failed",
-                data_source="demo" if result.get("warning") else "angel_one",
+                data_source=str(result.get("data_source") or ("demo" if result.get("warning") else "angel_one")),
                 config_json=json.dumps(config),
                 metrics_json=json.dumps(metrics),
                 equity_curve_json=json.dumps(equity[:500]),
