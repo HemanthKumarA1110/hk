@@ -25,21 +25,20 @@ from datetime import date, datetime, timedelta
 
 import pandas as pd
 
-BATTLE_ADAPTIVE_CODES = (
-    "SCALP-BT-001",
-    "SCALP-BT-002",
-    "SCALP-AD-001",
-    "SCALP-AD-002",
-    "SCALP-AD-003",
-    "SCALP-AD-004",
-)
-
-SMC_CODES = ("SCALP-SMC-001", "SCALP-SMC-002", "SCALP-SMC-003")
+from trading_shared.strategies.scalping_desk.strategy_catalog import catalog_for_instrument
 
 INSTRUMENTS = (
     ("nifty50", "NIFTY"),
     ("banknifty", "BANKNIFTY"),
 )
+
+
+def _codes_for_instrument(inst_key: str, *, include_smc: bool) -> list[str]:
+    return [
+        meta["code"]
+        for meta in catalog_for_instrument(inst_key)
+        if include_smc or meta.get("family") != "smc"
+    ]
 
 
 def _print_result(inst: str, code: str, result: dict) -> None:
@@ -126,9 +125,7 @@ def main() -> int:
     load_from = to_date - timedelta(days=days + 10)
     eval_from = to_date - timedelta(days=days)
 
-    codes = list(BATTLE_ADAPTIVE_CODES)
-    if include_smc:
-        codes.extend(SMC_CODES)
+    codes = _codes_for_instrument("nifty50", include_smc=include_smc)
 
     print(f"Scalping index backtest · {days}-day evaluation window")
     print(f"Load window: {load_from.isoformat()} → {to_date.isoformat()}")
@@ -160,17 +157,14 @@ def main() -> int:
                 )
             except Exception as exc:
                 print(f"\n{inst_key} candle load FAILED: {exc}")
-                for code in codes:
-                    entry = catalog_entry(code)
-                    if entry and inst_key not in entry.get("instruments", []):
-                        continue
+                for code in _codes_for_instrument(inst_key, include_smc=include_smc):
                     summary.append((inst_key, code, None, str(exc)))
                 continue
 
             print(f"\n>>> {inst_key.upper()} — {len(candles)} bars loaded ({data_source})")
             lot_size = int(INST_META[inst_key]["lot_size"])
 
-            for code in codes:
+            for code in _codes_for_instrument(inst_key, include_smc=include_smc):
                 entry = catalog_entry(code)
                 if not entry or inst_key not in entry.get("instruments", []):
                     continue

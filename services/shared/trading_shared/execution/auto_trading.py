@@ -318,7 +318,11 @@ class AutoTradingRunner:
             try:
                 if mode == MODE_PAPER:
                     executor = PaperTradeExecutor(self.db, user_id)
-                    order = await executor.place_order(payload)
+                    order = await executor.place_order(
+                        payload,
+                        desk=engine,
+                        strategy_code=signal.get("metadata", {}).get("strategy_code"),
+                    )
                 else:
                     executor = OrderExecutor(self.db, user_id)
                     order = await executor.place_order(payload)

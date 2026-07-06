@@ -21,6 +21,41 @@ REDIS_SCRIP_KEY = "market:scrip_master"
 REDIS_SCRIP_UPDATED_KEY = "market:scrip_master:updated_at"
 
 
+def index_strike_step(underlying: str) -> int:
+    return 100 if underlying == "BANKNIFTY" else 50
+
+
+def normalize_scrip_strike(raw_strike: float, spot: float = 0) -> float:
+    """Convert Angel scrip strike to index points (index options are stored ×100)."""
+    if raw_strike <= 0:
+        return raw_strike
+    if spot > 0 and raw_strike > spot * 50:
+        return raw_strike / 100.0
+    if spot <= 0 and raw_strike >= 100_000:
+        return raw_strike / 100.0
+    return raw_strike
+
+
+def parse_option_strike_symbol(symbol: str) -> float | None:
+    """Parse strike from NFO index option symbol e.g. NIFTY07JUL2624250CE."""
+    sym = str(symbol or "").upper().strip()
+    if not sym or sym.endswith("FUT"):
+        return None
+    for suffix in ("CE", "PE"):
+        if sym.endswith(suffix):
+            sym = sym[:-2]
+            break
+    else:
+        return None
+    digits = "".join(ch for ch in sym if ch.isdigit())
+    if len(digits) < 5:
+        return None
+    try:
+        return float(digits[-5:])
+    except ValueError:
+        return None
+
+
 @dataclass
 class Instrument:
     token: str
@@ -179,8 +214,17 @@ class ScripMasterService:
         nearest_expiry = options["expiry_dt"].min()
         chain = options[options["expiry_dt"] == nearest_expiry].copy()
         chain["strike"] = pd.to_numeric(chain["strike"], errors="coerce")
-        chain = chain[(chain["strike"] >= spot - strike_window * 100) & (chain["strike"] <= spot + strike_window * 100)]
-        return [Instrument.from_row(row.to_dict()) for _, row in chain.iterrows()]
+        chain["strike"] = chain["strike"].apply(lambda s: normalize_scrip_strike(float(s), spot))
+        half_window = strike_window * index_strike_step(underlying)
+        chain = chain[
+            (chain["strike"] >= spot - half_window) & (chain["strike"] <= spot + half_window)
+        ]
+        instruments: list[Instrument] = []
+        for _, row in chain.iterrows():
+            payload = row.to_dict()
+            payload["strike"] = normalize_scrip_strike(float(payload.get("strike") or 0), spot)
+            instruments.append(Instrument.from_row(payload))
+        return instruments
 
     def futures_chain(self, underlying: str, count: int = 2) -> list[Instrument]:
         df = self.dataframe()

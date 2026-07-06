@@ -59,8 +59,12 @@ def guard_status(
 
     expiry_blocked = expiry_blocks_new_entries(expiry_handler)
 
+    open_trades = state.get("active_trades") or []
+    has_open_trade = len(open_trades) > 0
+
     can_enter = (
         auto_on
+        and not has_open_trade
         and not loss_breached
         and not trades_capped
         and not ai_stopped
@@ -71,7 +75,8 @@ def guard_status(
     )
 
     can_enter_paper = (
-        not loss_breached
+        not has_open_trade
+        and not loss_breached
         and not trades_capped
         and not ai_stopped
         and not expiry_blocked
@@ -94,6 +99,8 @@ def guard_status(
         alerts.append("Stream disconnected — auto trading paused")
     if not gap_ok:
         alerts.append(f"Minimum {MIN_TRADE_GAP_MINUTES}m gap between trades")
+    if has_open_trade:
+        alerts.append("Open trade active — next entry only after exit")
     if expiry_handler and expiry_handler.get("warning"):
         alerts.append(expiry_handler["warning"])
 
@@ -108,6 +115,8 @@ def guard_status(
         "ai_daily_stop_reason": state.get("ai_daily_stop_reason") or stop_decision.get("reason"),
         "gap_ok": gap_ok,
         "stream_connected": stream_connected,
+        "has_open_trade": has_open_trade,
+        "open_trades_count": len(open_trades),
         "alerts": alerts,
         "daily_pnl": daily_pnl,
         "trades_today": trades_today,

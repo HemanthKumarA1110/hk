@@ -1,7 +1,34 @@
 import { useEffect, useMemo, useState } from 'react'
 import EquityCurveChart from '../EquityCurveChart'
 import MetricCard from '../MetricCard'
-import { defaultStrategyCode, filterStrategiesForDesk } from '../../utils/strategyFilters'
+import { filterStrategiesForDesk } from '../../utils/strategyFilters'
+
+const MAX_BACKTEST_DAYS = 60
+
+function defaultBacktestDates() {
+  const to = new Date()
+  const from = new Date(Date.now() - MAX_BACKTEST_DAYS * 86400000)
+  return {
+    from_date: from.toISOString().slice(0, 10),
+    to_date: to.toISOString().slice(0, 10),
+  }
+}
+
+function clampBacktestRange(fromDate, toDate) {
+  const end = new Date(toDate)
+  const start = new Date(fromDate)
+  const maxMs = MAX_BACKTEST_DAYS * 86400000
+  if (Number.isNaN(end.getTime()) || Number.isNaN(start.getTime())) {
+    return defaultBacktestDates()
+  }
+  if (end - start > maxMs) {
+    return {
+      from_date: new Date(end.getTime() - maxMs).toISOString().slice(0, 10),
+      to_date: toDate,
+    }
+  }
+  return { from_date: fromDate, to_date: toDate }
+}
 
 /** Collapsible backtest module — scalping desk strategies only (SCALP-* codes). */
 export default function BacktestModule({
@@ -10,28 +37,39 @@ export default function BacktestModule({
   onRun,
   strategies = [],
   defaultOpen = false,
+  deskCapital,
+  capitalUtilizationPct = 0.95,
 }) {
   const [open, setOpen] = useState(defaultOpen)
   const options = useMemo(() => {
     const filtered = filterStrategiesForDesk('scalping', strategies)
+    const fallbackCode = instrument === 'banknifty' ? 'SCALP-BT-003' : 'SCALP-BT-001'
+    const fallbackLabel = instrument === 'banknifty' ? 'EMA Crossover + RSI (Bank Nifty)' : 'EMA Crossover + RSI'
     const list =
       filtered.length > 0
         ? filtered
-        : [{ code: 'SCALP-BT-001', label: 'EMA Crossover + RSI', family: 'battle' }]
+        : [{ code: fallbackCode, label: fallbackLabel, family: 'battle' }]
     return list.map((s) => ({
       code: s.code,
       label: s.label,
       family: s.family,
     }))
-  }, [strategies])
+  }, [strategies, instrument])
   const [form, setForm] = useState({
-    from_date: new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10),
-    to_date: new Date().toISOString().slice(0, 10),
+    ...defaultBacktestDates(),
     timeframe: '1m',
-    strategy_code: options[0]?.code || 'SCALP-BT-001',
+    strategy_code: options[0]?.code || (instrument === 'banknifty' ? 'SCALP-BT-003' : 'SCALP-BT-001'),
     ai_entry: false,
     ai_exit: false,
   })
+
+  const updateRange = (patch) => {
+    setForm((prev) => {
+      const next = { ...prev, ...patch }
+      const clamped = clampBacktestRange(next.from_date, next.to_date)
+      return { ...next, ...clamped }
+    })
+  }
 
   useEffect(() => {
     if (options.length && !options.some((o) => o.code === form.strategy_code)) {
@@ -53,8 +91,13 @@ export default function BacktestModule({
           <p className="text-cyan-400 text-xs uppercase tracking-widest">Backtesting</p>
           <h3 className="font-semibold">{instrument.toUpperCase()} · Per-Strategy Backtest</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Scalping strategies only (SCALP-* codes) · up to 60 days (Angel One 1m)
+            Angel One 1m history · last {MAX_BACKTEST_DAYS} days · Nifty & Bank Nifty use separate SCALP codes
           </p>
+          {deskCapital != null && (
+            <p className="text-xs text-amber-300/90 mt-1">
+              Capital ₹{Number(deskCapital).toLocaleString('en-IN')} · {Math.round(Number(capitalUtilizationPct) * 100)}% utilization · lots sized from running equity
+            </p>
+          )}
         </div>
         <span className="text-slate-500">{open ? '▼' : '▶'}</span>
       </button>
@@ -84,7 +127,8 @@ export default function BacktestModule({
               <input
                 type="date"
                 value={form.from_date}
-                onChange={(e) => setForm({ ...form, from_date: e.target.value })}
+                max={form.to_date}
+                onChange={(e) => updateRange({ from_date: e.target.value })}
                 className="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5"
               />
             </label>
@@ -93,7 +137,9 @@ export default function BacktestModule({
               <input
                 type="date"
                 value={form.to_date}
-                onChange={(e) => setForm({ ...form, to_date: e.target.value })}
+                min={form.from_date}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => updateRange({ to_date: e.target.value })}
                 className="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5"
               />
             </label>
@@ -158,6 +204,26 @@ export default function BacktestModule({
           )}
           {result?.note && <p className="text-amber-400/90 text-xs">{result.note}</p>}
           {result?.warning && <p className="text-amber-400/90 text-xs">{result.warning}</p>}
+          {result?.data_insufficient && (
+            <p className="text-rose-400/90 text-xs font-medium">
+              Incomplete history — only {result.bars_loaded?.toLocaleString('en-IN')} bars loaded. Re-run after Angel One
+              is connected; expect ~30–40 trades on a full 60-day Nifty run.
+            </p>
+          )}
+          {result?.data_source && (
+            <p className="text-xs text-slate-500">
+              Data:{' '}
+              {result.data_source === 'angel_one'
+                ? 'Angel One live history'
+                : result.data_source === 'database'
+                  ? 'Cached DB (Angel One fetch failed)'
+                  : result.data_source}
+              {result.date_range
+                ? ` · ${result.date_range.from} → ${result.date_range.to}`
+                : ` · ${form.from_date} → ${form.to_date}`}
+              {result.bars_loaded != null ? ` · ${result.bars_loaded.toLocaleString('en-IN')} bars` : ''}
+            </p>
+          )}
           {backtest.error && <p className="text-rose-400 text-sm">{backtest.error}</p>}
 
           {result && (
@@ -177,15 +243,31 @@ export default function BacktestModule({
                   )}
                 </p>
               )}
+              {result.total_trades === 0 && (result.message || result.warning) && (
+                <p className="text-sm text-amber-300/90 bg-amber-950/30 border border-amber-900/40 rounded-lg px-3 py-2">
+                  {result.message || result.warning}
+                </p>
+              )}
               <div className="grid md:grid-cols-4 gap-3">
+                <MetricCard
+                  label="Initial Capital"
+                  value={`₹${Number(result.initial_capital ?? deskCapital ?? 0).toLocaleString('en-IN')}`}
+                />
+                <MetricCard
+                  label="Final Capital"
+                  value={`₹${Number(
+                    result.final_capital ??
+                      (Number(result.initial_capital ?? deskCapital ?? 0) + Number(result.total_pnl ?? 0))
+                  ).toLocaleString('en-IN')}`}
+                />
                 <MetricCard label="Total Trades" value={result.total_trades} />
                 <MetricCard label="Win Rate" value={`${result.win_rate}%`} />
-                <MetricCard label="Total P&L" value={`₹${result.total_pnl}`} />
+                <MetricCard label="Total P&L" value={`₹${Number(result.total_pnl).toLocaleString('en-IN')}`} />
                 <MetricCard label="Profit Factor" value={result.profit_factor} />
                 <MetricCard label="Max Drawdown" value={`₹${result.max_drawdown}`} />
-                <MetricCard label="Avg Win" value={`₹${result.avg_profit_win}`} />
-                <MetricCard label="Avg Loss" value={`₹${result.avg_loss_loss}`} />
-                <MetricCard label="Avg Duration" value={`${result.avg_trade_duration_bars} bars`} />
+                <MetricCard label="Avg Win" value={`₹${result.avg_profit_win ?? 0}`} />
+                <MetricCard label="Avg Loss" value={`₹${result.avg_loss_loss ?? 0}`} />
+                <MetricCard label="Avg Duration" value={`${result.avg_trade_duration_bars ?? 0} bars`} />
               </div>
               <EquityCurveChart
                 points={(result.equity_curve || []).map((p, i) => ({
@@ -200,6 +282,7 @@ export default function BacktestModule({
                       <th className="py-2 text-left">Entry</th>
                       <th className="py-2 text-left">Exit</th>
                       <th className="py-2">Type</th>
+                      <th className="py-2">Lots</th>
                       <th className="py-2">P&L</th>
                       <th className="py-2">Exit</th>
                     </tr>
@@ -210,6 +293,7 @@ export default function BacktestModule({
                         <td className="py-2">{t.entry_time?.slice(11, 19) || '—'}</td>
                         <td className="py-2">{t.exit_time?.slice(11, 19) || '—'}</td>
                         <td className="py-2 text-center">{t.signal_type}</td>
+                        <td className="py-2 text-center font-mono">{t.lots ?? '—'}</td>
                         <td className={`py-2 text-center font-mono ${t.pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                           ₹{t.pnl}
                         </td>

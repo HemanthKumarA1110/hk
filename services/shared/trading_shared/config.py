@@ -65,6 +65,10 @@ class Settings(BaseSettings):
 
     AI_DECISION_THRESHOLD: float = 75.0
 
+    SCALPING_STREAM_INTERVAL_SEC: float = 1.0
+    SCALPING_BROKER_CASH_REFRESH_SEC: int = 60
+    SCALPING_CANDLE_CACHE_SEC: int = 30
+
     ALLOW_PUBLIC_REGISTRATION: bool = True
     EXPOSE_SERVICE_REGISTRY: bool = True
     ENABLE_OPENAPI_DOCS: bool = True

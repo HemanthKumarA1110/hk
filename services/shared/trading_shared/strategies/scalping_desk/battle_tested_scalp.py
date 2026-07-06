@@ -22,6 +22,8 @@ from trading_shared.strategies.scalping_desk.engine import (
     premium_risk_from_index,
 )
 from trading_shared.strategies.scalping_desk.strategies import _two_bar_momentum
+from trading_shared.strategies.scalping_desk.orb_breakout_tuning import merge_orb_params
+from trading_shared.strategies.scalping_desk.ema_crossover_tuning import merge_ema_crossover_params
 
 IST = ZoneInfo("Asia/Kolkata")
 
@@ -213,9 +215,9 @@ def evaluate_ema_crossover_rsi(
     if len(df) < 25:
         return None
 
+    p = merge_ema_crossover_params(params) if instrument_key == "banknifty" else {}
     data = df if enriched else enrich_candles(df)
     row = data.iloc[-1]
-    prev = data.iloc[-2]
     ts = row.get("timestamp")
 
     if not skip_session and not in_battle_session(ts):
@@ -228,20 +230,41 @@ def evaluate_ema_crossover_rsi(
     rsi_val = float(row["rsi14"])
     spot = float(row["close"])
     vwap = float(row.get("vwap", spot))
+    vol_ratio = float(row.get("volume_ratio") or 0)
+    vol_spike = bool(row.get("vol_spike"))
+
+    if instrument_key == "banknifty":
+        sep_pct = float(p.get("ema_min_separation_pct") or 0)
+        if sep_pct > 0 and abs(ema9 - ema21) / max(spot, 1) * 100 < sep_pct:
+            return None
+        vol_min = float(p.get("ema_vol_min") or 0)
+        use_spike = bool(p.get("ema_use_vol_spike"))
+        if vol_min > 0 or use_spike:
+            vol_ok = vol_ratio >= vol_min or (use_spike and vol_spike)
+            if not vol_ok:
+                return None
+
+    lookback = int(p.get("ema_cross_lookback") or 3) if instrument_key == "banknifty" else 3
+    call_rsi_min = int(p.get("ema_rsi_call_min") or 50) if instrument_key == "banknifty" else 50
+    call_rsi_max = int(p.get("ema_rsi_call_max") or 65) if instrument_key == "banknifty" else 65
+    put_rsi_min = int(p.get("ema_rsi_put_min") or 35) if instrument_key == "banknifty" else 35
+    put_rsi_max = int(p.get("ema_rsi_put_max") or 50) if instrument_key == "banknifty" else 50
+    need_vwap = bool(p.get("ema_require_vwap", True)) if instrument_key == "banknifty" else True
+    need_momentum = bool(p.get("ema_require_two_bar_momentum", True)) if instrument_key == "banknifty" else True
 
     call_ok = (
-        _recent_cross(data, "CALL")
+        _recent_cross(data, "CALL", lookback=lookback)
         and ema9 > ema21
-        and 50 <= rsi_val <= 65
-        and spot > vwap
-        and _two_bar_momentum(data, "CALL")
+        and call_rsi_min <= rsi_val <= call_rsi_max
+        and (not need_vwap or spot > vwap)
+        and (not need_momentum or _two_bar_momentum(data, "CALL"))
     )
     put_ok = (
-        _recent_cross(data, "PUT")
+        _recent_cross(data, "PUT", lookback=lookback)
         and ema9 < ema21
-        and 35 <= rsi_val <= 50
-        and spot < vwap
-        and _two_bar_momentum(data, "PUT")
+        and put_rsi_min <= rsi_val <= put_rsi_max
+        and (not need_vwap or spot < vwap)
+        and (not need_momentum or _two_bar_momentum(data, "PUT"))
     )
 
     if not call_ok and not put_ok:
@@ -249,6 +272,13 @@ def evaluate_ema_crossover_rsi(
 
     signal_type = "CALL" if call_ok else "PUT"
     risk = battle_risk(instrument_key)
+    if instrument_key == "banknifty":
+        risk = {
+            **risk,
+            "stop_pts": float(p.get("ema_stop_pts") or risk["stop_pts"]),
+            "target_pts": float(p.get("ema_target_pts") or risk["target_pts"]),
+            "max_hold_bars": int(p.get("ema_max_hold_bars") or risk["max_hold_bars"]),
+        }
     return _build_battle_signal(
         strategy_id="ema_crossover_rsi",
         strategy_label="EMA Crossover + RSI",
@@ -277,6 +307,7 @@ def evaluate_orb_breakout(
     if len(df) < 30:
         return None
 
+    p = merge_orb_params(params) if instrument_key == "banknifty" else {}
     data = df if enriched else enrich_candles(df)
     row = data.iloc[-1]
     ts = row.get("timestamp")
@@ -290,14 +321,32 @@ def evaluate_orb_breakout(
     if ist is None:
         return None
     minutes = ist.hour * 60 + ist.minute
-    # ORB entries mainly in morning window
-    if minutes > 10 * 60 + 30:
+    entry_cutoff = int(p.get("orb_entry_cutoff_min") or (10 * 60 + 30))
+    if minutes > entry_cutoff:
         return None
 
     risk = battle_risk(instrument_key)
+    if instrument_key == "banknifty":
+        risk = {
+            **risk,
+            "stop_pts": float(p.get("orb_stop_pts") or risk["stop_pts"]),
+            "target_pts": float(p.get("orb_target_pts") or risk["target_pts"]),
+            "max_hold_bars": int(p.get("orb_max_hold_bars") or risk["max_hold_bars"]),
+            "orb_minutes": int(p.get("orb_minutes") or risk.get("orb_minutes") or 15),
+        }
+
     orb = _session_orb(data, int(risk.get("orb_minutes", 15)))
     if not orb:
         return None
+
+    or_range = float(orb["high"] - orb["low"])
+    if instrument_key == "banknifty":
+        rmin = float(p.get("orb_or_range_min") or 0)
+        rmax = float(p.get("orb_or_range_max") or 99999)
+        if or_range < rmin:
+            return None
+        if p.get("orb_skip_wide_or") and or_range > rmax:
+            return None
 
     spot = float(row["close"])
     prev_spot = float(data.iloc[-2]["close"])
@@ -305,26 +354,38 @@ def evaluate_orb_breakout(
     ema21 = float(row["ema21"])
     rsi_val = float(row["rsi14"])
     vol_ratio = float(row.get("volume_ratio") or 0)
-    buffer = spot * 0.0003
+    vol_spike = bool(row.get("vol_spike"))
+    buffer = spot * float(p.get("orb_buffer_pct") or 0.0003) if instrument_key == "banknifty" else spot * 0.0003
+    vol_min = float(p.get("orb_vol_min") or 1.35) if instrument_key == "banknifty" else 1.35
+    use_vol_spike = bool(p.get("orb_use_vol_spike", True)) if instrument_key == "banknifty" else False
+    vol_ok = vol_ratio >= vol_min or (use_vol_spike and vol_spike)
 
+    require_inside = bool(p.get("orb_require_inside_or", True)) if instrument_key == "banknifty" else True
     inside_or = orb["low"] <= prev_spot <= orb["high"]
+    if require_inside and not inside_or:
+        return None
+
+    call_rsi_min = int(p.get("orb_rsi_call_min") or 52) if instrument_key == "banknifty" else 52
+    call_rsi_max = int(p.get("orb_rsi_call_max") or 66) if instrument_key == "banknifty" else 66
+    put_rsi_min = int(p.get("orb_rsi_put_min") or 34) if instrument_key == "banknifty" else 34
+    put_rsi_max = int(p.get("orb_rsi_put_max") or 48) if instrument_key == "banknifty" else 48
+    need_momentum = bool(p.get("orb_require_two_bar_momentum", True)) if instrument_key == "banknifty" else True
+
     call_ok = (
-        inside_or
-        and spot > orb["high"] + buffer
+        spot > orb["high"] + buffer
         and ema9 > ema21
-        and 52 <= rsi_val <= 66
-        and vol_ratio >= 1.35
+        and call_rsi_min <= rsi_val <= call_rsi_max
+        and vol_ok
         and float(row["close"]) > float(row["open"])
-        and _two_bar_momentum(data, "CALL")
+        and (not need_momentum or _two_bar_momentum(data, "CALL"))
     )
     put_ok = (
-        inside_or
-        and spot < orb["low"] - buffer
+        spot < orb["low"] - buffer
         and ema9 < ema21
-        and 34 <= rsi_val <= 48
-        and vol_ratio >= 1.35
+        and put_rsi_min <= rsi_val <= put_rsi_max
+        and vol_ok
         and float(row["close"]) < float(row["open"])
-        and _two_bar_momentum(data, "PUT")
+        and (not need_momentum or _two_bar_momentum(data, "PUT"))
     )
     if not call_ok and not put_ok:
         return None

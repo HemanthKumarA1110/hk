@@ -97,6 +97,32 @@ def run_intraday_desk_auto() -> dict:
         db.close()
 
 
+@celery_app.task(name="scalping_desk.run")
+def run_scalping_desk_auto() -> dict:
+    from trading_shared.config import get_settings
+    from trading_shared.db.session import SessionLocal
+    from trading_shared.strategies.scalping_desk.service import iter_auto_enabled_desks, run_scalping_desk_auto_sync
+
+    settings = get_settings()
+    db = SessionLocal()
+    results: dict[str, dict] = {}
+    try:
+        for user_id, instrument_key in iter_auto_enabled_desks(settings.REDIS_URL):
+            key = f"{user_id}:{instrument_key}"
+            try:
+                results[key] = run_scalping_desk_auto_sync(db, user_id, instrument_key)
+            except Exception as exc:
+                logger.exception(
+                    "Scalping desk auto cycle failed for user_id=%s instrument=%s",
+                    user_id,
+                    instrument_key,
+                )
+                results[key] = {"errors": [str(exc)], "instrument": instrument_key}
+        return {"desks": len(results), "results": results}
+    finally:
+        db.close()
+
+
 @celery_app.task(name="swing_desk.run")
 def run_swing_desk_auto() -> dict:
     from trading_shared.config import get_settings
@@ -116,6 +142,13 @@ def run_swing_desk_auto() -> dict:
         return {"users": len(results), "results": results}
     finally:
         db.close()
+
+
+@celery_app.task(name="paper_trading.sync")
+def sync_paper_trading_quotes() -> dict:
+    from trading_shared.execution.paper_sync import sync_paper_orders_sync
+
+    return sync_paper_orders_sync()
 
 
 @celery_app.task(name="backtest.run")

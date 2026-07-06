@@ -10,15 +10,32 @@ import pandas as pd
 
 from trading_shared.strategies.scalping_desk.ai_decision import compute_ai_targets
 from trading_shared.strategies.scalping_desk.daily_stop import evaluate_ai_daily_stop
-from trading_shared.strategies.scalping_desk.engine import enrich_candles, max_hold_bars, should_exit_index
+from trading_shared.strategies.scalping_desk.engine import (
+    enrich_candles,
+    estimate_option_mark_premium,
+    max_hold_bars,
+    should_exit,
+    should_exit_index,
+)
 from trading_shared.strategies.scalping_desk.strategy_catalog import (
     STRATEGY_CATALOG,
     catalog_entry,
     default_strategy_settings,
 )
 from trading_shared.strategies.scalping_desk.strategy_selector import select_and_evaluate, select_from_catalog
+from trading_shared.strategies.scalping_desk.capital_utilization import (
+    backtest_option_trade_pnl,
+    backtest_size_for_bar,
+)
+from trading_shared.strategies.scalping_desk.option_execution import (
+    OPTION_EXECUTION_BUY_AND_SELL,
+    OPTION_EXECUTION_BUY_ONLY,
+    adapt_signal_for_execution,
+    backtest_sell_margin_lots,
+    should_exit_option_position,
+)
 
-MAX_BACKTEST_BARS = 15000  # ~40 trading days of 1m bars
+MAX_BACKTEST_BARS = 25000  # ~66 trading days of 1m bars
 BACKTEST_LOOKBACK = 60
 EQUITY_CURVE_STEP = 15
 MIN_BARS_BETWEEN_TRADES = 8
@@ -39,6 +56,8 @@ class BacktestTrade:
     target_inr: float = 0
     strategy_id: str = ""
     strategy_code: str = ""
+    lots: int = 1
+    capital_deployed: float = 0
 
 
 def _backtest_config_for_code(strategy_code: str, instrument_key: str) -> dict[str, Any]:
@@ -72,26 +91,56 @@ def run_strategy_backtest(
     evaluation_days: int | None = None,
     ai_entry: bool = False,
     ai_exit: bool = False,
+    capital_utilization_pct: float = 0.95,
+    max_lots_per_trade: int = 0,
+    option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
 ) -> dict[str, Any]:
     """Backtest one catalog strategy by its stable code."""
     entry = catalog_entry(strategy_code)
     if not entry:
-        return _empty_result(f"Unknown strategy code: {strategy_code}")
+        return _empty_result(f"Unknown strategy code: {strategy_code}", capital=capital)
     if instrument_key not in entry.get("instruments", []):
-        return _empty_result(f"{strategy_code} is not available on {instrument_key}")
+        return _empty_result(f"{strategy_code} is not available on {instrument_key}", capital=capital)
+
+    bt_params = dict(params or {})
+    if strategy_code == "SCALP-BT-003" and instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.ema_crossover_tuning import (
+            EMA_CROSSOVER_BANK_DEFAULTS,
+            merge_ema_crossover_params,
+        )
+
+        merged = merge_ema_crossover_params(bt_params)
+        # Drop stale blocking filters from older saved desk configs.
+        if float(merged.get("ema_vol_min") or 0) > 0 or float(merged.get("ema_min_separation_pct") or 0) > 0:
+            merged = dict(EMA_CROSSOVER_BANK_DEFAULTS)
+        bt_params = {**bt_params, "ema_crossover": merged}
+
+    if strategy_code == "SCALP-SMC-004" and instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
+
+        bt_params = merge_smc_fvg_ob_bos_params(bt_params)
+
+    if strategy_code == "SCALP-SMC-006" and instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
+
+        bt_params = merge_smc_orb_fvg_params(bt_params)
 
     if entry["family"] == "smc":
         from trading_shared.strategies.scalping_desk.smc_backtest import run_single_smc_backtest
 
+        smc_params = bt_params
         result = run_single_smc_backtest(
             candles,
             entry["id"],
             lot_size,
             capital,
             instrument_key=instrument_key,
-            params={**(params or {}), **((params or {}).get("smc_params") or {})},
+            params=smc_params,
             max_loss_per_day=max_loss_per_day,
             max_trades_per_day=max_trades_per_day,
+            capital_utilization_pct=capital_utilization_pct,
+            max_lots_per_trade=max_lots_per_trade,
+            option_execution_mode=option_execution_mode,
         )
     else:
         result = run_backtest(
@@ -103,10 +152,12 @@ def run_strategy_backtest(
             max_trades_per_day=max_trades_per_day,
             instrument_key=instrument_key,
             strategy_code=strategy_code,
-            params=params,
+            params=bt_params,
             evaluation_days=evaluation_days,
             ai_entry=ai_entry,
             ai_exit=ai_exit,
+            capital_utilization_pct=capital_utilization_pct,
+            option_execution_mode=option_execution_mode,
         )
 
     result["strategy_code"] = strategy_code
@@ -138,13 +189,16 @@ def run_backtest(
     evaluation_days: int | None = None,
     ai_entry: bool = False,
     ai_exit: bool = False,
+    capital_utilization_pct: float = 0.95,
+    max_lots_per_trade: int = 0,
+    option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
 ) -> dict[str, Any]:
     """
     Replay scalping rules on historical OHLCV candles.
-    Uses a single enrich pass and fixed lookback windows for speed.
+    option_execution_mode: buy_only (BUY CE/PE) or buy_and_sell (SELL PE/CE on same setups).
     """
     if candles.empty or len(candles) < 30:
-        return _empty_result("Insufficient candle history")
+        return _empty_result("Insufficient candle history", capital=capital)
 
     frame = candles.reset_index(drop=True)
     if len(frame) > MAX_BACKTEST_BARS:
@@ -169,9 +223,7 @@ def run_backtest(
 
     catalog_config = _backtest_config_for_code(strategy_code, instrument_key) if strategy_code else None
     code_meta = STRATEGY_CATALOG.get(strategy_code or "", {})
-    use_bar_session = (catalog_config or {}).get("strategy_family") == "battle" or (
-        not strategy_code and strategy_family == "battle"
-    )
+    filter_backtest_session = True
 
     for i in range(window, len(data)):
         row = data.iloc[i]
@@ -181,15 +233,30 @@ def run_backtest(
 
         if active:
             bars_held = i - active["entry_index"]
-            exit_hit, reason = should_exit_index(
-                active["signal_type"],
-                spot,
-                active["entry_spot"],
-                active["target_pts"],
-                active["stop_pts"],
-                bars_held=bars_held,
-                max_hold=active.get("max_hold_bars") or hold_limit,
+            entry_premium = float(active.get("entry") or 0)
+            entry_spot = float(active.get("entry_spot") or spot)
+            current_premium = estimate_option_mark_premium(
+                entry_premium, active["signal_type"], entry_spot, spot
             )
+            exit_hit, reason = should_exit_option_position(
+                order_side=str(active.get("order_side") or "BUY"),
+                signal_type=active["signal_type"],
+                current_ltp=current_premium,
+                entry=entry_premium,
+                target=float(active.get("target") or entry_premium * 1.08),
+                stoploss=float(active.get("stoploss") or entry_premium * 0.88),
+                indicators=active.get("indicators") or {},
+            )
+            if not exit_hit:
+                exit_hit, reason = should_exit_index(
+                    active["signal_type"],
+                    spot,
+                    entry_spot,
+                    active["target_pts"],
+                    active["stop_pts"],
+                    bars_held=bars_held,
+                    max_hold=active.get("max_hold_bars") or hold_limit,
+                )
             if ai_exit and not exit_hit:
                 battle_family = (catalog_config or {}).get("strategy_family") == "battle" or (
                     strategy_code or ""
@@ -214,10 +281,14 @@ def run_backtest(
                         exit_hit = True
                         reason = ai_exit_dec.get("mode") or "ai_exit"
             if exit_hit or reason:
-                move = spot - active["entry_spot"]
-                pnl = move * lot_size
-                if active["signal_type"] == "PUT":
-                    pnl = -move * lot_size
+                trade_lots = int(active.get("lots") or 1)
+                pnl = backtest_option_trade_pnl(
+                    entry_premium,
+                    current_premium,
+                    lot_size,
+                    trade_lots,
+                    order_side=str(active.get("order_side") or "BUY"),
+                )
                 equity += pnl
                 day_pnl[day] = day_pnl.get(day, 0.0) + pnl
                 day_trades[day] = day_trades.get(day, 0) + 1
@@ -256,6 +327,8 @@ def run_backtest(
                         target_inr=active.get("target_inr", 0),
                         strategy_id=active.get("strategy_id", ""),
                         strategy_code=active.get("strategy_code", ""),
+                        lots=trade_lots,
+                        capital_deployed=round(active.get("capital_deployed") or 0, 2),
                     )
                 )
                 active = None
@@ -276,7 +349,7 @@ def run_backtest(
             and not trades_capped
             and not ai_stopped
         ):
-            if use_bar_session:
+            if filter_backtest_session:
                 from trading_shared.strategies.scalping_desk.battle_tested_scalp import (
                     in_battle_session,
                     is_expiry_day,
@@ -295,7 +368,7 @@ def run_backtest(
                     instrument_key,
                     catalog_config,
                     params=params,
-                    skip_session=not use_bar_session,
+                    skip_session=not filter_backtest_session,
                     enriched=True,
                 )
             else:
@@ -309,11 +382,11 @@ def run_backtest(
                     strategy_mode=strategy_mode,
                     fixed_strategy_id=fixed_strategy_id,
                     strategy_family=strategy_family,
-                    skip_session=not use_bar_session,
+                    skip_session=not filter_backtest_session,
                     enriched=True,
                 )
             if signal_obj:
-                sig = signal_obj.to_dict()
+                sig = adapt_signal_for_execution(signal_obj.to_dict(), option_execution_mode)
                 context = {
                     "capital": capital,
                     "lot_size": lot_size,
@@ -342,11 +415,42 @@ def run_backtest(
                         if validation.get("verdict") == "SKIP":
                             continue
                 entry_spot = float(sig["indicators"].get("spot") or spot)
+                entry_premium = float(sig.get("entry") or 0)
+                if str(sig.get("order_side") or "BUY").upper() == "SELL":
+                    _, deployable, premium = backtest_size_for_bar(
+                        initial_capital=capital,
+                        instrument_key=instrument_key,
+                        spot=entry_spot,
+                        day=day,
+                        day_pnl=day_pnl,
+                        utilization_pct=capital_utilization_pct,
+                        option_premium=entry_premium if entry_premium > 0 else None,
+                        max_lots=max_lots_per_trade,
+                        current_equity=equity,
+                    )
+                    lots = backtest_sell_margin_lots(deployable, entry_spot, lot_size)
+                    premium = entry_premium if entry_premium > 0 else premium
+                else:
+                    lots, deployable, premium = backtest_size_for_bar(
+                        initial_capital=capital,
+                        instrument_key=instrument_key,
+                        spot=entry_spot,
+                        day=day,
+                        day_pnl=day_pnl,
+                        utilization_pct=capital_utilization_pct,
+                        option_premium=entry_premium if entry_premium > 0 else None,
+                        max_lots=max_lots_per_trade,
+                        current_equity=equity,
+                    )
+                if lots < 1:
+                    continue
                 active = {
                     **sig,
                     "entry_time": ts,
                     "entry_index": i,
                     "entry_spot": entry_spot,
+                    "lots": lots,
+                    "capital_deployed": round(lots * premium * lot_size, 2),
                     "stop_pts": targets["stop_pts"],
                     "target_pts": targets["target_pts"],
                     "target_inr": targets["target_inr"],
@@ -371,6 +475,8 @@ def run_backtest(
         evaluation_days=evaluation_days,
         ai_entry=ai_entry,
         ai_exit=ai_exit,
+        capital_utilization_pct=capital_utilization_pct,
+        option_execution_mode=option_execution_mode,
     )
 
 
@@ -408,11 +514,17 @@ def _summarize(
     evaluation_days: int | None = None,
     ai_entry: bool = False,
     ai_exit: bool = False,
+    capital_utilization_pct: float = 0.95,
+    option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
 ) -> dict[str, Any]:
     if evaluation_days:
         trades = _filter_trades_by_days(trades, evaluation_days)
         if not trades:
-            return _empty_result(f"No trades in last {evaluation_days} days", bars_processed)
+            return _empty_result(
+                f"No trades in last {evaluation_days} days",
+                bars_processed=bars_processed,
+                capital=capital,
+            )
         # Rebuild equity curve from filtered trades
         equity = capital
         equity_curve = [{"index": 0, "equity": equity, "date": trades[0].entry_time[:10]}]
@@ -420,7 +532,7 @@ def _summarize(
             equity += t.pnl
             equity_curve.append({"index": idx, "equity": round(equity, 2), "date": t.exit_time[:10]})
     if not trades:
-        return _empty_result("No trades generated", bars_processed)
+        return _empty_result("No trades generated", bars_processed=bars_processed, capital=capital)
 
     wins = [t for t in trades if t.pnl > 0]
     losses = [t for t in trades if t.pnl <= 0]
@@ -485,6 +597,10 @@ def _summarize(
         "strategy_code": strategy_code,
         "strategy_label": strategy_label,
         "instrument": instrument_key,
+        "initial_capital": round(capital, 2),
+        "final_capital": round(equity_curve[-1]["equity"] if equity_curve else capital + total_pnl, 2),
+        "capital_utilization_pct": capital_utilization_pct,
+        "option_execution_mode": option_execution_mode,
         "total_trades": len(trades),
         "win_rate": round(win_rate, 2),
         "total_pnl": round(total_pnl, 2),
@@ -516,6 +632,8 @@ def _summarize(
                 "target_inr": t.target_inr,
                 "strategy_id": t.strategy_id,
                 "strategy_code": t.strategy_code,
+                "lots": t.lots,
+                "capital_deployed": t.capital_deployed,
             }
             for t in trades
         ],
@@ -526,7 +644,8 @@ def _summarize(
     }
 
 
-def _empty_result(message: str, bars_processed: int = 0) -> dict[str, Any]:
+def _empty_result(message: str, bars_processed: int = 0, capital: float = 0) -> dict[str, Any]:
+    cap = round(float(capital or 0), 2)
     return {
         "status": "completed",
         "message": message,
@@ -534,8 +653,14 @@ def _empty_result(message: str, bars_processed: int = 0) -> dict[str, Any]:
         "win_rate": 0,
         "total_pnl": 0,
         "max_drawdown": 0,
+        "initial_capital": cap,
+        "final_capital": cap,
+        "profit_factor": 0,
+        "avg_profit_win": 0,
+        "avg_loss_loss": 0,
+        "avg_trade_duration_bars": 0,
         "bars_processed": bars_processed,
-        "equity_curve": [],
+        "equity_curve": [{"index": 0, "equity": cap, "date": ""}] if cap else [],
         "trades": [],
         "monthly_breakdown": [],
     }

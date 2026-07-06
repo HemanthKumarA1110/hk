@@ -3,7 +3,7 @@ import { useState } from 'react'
 /**
  * AI Auto Trading toggle with confirmation modal.
  */
-export default function AIAutoToggle({ enabled, onToggle, paperMode = true }) {
+export default function AIAutoToggle({ enabled, onToggle, isPaper = true }) {
   const [showModal, setShowModal] = useState(false)
 
   const confirmEnable = () => {
@@ -16,7 +16,9 @@ export default function AIAutoToggle({ enabled, onToggle, paperMode = true }) {
       <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         {!enabled && (
           <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-3">
-            Master switch OFF — paper strategies still auto-enter simulated trades; live strategies wait for this toggle
+            {isPaper
+              ? 'Paper mode — live Angel One stream, dummy orders in app, updated from real quotes'
+              : 'Master switch OFF — live strategies wait for this toggle before placing orders'}
           </p>
         )}
         <div className="flex items-center justify-between gap-4">
@@ -38,8 +40,16 @@ export default function AIAutoToggle({ enabled, onToggle, paperMode = true }) {
             {enabled ? 'Turn OFF' : 'Turn ON'}
           </button>
         </div>
-        {paperMode && !enabled && (
-          <p className="text-xs text-slate-500 mt-2">Default: paper mode. Enable only when you accept live order risk.</p>
+        {isPaper && !enabled && (
+          <p className="text-xs text-slate-500 mt-2">Switch to Live mode above when you are ready for real Angel One orders.</p>
+        )}
+        {!isPaper && !enabled && (
+          <p className="text-xs text-slate-500 mt-2">Live mode is on — enable AI Auto Trading to allow live strategy entries.</p>
+        )}
+        {enabled && (
+          <p className="text-xs text-emerald-400/90 mt-2">
+            Running in background — no need to keep this page open. Live stream evaluates every ~1s on Nifty / Bank Nifty ticks.
+          </p>
         )}
       </section>
 

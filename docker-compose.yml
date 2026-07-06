@@ -349,6 +349,25 @@ services:
       postgres:
         condition: service_healthy
 
+  scalping-stream-worker:
+    build:
+      context: .
+      dockerfile: services/celery-worker/Dockerfile
+    container_name: trading-scalping-stream
+    restart: unless-stopped
+    command: python -m app.scalping_runner
+    environment:
+      <<: *common-env
+      SERVICE_NAME: scalping-stream-worker
+      SCALPING_STREAM_INTERVAL_SEC: "1.0"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      market-data-service:
+        condition: service_started
+
   frontend:
     build:
       context: ./frontend

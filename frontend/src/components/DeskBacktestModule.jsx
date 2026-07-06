@@ -44,6 +44,8 @@ export default function DeskBacktestModule({
 
   defaultOpen = false,
 
+  deskCapital,
+
 }) {
 
   const autoPick = engine === 'intraday' || engine === 'swing'
@@ -113,6 +115,18 @@ export default function DeskBacktestModule({
     }
 
   }, [options, form.strategy_code])
+
+
+
+  useEffect(() => {
+
+    if (deskCapital != null && Number(deskCapital) > 0) {
+
+      setForm((prev) => ({ ...prev, initial_capital: Number(deskCapital) }))
+
+    }
+
+  }, [deskCapital])
 
 
 
@@ -415,6 +429,16 @@ export default function DeskBacktestModule({
                 className="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-2 py-1.5"
 
               />
+
+              {deskCapital != null && Number(deskCapital) > 0 && (
+
+                <span className="text-xs text-slate-500 mt-1 block">
+
+                  Synced from desk Trade Settings — qty and P&amp;L scale with this capital.
+
+                </span>
+
+              )}
 
             </label>
 

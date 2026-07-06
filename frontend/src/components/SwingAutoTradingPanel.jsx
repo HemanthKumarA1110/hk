@@ -136,7 +136,7 @@ export default function SwingAutoTradingPanel({ strategies = [], isPaper = true,
             <h3 className="font-semibold text-lg mt-1">Swing Bot</h3>
             <p className="text-xs text-slate-500 mt-1">
               AI picks top Nifty 50 stocks · multi-day delivery holds · strategy/AI exits ·{' '}
-              {isPaper ? 'paper' : 'live'} orders
+              {isPaper ? 'paper' : 'live'} orders · background ~60s
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

@@ -15,8 +15,11 @@ from trading_shared.broker.angel_one.session_manager import AngelOneSessionManag
 from trading_shared.config import get_settings
 from trading_shared.db.session import SessionLocal
 from trading_shared.market.analytics import black_scholes_greeks, compute_pcr, parse_tick
-from trading_shared.market.scrip_master import REDIS_SCRIP_UPDATED_KEY
-from trading_shared.market.scrip_master import ScripMasterService
+from trading_shared.market.scrip_master import (
+    REDIS_SCRIP_UPDATED_KEY,
+    ScripMasterService,
+    parse_option_strike_symbol,
+)
 from trading_shared.market.websocket_stream import AngelOneWebSocketStream
 from trading_shared.models import MarketCandle, OptionChainSnapshot
 
@@ -268,7 +271,7 @@ class StreamManager:
                 bank_spot = tick.get("ltp", bank_spot)
 
         for underlying, spot in (("NIFTY", nifty_spot), ("BANKNIFTY", bank_spot)):
-            for inst in self.scrip_service.nearest_expiry_options(underlying, spot, strike_window=8):
+            for inst in self.scrip_service.nearest_expiry_options(underlying, spot, strike_window=5):
                 nse_fo.append(inst.token)
                 token_symbol[inst.token] = inst.symbol
             for inst in self.scrip_service.futures_chain(underlying, count=2):
@@ -277,7 +280,7 @@ class StreamManager:
 
         # Angel One allows max 50 tokens per subscription batch; trim if needed
         nse_cm = list(dict.fromkeys(nse_cm))[:40]
-        nse_fo = list(dict.fromkeys(nse_fo))[:40]
+        nse_fo = list(dict.fromkeys(nse_fo))[:50]
         return nse_cm, nse_fo, token_symbol
 
     def _handle_tick(self, raw: dict[str, Any]) -> None:
@@ -353,12 +356,14 @@ class StreamManager:
         else:
             rows = {}
         chain["rows"] = rows
+        strike = parse_option_strike_symbol(symbol)
         rows[symbol] = {
             "symbol": symbol,
             "token": tick["token"],
             "ltp": tick["ltp"],
             "oi": tick.get("oi", 0),
             "volume": tick.get("volume", 0),
+            **({"strike": strike} if strike is not None else {}),
         }
         total_ce_oi = sum(row["oi"] for key, row in rows.items() if key.endswith("CE"))
         total_pe_oi = sum(row["oi"] for key, row in rows.items() if key.endswith("PE"))
@@ -392,7 +397,7 @@ class StreamManager:
                 spot = tick.get("ltp", 0) if tick else 0
             rows = []
             for symbol, row in chain.get("rows", {}).items():
-                strike = self._extract_strike(symbol)
+                strike = parse_option_strike_symbol(symbol) or 0.0
                 opt_type = "CE" if symbol.endswith("CE") else "PE"
                 iv = 0.18
                 greeks = black_scholes_greeks(spot, strike, 7 / 365, 0.07, iv, opt_type)
@@ -435,13 +440,6 @@ class StreamManager:
                 db.rollback()
             finally:
                 db.close()
-
-    @staticmethod
-    def _extract_strike(symbol: str) -> float:
-        digits = "".join(ch if ch.isdigit() else " " for ch in symbol).split()
-        if not digits:
-            return 0.0
-        return float(digits[-1])
 
     async def fetch_historical_candles(
         self,

@@ -143,18 +143,26 @@ def evaluate_momentum_burst(
     """High-confluence momentum scalp — stricter filters for higher win rate."""
     if len(df) < 21:
         return None
-    if not skip_session and not in_trading_session():
-        return None
+
+    data = df if enriched else enrich_candles(df)
+    row = data.iloc[-1]
+    ts = row.get("timestamp")
+    if not skip_session:
+        from trading_shared.strategies.scalping_desk.battle_tested_scalp import in_battle_session
+
+        if not in_battle_session(ts):
+            return None
 
     params = params or {}
     vol_min = float(params.get("volume_spike_ratio", 1.35))
-    data = df if enriched else enrich_candles(df)
-    row = data.iloc[-1]
+    if bool(row.get("volume_proxy")) or instrument_key in ("nifty50", "banknifty"):
+        vol_min = float(params.get("index_volume_spike_ratio", 1.12))
     spot = float(row["close"])
     rsi_val = float(row["rsi14"])
     st_dir = float(row["supertrend_dir"] or 0)
     vol_ratio = float(row["volume_ratio"])
     vwap = float(row["vwap"])
+    vol_ok = vol_ratio >= vol_min or bool(row.get("vol_spike"))
 
     if not _ema_separated(data, spot):
         return None
@@ -165,7 +173,7 @@ def evaluate_momentum_burst(
         and _ema_bullish(data)
         and 46 <= rsi_val <= 62
         and st_dir > 0
-        and vol_ratio >= vol_min
+        and vol_ok
         and _two_bar_momentum(data, "CALL")
     )
     put_ok = (
@@ -174,7 +182,7 @@ def evaluate_momentum_burst(
         and _ema_bearish(data)
         and 40 <= rsi_val <= 52
         and st_dir < 0
-        and vol_ratio >= vol_min
+        and vol_ok
         and _two_bar_momentum(data, "PUT")
     )
     if not call_ok and not put_ok:

@@ -313,7 +313,10 @@ def select_from_catalog(
     settings = merge_strategy_settings(config, instrument_key)
     active_codes = [c for c, s in settings.items() if s.get("enabled")]
     mode = config.get("strategy_mode", "auto")
-    fixed_code = config.get("fixed_strategy_code") or code_for_id(config.get("fixed_strategy_id") or "")
+    fixed_code = config.get("fixed_strategy_code") or code_for_id(
+        config.get("fixed_strategy_id") or "",
+        instrument_key,
+    )
 
     context = build_market_context(
         df, tick=tick, chain=option_chain, underlying=underlying, pre_enriched=enriched

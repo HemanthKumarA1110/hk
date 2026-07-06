@@ -1,18 +1,26 @@
-"""Simulated order execution without Angel One broker connection."""
+"""Simulated order execution using Angel One live quotes — no broker placement."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import uuid
 from collections import defaultdict
+from datetime import datetime, timezone
+from typing import Any
 
 import redis
 from sqlalchemy.orm import Session
 
 from trading_shared.broker.angel_one.constants import INDEX_TOKENS
+from trading_shared.broker.angel_one.exceptions import AngelOneAPIError, AngelOneAuthError
+from trading_shared.broker.angel_one.schemas import LTPRequest
+from trading_shared.broker.angel_one.session_manager import AngelOneSessionManager
 from trading_shared.config import get_settings
-from trading_shared.execution.executor import OrderRejectedError, OrderExecutor
+from trading_shared.execution.executor import OrderRejectedError
+from trading_shared.market.constants import NSE_CM, NSE_FO
+from trading_shared.market.index_quotes import extract_ltp_from_response
 from trading_shared.market.redis_bus import MarketRedisBus
 from trading_shared.market.scrip_master import ScripMasterService
 from trading_shared.models.order import BrokerOrder
@@ -21,20 +29,66 @@ from trading_shared.schemas.order import OrderCreateRequest
 
 logger = logging.getLogger(__name__)
 
-# Demo LTP when market stream / broker is unavailable (paper trading only).
-REFERENCE_LTP: dict[str, float] = {
-    "NIFTY": 24100.0,
-    "BANKNIFTY": 51800.0,
-    "RELIANCE-EQ": 1450.0,
-    "TCS-EQ": 4100.0,
-    "INFY-EQ": 1780.0,
-    "HDFCBANK-EQ": 1720.0,
-    "SBIN-EQ": 820.0,
-    "ITC-EQ": 460.0,
-}
+
+def _parse_payload(raw: str | None) -> dict[str, Any]:
+    if not raw:
+        return {"response": {}, "meta": {}}
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return {"response": {}, "meta": {}}
+    if isinstance(data, dict) and "meta" in data:
+        return {"response": data.get("response") or {}, "meta": data.get("meta") or {}}
+    return {"response": data if isinstance(data, dict) else {}, "meta": {}}
+
+
+def _dump_payload(response: dict[str, Any], meta: dict[str, Any]) -> str:
+    return json.dumps({"response": response, "meta": meta})
+
+
+def _desk_to_source(desk: str | None) -> str:
+    """Map desk tag from order meta to a stable source id for the paper orders UI."""
+    if not desk:
+        return "live_trading"
+    key = str(desk).strip().lower()
+    if key.startswith("scalping"):
+        return "scalping_desk"
+    if key == "intraday":
+        return "intraday_desk"
+    if key == "swing":
+        return "swing_desk"
+    return "live_trading"
+
+
+def _infer_source_from_order(row: BrokerOrder, desk: str | None) -> str:
+    """Resolve source for legacy rows saved before desk tags were persisted."""
+    tagged = _desk_to_source(desk)
+    if tagged != "live_trading":
+        return tagged
+    exchange = str(row.exchange or "").upper()
+    product = str(row.product or "").upper()
+    if exchange == "NFO":
+        return "scalping_desk"
+    if product == "DELIVERY" and exchange == "NSE":
+        return "swing_desk"
+    if product == "INTRADAY" and exchange == "NSE":
+        return "intraday_desk"
+    return "live_trading"
+
+
+def _source_label(source: str | None) -> str:
+    labels = {
+        "scalping_desk": "Scalping",
+        "intraday_desk": "Intraday",
+        "swing_desk": "Swing",
+        "live_trading": "Live form",
+    }
+    return labels.get(str(source or ""), "Platform")
 
 
 class PaperTradeExecutor:
+    """Paper trading mirrors live logic but stores dummy orders updated from live market data."""
+
     def __init__(self, db: Session, user_id: int):
         self.db = db
         self.user_id = user_id
@@ -43,20 +97,20 @@ class PaperTradeExecutor:
         self.risk = RiskManager(self.settings.REDIS_URL)
         self.scrip = ScripMasterService(self.redis)
         self.market_bus = MarketRedisBus(self.settings.REDIS_URL)
+        self.session_manager = AngelOneSessionManager(db, self.redis)
 
-    async def place_order(self, payload: OrderCreateRequest) -> dict:
+    async def place_order(
+        self,
+        payload: OrderCreateRequest,
+        *,
+        desk: str | None = None,
+        strategy_code: str | None = None,
+    ) -> dict:
         symbol, token, exchange = await self._resolve_symbol(
             payload.symbol, payload.exchange, payload.symboltoken
         )
 
-        entry_price = payload.price
-        if entry_price <= 0 or payload.order_type.upper() == "MARKET":
-            entry_price = self._resolve_price(exchange, symbol, token, payload.price)
-        if entry_price <= 0:
-            raise OrderRejectedError(
-                "Enter a limit price for paper MARKET orders when live quotes are unavailable"
-            )
-
+        entry_price, quote_source = await self._resolve_live_price(exchange, symbol, token, payload.price)
         stoploss = payload.stoploss or self.risk.engine.dynamic_stoploss(
             entry_price, payload.side, atr=entry_price * 0.005
         )
@@ -70,9 +124,23 @@ class PaperTradeExecutor:
             raise OrderRejectedError("Risk engine returned zero quantity")
 
         broker_order_id = f"PAPER-{uuid.uuid4().hex[:12].upper()}"
+        now_iso = datetime.now(timezone.utc).isoformat()
+        meta = {
+            "quote_source": quote_source,
+            "entry_ltp": entry_price,
+            "live_ltp": entry_price,
+            "unrealized_pnl": 0.0,
+            "realized_pnl": None,
+            "exit_ltp": None,
+            "exit_reason": None,
+            "desk": desk,
+            "strategy_code": strategy_code,
+            "opened_at": now_iso,
+            "updated_at": now_iso,
+        }
         response = {
             "status": True,
-            "message": "Paper order filled (simulated)",
+            "message": "Paper order opened at live market price (simulated)",
             "data": {"orderid": broker_order_id, "uniqueorderid": broker_order_id},
         }
 
@@ -89,24 +157,105 @@ class PaperTradeExecutor:
             order_type=payload.order_type.upper(),
             product=payload.product.upper(),
             variety=payload.variety,
-            status="filled",
+            status="open",
             stoploss=stoploss,
             risk_approved=True,
             risk_reason=evaluation.get("reason"),
             execution_mode="paper",
-            broker_response_json=json.dumps(response),
+            broker_response_json=_dump_payload(response, meta),
         )
         self.db.add(order)
         self.db.commit()
         self.db.refresh(order)
 
         notional = entry_price * approved_qty
-        pnl = 0.0
-        if payload.side.upper() == "SELL":
-            pnl = self._estimate_exit_pnl(symbol, entry_price, approved_qty)
-        self.risk.register_trade(pnl, notional)
+        self.risk.register_trade(0.0, notional)
 
-        return OrderExecutor._serialize_order(order, message=response["message"])
+        return self._serialize_order(order, message=response["message"])
+
+    async def close_open_order(
+        self,
+        *,
+        broker_order_id: str | None = None,
+        symbol: str | None = None,
+        exit_price: float | None = None,
+        reason: str = "",
+    ) -> dict | None:
+        query = self.db.query(BrokerOrder).filter(
+            BrokerOrder.user_id == self.user_id,
+            BrokerOrder.execution_mode == "paper",
+            BrokerOrder.status == "open",
+        )
+        if broker_order_id:
+            query = query.filter(BrokerOrder.broker_order_id == broker_order_id)
+        elif symbol:
+            query = query.filter(BrokerOrder.symbol == symbol)
+        else:
+            return None
+
+        order = query.order_by(BrokerOrder.created_at.desc()).first()
+        if not order:
+            return None
+
+        if exit_price is None or exit_price <= 0:
+            exit_price, quote_source = await self._resolve_live_price(
+                order.exchange, order.symbol, order.symboltoken, 0
+            )
+        else:
+            quote_source = "signal"
+
+        pnl = self._calc_pnl(order.side, order.price, exit_price, order.qty)
+        payload = _parse_payload(order.broker_response_json)
+        meta = payload["meta"]
+        meta.update(
+            {
+                "exit_ltp": exit_price,
+                "exit_reason": reason,
+                "realized_pnl": round(pnl, 2),
+                "unrealized_pnl": 0.0,
+                "live_ltp": exit_price,
+                "quote_source": quote_source,
+                "closed_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        order.status = "closed"
+        order.broker_response_json = _dump_payload(payload["response"], meta)
+        self.db.commit()
+        self.db.refresh(order)
+        self.risk.register_trade(pnl, 0.0)
+        return self._serialize_order(order, message="Paper position closed at live price (simulated)")
+
+    async def refresh_open_orders(self) -> list[dict]:
+        rows = (
+            self.db.query(BrokerOrder)
+            .filter(
+                BrokerOrder.user_id == self.user_id,
+                BrokerOrder.execution_mode == "paper",
+                BrokerOrder.status == "open",
+            )
+            .order_by(BrokerOrder.created_at.asc())
+            .all()
+        )
+        updated: list[dict] = []
+        for row in rows:
+            try:
+                live_ltp, quote_source = await self._resolve_live_price(
+                    row.exchange, row.symbol, row.symboltoken, 0
+                )
+            except OrderRejectedError:
+                continue
+            payload = _parse_payload(row.broker_response_json)
+            meta = payload["meta"]
+            meta["live_ltp"] = live_ltp
+            meta["quote_source"] = quote_source
+            meta["unrealized_pnl"] = round(self._calc_pnl(row.side, row.price, live_ltp, row.qty), 2)
+            meta["updated_at"] = datetime.now(timezone.utc).isoformat()
+            row.broker_response_json = _dump_payload(payload["response"], meta)
+            updated.append(self._serialize_paper_row(row))
+        if updated:
+            self.db.commit()
+        return updated
 
     async def list_trades(self, limit: int = 50) -> list[dict]:
         rows = (
@@ -114,7 +263,7 @@ class PaperTradeExecutor:
             .filter(
                 BrokerOrder.user_id == self.user_id,
                 BrokerOrder.execution_mode == "paper",
-                BrokerOrder.status == "filled",
+                BrokerOrder.status.in_(("open", "closed")),
             )
             .order_by(BrokerOrder.created_at.desc())
             .limit(limit)
@@ -123,7 +272,6 @@ class PaperTradeExecutor:
         return [self._serialize_paper_row(row) for row in rows]
 
     def list_all_orders(self, limit: int = 100) -> list[dict]:
-        """All paper orders including rejected — for audit/history views."""
         rows = (
             self.db.query(BrokerOrder)
             .filter(
@@ -136,55 +284,32 @@ class PaperTradeExecutor:
         )
         return [self._serialize_paper_row(row) for row in rows]
 
-    @staticmethod
-    def _serialize_paper_row(row: BrokerOrder) -> dict:
-        pnl = None
-        result = row.status
-        if row.status == "filled":
-            result = "filled"
-        elif row.status == "rejected_by_risk":
-            result = "rejected"
-        return {
-            "source": "live_trading",
-            "order_id": row.broker_order_id or str(row.id),
-            "symbol": row.symbol,
-            "side": row.side,
-            "qty": row.qty,
-            "price": row.price,
-            "entry": row.price,
-            "exit": None,
-            "pnl": pnl,
-            "status": row.status,
-            "result": result,
-            "risk_approved": row.risk_approved,
-            "risk_reason": row.risk_reason,
-            "timestamp": row.created_at.isoformat() if row.created_at else None,
-            "mode": "paper",
-            "instrument": row.exchange,
-        }
-
     def list_positions(self) -> list[dict]:
         rows = (
             self.db.query(BrokerOrder)
             .filter(
                 BrokerOrder.user_id == self.user_id,
                 BrokerOrder.execution_mode == "paper",
-                BrokerOrder.status == "filled",
+                BrokerOrder.status == "open",
             )
             .order_by(BrokerOrder.created_at.asc())
             .all()
         )
         net_qty: dict[str, int] = defaultdict(int)
         cost_basis: dict[str, float] = defaultdict(float)
+        live_ltp: dict[str, float] = {}
+        unrealized: dict[str, float] = defaultdict(float)
+
         for row in rows:
+            payload = _parse_payload(row.broker_response_json)
+            meta = payload["meta"]
             signed_qty = row.qty if row.side == "BUY" else -row.qty
+            net_qty[row.symbol] += signed_qty
             if signed_qty > 0:
                 cost_basis[row.symbol] += row.price * signed_qty
-                net_qty[row.symbol] += signed_qty
-            else:
-                net_qty[row.symbol] += signed_qty
-                if net_qty[row.symbol] == 0:
-                    cost_basis[row.symbol] = 0.0
+            if meta.get("live_ltp"):
+                live_ltp[row.symbol] = float(meta["live_ltp"])
+            unrealized[row.symbol] += float(meta.get("unrealized_pnl") or 0)
 
         positions = []
         for symbol, qty in net_qty.items():
@@ -197,28 +322,48 @@ class PaperTradeExecutor:
                     "qty": qty,
                     "side": "LONG" if qty > 0 else "SHORT",
                     "avg_price": round(avg, 2),
+                    "live_ltp": live_ltp.get(symbol),
+                    "unrealized_pnl": round(unrealized.get(symbol, 0), 2),
                     "mode": "paper",
+                    "status": "open",
                 }
             )
         return positions
 
-    def _estimate_exit_pnl(self, symbol: str, exit_price: float, qty: int) -> float:
-        buys = (
-            self.db.query(BrokerOrder)
-            .filter(
-                BrokerOrder.user_id == self.user_id,
-                BrokerOrder.execution_mode == "paper",
-                BrokerOrder.symbol == symbol,
-                BrokerOrder.side == "BUY",
-                BrokerOrder.status == "filled",
+    async def _resolve_live_price(
+        self,
+        exchange: str,
+        symbol: str,
+        token: str,
+        limit_price: float,
+    ) -> tuple[float, str]:
+        if limit_price and limit_price > 0:
+            return float(limit_price), "limit"
+
+        exchange_type = NSE_FO if exchange.upper() == "NFO" else NSE_CM
+        tick = self.market_bus.get_tick(exchange_type, token)
+        if tick and tick.get("ltp"):
+            return float(tick["ltp"]), "angel_stream"
+
+        if exchange.upper() != "NFO":
+            tick = self.market_bus.get_tick(NSE_CM, token)
+            if tick and tick.get("ltp"):
+                return float(tick["ltp"]), "angel_stream"
+
+        try:
+            client = await self.session_manager.get_client_for_user(self.user_id)
+            response = await client.get_ltp(
+                LTPRequest(exchange=exchange, tradingsymbol=symbol, symboltoken=token)
             )
-            .order_by(BrokerOrder.created_at.asc())
-            .all()
+            ltp = extract_ltp_from_response(response, token)
+            if ltp is not None and ltp > 0:
+                return float(ltp), "angel_ltp"
+        except (AngelOneAuthError, AngelOneAPIError, TypeError, ValueError):
+            logger.debug("Angel LTP fetch failed for %s", symbol, exc_info=True)
+
+        raise OrderRejectedError(
+            "Live market price unavailable. Connect Angel One and start the market stream for paper trading."
         )
-        if not buys:
-            return 0.0
-        entry = buys[-1].price
-        return (exit_price - entry) * qty
 
     async def _resolve_symbol(
         self, raw_symbol: str, exchange: str, symboltoken: str | None = None
@@ -254,24 +399,60 @@ class PaperTradeExecutor:
         except Exception:
             logger.debug("Scrip master lookup failed for %s", raw_symbol)
 
-        if cleaned_eq in REFERENCE_LTP:
-            return cleaned_eq, "0", exchange
+        if symboltoken:
+            return cleaned_eq, str(symboltoken), exchange
 
         raise OrderRejectedError(f"Unable to resolve symbol {raw_symbol} for paper trading")
 
-    def _resolve_price(self, exchange: str, symbol: str, token: str, limit_price: float) -> float:
-        if limit_price > 0:
-            return limit_price
+    @staticmethod
+    def _calc_pnl(side: str, entry: float, mark: float, qty: int) -> float:
+        move = (mark - entry) * qty
+        return -move if side.upper() == "SELL" else move
 
-        tick = self.market_bus.get_tick(1, token)
-        if tick and tick.get("ltp"):
-            return float(tick["ltp"])
+    def _serialize_order(self, order: BrokerOrder, *, message: str) -> dict:
+        row = self._serialize_paper_row(order)
+        row["message"] = message
+        row["id"] = order.id
+        row["broker_order_id"] = order.broker_order_id
+        return row
 
-        for key, price in REFERENCE_LTP.items():
-            if key in symbol.upper() or symbol.upper() in key:
-                return price
-
-        return 0.0
+    @staticmethod
+    def _serialize_paper_row(row: BrokerOrder) -> dict:
+        payload = _parse_payload(row.broker_response_json)
+        meta = payload["meta"]
+        pnl = meta.get("realized_pnl")
+        if pnl is None and row.status == "open":
+            pnl = meta.get("unrealized_pnl")
+        result = row.status
+        if row.status == "closed" and pnl is not None:
+            result = "win" if float(pnl) > 0 else "loss" if float(pnl) < 0 else "breakeven"
+        desk = meta.get("desk")
+        source = _infer_source_from_order(row, desk)
+        return {
+            "source": source,
+            "source_label": _source_label(source),
+            "order_id": row.broker_order_id or str(row.id),
+            "symbol": row.symbol,
+            "side": row.side,
+            "qty": row.qty,
+            "price": row.price,
+            "entry": row.price,
+            "exit": meta.get("exit_ltp"),
+            "live_ltp": meta.get("live_ltp"),
+            "pnl": round(float(pnl), 2) if pnl is not None else None,
+            "status": row.status,
+            "result": result,
+            "risk_approved": row.risk_approved,
+            "risk_reason": row.risk_reason,
+            "timestamp": row.created_at.isoformat() if row.created_at else None,
+            "updated_at": meta.get("updated_at") or (row.updated_at.isoformat() if row.updated_at else None),
+            "mode": "paper",
+            "instrument": row.exchange,
+            "quote_source": meta.get("quote_source"),
+            "desk": desk,
+            "strategy_code": meta.get("strategy_code"),
+            "exit_reason": meta.get("exit_reason"),
+        }
 
     def _persist_rejected(
         self,
@@ -303,3 +484,25 @@ class PaperTradeExecutor:
         self.db.commit()
         self.db.refresh(order)
         return order
+
+
+async def refresh_all_paper_orders(db: Session) -> dict[str, int]:
+    user_ids = [
+        row[0]
+        for row in db.query(BrokerOrder.user_id)
+        .filter(BrokerOrder.execution_mode == "paper", BrokerOrder.status == "open")
+        .distinct()
+        .all()
+    ]
+    refreshed = 0
+    for user_id in user_ids:
+        try:
+            updated = await PaperTradeExecutor(db, user_id).refresh_open_orders()
+            refreshed += len(updated)
+        except Exception:
+            logger.exception("Paper quote refresh failed for user_id=%s", user_id)
+    return {"users": len(user_ids), "orders_refreshed": refreshed}
+
+
+def refresh_all_paper_orders_sync(db: Session) -> dict[str, int]:
+    return asyncio.run(refresh_all_paper_orders(db))

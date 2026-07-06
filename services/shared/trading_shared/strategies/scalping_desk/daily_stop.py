@@ -35,6 +35,8 @@ def maybe_reset_daily_state(state: dict[str, Any]) -> dict[str, Any]:
     state["ai_daily_stop_reason"] = None
     state["ai_daily_stop_confidence"] = 0
     state["ai_daily_stop_at"] = None
+    state["session_start_capital"] = None
+    state["session_capital_source"] = None
     return state
 
 

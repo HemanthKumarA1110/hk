@@ -418,11 +418,15 @@ def evaluate_fvg_ob_bos_setup(mtf: MTFContext, params: dict[str, Any]) -> SMCSet
     if vol < float(params.get("volume_min", 0.95)):
         return None
 
-    structure_ok = (
-        has_bos(mtf, direction, params, spot=spot)
-        or mtf.structure_5m == direction
-        or (mtf.structure_5m == "neutral" and mtf.bias_15m == direction)
-    )
+    require_bos = bool(params.get("fvg_require_bos", False))
+    if require_bos:
+        structure_ok = has_bos(mtf, direction, params, spot=spot)
+    else:
+        structure_ok = (
+            has_bos(mtf, direction, params, spot=spot)
+            or mtf.structure_5m == direction
+            or (mtf.structure_5m == "neutral" and mtf.bias_15m == direction)
+        )
     if not structure_ok:
         return None
 
@@ -442,15 +446,53 @@ def evaluate_fvg_ob_bos_setup(mtf: MTFContext, params: dict[str, Any]) -> SMCSet
         (direction == "bullish" and float(row.get("ema9", spot)) >= float(row.get("ema21", spot)))
         or (direction == "bearish" and float(row.get("ema9", spot)) <= float(row.get("ema21", spot)))
     )
-    if not (in_ob or fvg_hit or (ob and near_vwap) or (trend_ok and (ob or fvgs))):
+    require_in_zone = bool(params.get("fvg_require_in_zone", False))
+    allow_trend_fallback = bool(params.get("fvg_allow_trend_fallback", True))
+    if require_in_zone:
+        zone_ok = in_ob or fvg_hit
+    else:
+        zone_ok = in_ob or fvg_hit or (ob and near_vwap) or (allow_trend_fallback and trend_ok and (ob or fvgs))
+    if not zone_ok:
         return None
+
+    if bool(params.get("fvg_require_vwap_align", False)):
+        vwap = float(row.get("vwap", spot))
+        if direction == "bullish" and spot < vwap:
+            return None
+        if direction == "bearish" and spot > vwap:
+            return None
+
+    if bool(params.get("fvg_require_two_bar_momentum", False)) and len(df1) >= 3:
+        prev = df1.iloc[-2]
+        if direction == "bullish" and float(row["close"]) <= float(prev["close"]):
+            return None
+        if direction == "bearish" and float(row["close"]) >= float(prev["close"]):
+            return None
+
+    rsi = float(row.get("rsi14", 50))
+    if direction == "bullish":
+        rsi_min = params.get("fvg_rsi_call_min")
+        rsi_max = params.get("fvg_rsi_call_max")
+        if rsi_min is not None and rsi < float(rsi_min):
+            return None
+        if rsi_max is not None and rsi > float(rsi_max):
+            return None
+    else:
+        rsi_min = params.get("fvg_rsi_put_min")
+        rsi_max = params.get("fvg_rsi_put_max")
+        if rsi_min is not None and rsi < float(rsi_min):
+            return None
+        if rsi_max is not None and rsi > float(rsi_max):
+            return None
 
     if not _rejection(row, direction):
         return None
 
     atr = float(row.get("atr") or spot * 0.002)
-    stop = atr * float(params.get("stop_atr_mult", 1.0))
-    target = atr * float(params.get("target_atr_mult", 1.6))
+    stop_override = params.get("fvg_stop_pts")
+    target_override = params.get("fvg_target_pts")
+    stop = float(stop_override) if stop_override else atr * float(params.get("stop_atr_mult", 1.0))
+    target = float(target_override) if target_override else atr * float(params.get("target_atr_mult", 1.6))
     zone = (ob["bottom"], ob["top"]) if ob else (fvgs[-1]["bottom"], fvgs[-1]["top"])
 
     return SMCSetup(
@@ -514,12 +556,23 @@ def evaluate_liquidity_sweep_setup(mtf: MTFContext, params: dict[str, Any]) -> S
 
 
 def evaluate_orb_fvg_setup(mtf: MTFContext, params: dict[str, Any]) -> SMCSetup | None:
+    from trading_shared.strategies.scalping_desk.battle_tested_scalp import _to_ist
+    from trading_shared.strategies.scalping_desk.strategies import _two_bar_momentum
+
     df1 = mtf.df_1m
     if len(df1) < 20:
         return None
 
     orb = opening_range(df1, int(params.get("orb_minutes", 15)), mtf.session_orb)
     if not orb:
+        return None
+
+    or_range = float(orb["high"] - orb["low"])
+    rmin = float(params.get("smc_orb_range_min") or 0)
+    rmax = float(params.get("smc_orb_range_max") or 99999)
+    if or_range < rmin:
+        return None
+    if params.get("smc_orb_skip_wide_or") and or_range > rmax:
         return None
 
     row = df1.iloc[-1]
@@ -531,19 +584,46 @@ def evaluate_orb_fvg_setup(mtf: MTFContext, params: dict[str, Any]) -> SMCSetup 
     ts = pd.to_datetime(row.get("timestamp"), errors="coerce")
     if ts is not pd.NaT and (ts.hour < 9 or (ts.hour == 9 and ts.minute < 30)):
         return None
+    ist = _to_ist(row.get("timestamp"))
+    if ist is not None:
+        minutes = ist.hour * 60 + ist.minute
+        cutoff = int(params.get("smc_orb_entry_cutoff_min") or (10 * 60 + 30))
+        if minutes > cutoff:
+            return None
 
     fvgs = detect_fvg(df1.tail(30), float(params.get("fvg_min_gap_pct", 0.008)))
     buffer = float(params.get("entry_buffer_pct", 0.12))
     bias = _resolve_bias(mtf)
-    orb_pad = orb["mid"] * 0.0008
+    orb_pad = orb["mid"] * float(params.get("smc_orb_pad_pct") or 0.0008)
+    require_fvg = bool(params.get("smc_orb_require_fvg", False))
+    require_breakout = bool(params.get("smc_orb_require_breakout", False))
+    require_momentum = bool(params.get("smc_orb_require_momentum", False))
+    call_rsi_min = int(params.get("smc_orb_rsi_call_min") or 40)
+    call_rsi_max = int(params.get("smc_orb_rsi_call_max") or 70)
+    put_rsi_min = int(params.get("smc_orb_rsi_put_min") or 30)
+    put_rsi_max = int(params.get("smc_orb_rsi_put_max") or 60)
+    rsi = float(row.get("rsi14", 50))
+
+    stop_override = params.get("smc_orb_stop_pts")
+    target_override = params.get("smc_orb_target_pts")
+    atr = float(row.get("atr") or spot * 0.002)
+    stop_pts = float(stop_override) if stop_override else atr * float(params.get("stop_atr_mult", 1.0))
+    target_pts = float(target_override) if target_override else atr * float(params.get("target_atr_mult", 1.6))
 
     # Bullish ORB breakout + FVG retest (or momentum continuation)
     if bias != "bearish" and spot > orb["high"] - orb_pad:
         bull_fvgs = [f for f in fvgs if f["type"] == "bullish"]
         fvg_hit = bull_fvgs and _in_zone(spot, bull_fvgs[-1], buffer)
         momentum = spot > orb["mid"] and float(row.get("ema9", spot)) >= float(row.get("ema21", spot))
-        if (spot > orb["high"] or momentum) and (fvg_hit or momentum) and _rejection(row, "bullish"):
-            atr = float(row.get("atr") or spot * 0.002)
+        breakout = spot > orb["high"]
+        signal_ok = (fvg_hit or momentum) if not require_fvg else fvg_hit
+        if require_breakout and not breakout:
+            signal_ok = False
+        if require_momentum and not _two_bar_momentum(df1, "CALL"):
+            signal_ok = False
+        if not (call_rsi_min <= rsi <= call_rsi_max):
+            signal_ok = False
+        if signal_ok and _rejection(row, "bullish"):
             zone = (bull_fvgs[-1]["bottom"], bull_fvgs[-1]["top"]) if bull_fvgs else (orb["high"], orb["high"] * 1.001)
             return SMCSetup(
                 strategy_id="smc_orb_fvg",
@@ -551,16 +631,23 @@ def evaluate_orb_fvg_setup(mtf: MTFContext, params: dict[str, Any]) -> SMCSetup 
                 bias=bias if bias != "neutral" else "bullish",
                 entry_zone=zone,
                 conditions=["orb_breakout_up", "fvg_or_momentum"],
-                stop_pts=round(atr * float(params["stop_atr_mult"]), 2),
-                target_pts=round(atr * float(params["target_atr_mult"]), 2),
+                stop_pts=round(stop_pts, 2),
+                target_pts=round(target_pts, 2),
             )
 
     if bias != "bullish" and spot < orb["low"] + orb_pad:
         bear_fvgs = [f for f in fvgs if f["type"] == "bearish"]
         fvg_hit = bear_fvgs and _in_zone(spot, bear_fvgs[-1], buffer)
         momentum = spot < orb["mid"] and float(row.get("ema9", spot)) <= float(row.get("ema21", spot))
-        if (spot < orb["low"] or momentum) and (fvg_hit or momentum) and _rejection(row, "bearish"):
-            atr = float(row.get("atr") or spot * 0.002)
+        breakout = spot < orb["low"]
+        signal_ok = (fvg_hit or momentum) if not require_fvg else fvg_hit
+        if require_breakout and not breakout:
+            signal_ok = False
+        if require_momentum and not _two_bar_momentum(df1, "PUT"):
+            signal_ok = False
+        if not (put_rsi_min <= rsi <= put_rsi_max):
+            signal_ok = False
+        if signal_ok and _rejection(row, "bearish"):
             zone = (bear_fvgs[-1]["bottom"], bear_fvgs[-1]["top"]) if bear_fvgs else (orb["low"] * 0.999, orb["low"])
             return SMCSetup(
                 strategy_id="smc_orb_fvg",
@@ -568,8 +655,8 @@ def evaluate_orb_fvg_setup(mtf: MTFContext, params: dict[str, Any]) -> SMCSetup 
                 bias=bias if bias != "neutral" else "bearish",
                 entry_zone=zone,
                 conditions=["orb_breakout_down", "fvg_or_momentum"],
-                stop_pts=round(atr * float(params["stop_atr_mult"]), 2),
-                target_pts=round(atr * float(params["target_atr_mult"]), 2),
+                stop_pts=round(stop_pts, 2),
+                target_pts=round(target_pts, 2),
             )
     return None
 
@@ -678,7 +765,16 @@ def evaluate_smc_strategy(
     """Evaluate one SMC strategy on latest candles."""
     if len(df) < 60:
         return None
-    merged_params = {**DEFAULT_SMC_PARAMS, **(params or {})}
+    if instrument_key == "banknifty" and strategy_id == "smc_fvg_ob_bos":
+        from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
+
+        merged_params = merge_smc_fvg_ob_bos_params(params)
+    elif instrument_key == "banknifty" and strategy_id == "smc_orb_fvg":
+        from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
+
+        merged_params = merge_smc_orb_fvg_params(params)
+    else:
+        merged_params = {**DEFAULT_SMC_PARAMS, **(params or {})}
     mtf = build_mtf_context(df)
     evaluator = SMC_EVALUATORS.get(strategy_id)
     if not evaluator:
@@ -715,6 +811,14 @@ def evaluate_smc_best(
         "rankings": [],
     }
     merged = {**DEFAULT_SMC_PARAMS, **(params or {})}
+    if instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
+        from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
+
+        if fixed_strategy_id == "smc_orb_fvg":
+            merged = merge_smc_orb_fvg_params(params)
+        else:
+            merged = merge_smc_fvg_ob_bos_params(params)
     for sid in order:
         setup = SMC_EVALUATORS[sid](mtf, merged)
         if setup:

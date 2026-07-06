@@ -249,9 +249,11 @@ class BacktestDataLoader:
         for i, ts in enumerate(timestamps):
             drift = 1 + ((i % 11) - 5) * 0.0015
             close = max(price * drift, 1)
-            high = close * 1.002
-            low = close * 0.998
-            open_px = close * 0.9995
+            spike = i % 47 == 0 or i % 83 == 0
+            range_mult = 0.008 if spike else 0.002
+            high = close * (1 + range_mult)
+            low = close * (1 - range_mult)
+            open_px = close * (0.9995 if not spike else 0.996)
             rows.append(
                 {
                     "timestamp": ts,

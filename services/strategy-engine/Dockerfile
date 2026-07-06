@@ -3,6 +3,7 @@ WORKDIR /app
 COPY services/shared /app/shared
 RUN pip install --no-cache-dir /app/shared
 COPY services/strategy-engine /app/strategy-engine
+COPY scripts /app/scripts
 RUN pip install --no-cache-dir -r /app/strategy-engine/requirements.txt
 ENV PYTHONPATH=/app/strategy-engine
 WORKDIR /app/strategy-engine
