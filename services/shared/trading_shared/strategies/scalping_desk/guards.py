@@ -26,7 +26,8 @@ def guard_status(
     daily_pnl = float(state.get("daily_pnl") or 0)
     trades_today = int(state.get("trades_today") or 0)
     max_loss = float(config.get("max_loss_per_day") or 5000)
-    max_trades = int(config.get("max_trades_per_day") or DEFAULT_MAX_TRADES)
+    raw_max_trades = config.get("max_trades_per_day")
+    max_trades = DEFAULT_MAX_TRADES if raw_max_trades is None else int(raw_max_trades)
     if expiry_handler and (
         expiry_handler.get("is_expiry") or expiry_handler.get("is_special_session")
     ):
@@ -44,7 +45,8 @@ def guard_status(
     )
 
     loss_breached = daily_pnl <= -abs(max_loss)
-    trades_capped = trades_today >= max_trades
+    # Expiry AM sets max_trades=0; that is an expiry block, not a trade-count ceiling.
+    trades_capped = max_trades > 0 and trades_today >= max_trades
     gap_ok = True
     if last_trade_at:
         try:
@@ -74,16 +76,7 @@ def guard_status(
         and stream_connected
     )
 
-    can_enter_paper = (
-        not has_open_trade
-        and not loss_breached
-        and not trades_capped
-        and not ai_stopped
-        and not expiry_blocked
-        and gap_ok
-        and not force_exit
-        and stream_connected
-    )
+    can_enter_paper = can_enter
 
     alerts = []
     if ai_stopped:

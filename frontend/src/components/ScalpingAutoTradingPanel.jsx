@@ -3,6 +3,7 @@ import {
   evaluateScalpingDesk,
   fetchScalpingDesk,
   saveScalpingDeskConfig,
+  startMarketStream,
   toggleScalpingAutoTrading,
 } from '../api'
 import { INSTRUMENT_META } from '../types/scalping.types'
@@ -17,7 +18,7 @@ function formatApiError(err, fallback) {
 }
 
 /** Compact scalping auto-trading card for the Live Trading hub. */
-export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPaper = true }) {
+export default function ScalpingAutoTradingPanel({ instrument = 'nifty50' }) {
   const meta = INSTRUMENT_META[instrument] || { label: instrument, underlying: instrument }
   const [desk, setDesk] = useState(null)
   const [draft, setDraft] = useState(null)
@@ -80,10 +81,15 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
     setMessage('')
     try {
       if (enabled) {
+        await startMarketStream().catch(() => null)
         await saveScalpingDeskConfig(instrument, { ...(draft || cfg), auto_trading_enabled: true })
       }
       await toggleScalpingAutoTrading(instrument, enabled)
-      setMessage(enabled ? 'Auto trading enabled' : 'Auto trading disabled')
+      setMessage(
+        enabled
+          ? 'Auto trading enabled — Live Market Engine ON for ticks'
+          : 'Auto trading disabled'
+      )
       await load()
     } catch (err) {
       setError(formatApiError(err, 'Failed to toggle auto trading'))
@@ -119,7 +125,7 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
             <p className="text-amber-400 text-xs uppercase tracking-widest">Scalping · {meta.underlying}</p>
             <h3 className="font-semibold text-lg mt-1">{meta.label}</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Index options · AI adaptive entries · {isPaper ? 'paper' : 'live'} · live stream ~1s
+              Index options · AI adaptive entries · live Angel One · live stream ~1s
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -193,8 +199,8 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
             <span className="text-slate-400">Strategy mode</span>
             <div className="flex gap-2 mt-1">
               {[
-                ['auto', 'AI Auto'],
-                ['manual', 'Manual'],
+                ['auto', 'All strategies'],
+                ['manual', 'Selected only'],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -258,7 +264,7 @@ export default function ScalpingAutoTradingPanel({ instrument = 'nifty50', isPap
           <div className="max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6">
             <h3 className="text-lg font-semibold text-amber-300">Enable {meta.underlying} scalping?</h3>
             <p className="text-sm text-slate-400 mt-3">
-              Places {isPaper ? 'paper orders at live Angel One prices' : 'live Angel One orders'} when AI confidence passes filters.
+              Places live Angel One orders when AI confidence passes filters.
               Review capital and max loss before enabling.
             </p>
             <div className="flex gap-3 mt-6">

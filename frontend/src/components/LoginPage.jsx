@@ -84,13 +84,12 @@ export default function LoginPage() {
           <BrandLogo size="lg" showTagline />
           <p className="mt-6 text-slate-400 leading-relaxed">{APP_DESCRIPTION}</p>
           <p className="mt-3 text-slate-500 text-sm leading-relaxed">
-            Sign in, then connect Angel One for live trading — or skip broker setup and use paper trading
-            from the Live Trading page.
+            Sign in, then connect Angel One for live trading.
           </p>
 
           <ul className="mt-8 space-y-3 text-sm text-slate-300">
 
-            <li>Paper trading works without Angel One</li>
+            <li>Live MARKET orders via Angel One</li>
 
             <li>Encrypted broker credentials at rest</li>
 

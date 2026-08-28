@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ensureMarketStream, wsMarketUrl } from '../services/angelOneApi'
+import { fetchStreamStatus } from '../api'
+import { wsMarketUrl } from '../services/angelOneApi'
 
 /**
  * Subscribe to market-data gateway WebSocket (proxied Angel One ticks).
+ * Does not start the Live Market Engine — turn that ON from Overview when needed.
  * @param {(tick: object) => void} [onTick]
  */
 export function useAngelOneWebSocket(onTick) {
@@ -32,11 +34,12 @@ export function useAngelOneWebSocket(onTick) {
   }, [])
 
   useEffect(() => {
-    ensureMarketStream().finally(connect)
+    fetchStreamStatus().catch(() => null)
+    connect()
     return () => {
       wsRef.current?.close()
     }
   }, [connect])
 
-  return { connected, reconnect: connect }
+  return { connected }
 }

@@ -10,8 +10,17 @@ Rules:
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
+from trading_shared.execution.qty import max_lots_per_order
+
+# Leave headroom for brokerage, taxes, and a 1-tick premium move on split fills.
+CASH_BUFFER_PCT = 0.03
+_INSUFFICIENT_FUNDS_RE = re.compile(
+    r"Available funds\s*-\s*(?:Rs\.?|₹)?\s*([0-9,]+\.?[0-9]*).*?require(?:s)?\s*(?:Rs\.?|₹)?\s*([0-9,]+\.?[0-9]*)",
+    re.IGNORECASE | re.DOTALL,
+)
 from trading_shared.strategies.scalping_desk.constants import INSTRUMENTS
 from trading_shared.strategies.scalping_desk.daily_stop import trading_day_key
 
@@ -35,8 +44,9 @@ def ensure_session_capital(
     broker_cash: float | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """
-    Initialise session_start_capital once per IST trading day.
-    Returns (updated_state, capital_info).
+    Keep session capital in sync with Angel One cash while the desk is flat.
+    Freeze the last broker reading while a trade is open so blocked margin
+    does not shrink the next size. Returns (updated_state, capital_info).
     """
     today = trading_day_key()
     if state.get("trading_day") != today:
@@ -45,23 +55,35 @@ def ensure_session_capital(
 
     manual = float(config.get("capital") or 100_000)
     auto = bool(config.get("auto_capital_from_broker", True))
-    utilization_pct = float(config.get("capital_utilization_pct") or 0.95)
+    utilization_pct = float(config.get("capital_utilization_pct") if config.get("capital_utilization_pct") is not None else 1.0)
     utilization_pct = min(max(utilization_pct, 0.5), 1.0)
 
-    if state.get("session_start_capital") is None:
-        if auto and broker_cash is not None and broker_cash > 0:
-            session_start = round(broker_cash, 2)
+    has_open = bool(state.get("active_trades"))
+    current = state.get("session_start_capital")
+    source = state.get("session_capital_source")
+    if auto and broker_cash is not None and float(broker_cash) > 0:
+        if not has_open or current is None:
+            session_start = round(float(broker_cash), 2)
             source = "broker"
         else:
-            session_start = round(manual, 2)
-            source = "manual"
-        state["session_start_capital"] = session_start
-        state["session_capital_source"] = source
+            session_start = float(current)
+            source = source or "broker"
+    elif current is None:
+        session_start = round(manual, 2)
+        source = "manual"
+    else:
+        session_start = float(current)
+        source = source or "manual"
 
-    session_start = float(state["session_start_capital"])
+    state["session_start_capital"] = session_start
+    state["session_capital_source"] = source
     daily_pnl = float(state.get("daily_pnl") or 0)
-    # T+1: same-day profits do not increase deployable capital; losses reduce it.
-    after_losses = session_start + min(daily_pnl, 0.0)
+    # Live broker cash already reflects closed-trade losses. Only apply the
+    # T+1 haircut when we are still on fallback/manual capital.
+    if source == "broker" and not has_open:
+        after_losses = session_start
+    else:
+        after_losses = session_start + min(daily_pnl, 0.0)
     deployable = round(max(after_losses, 0.0) * utilization_pct, 2)
 
     info = {
@@ -92,7 +114,8 @@ def compute_utilization_lots(
     state = state or {}
     meta = INSTRUMENTS.get(instrument_key, INSTRUMENTS["nifty50"])
     lot_size = int(meta["lot_size"])
-    max_trades = int(config.get("max_trades_per_day") or 3)
+    raw_max_trades = config.get("max_trades_per_day")
+    max_trades = 3 if raw_max_trades is None else int(raw_max_trades)
     trade_count = int(state.get("trades_today") or 0)
     open_pnl = float(state.get("daily_pnl") or 0)
     session_start = float(state.get("session_start_capital") or config.get("capital") or 100_000)
@@ -107,7 +130,7 @@ def compute_utilization_lots(
             "sizing_mode": "utilization",
         }
 
-    if trade_count >= max_trades:
+    if max_trades > 0 and trade_count >= max_trades:
         return {
             "action": "HALT",
             "lots": 0,
@@ -136,7 +159,15 @@ def compute_utilization_lots(
         }
 
     cost_per_lot = option_premium * lot_size
-    lots = int(deployable_capital // cost_per_lot) if cost_per_lot > 0 else 0
+    budget = float(deployable_capital) * (1.0 - CASH_BUFFER_PCT)
+    lots = int(budget // cost_per_lot) if cost_per_lot > 0 else 0
+    max_lots = int(config.get("max_lots_per_trade") or 0)
+    if max_lots > 0:
+        lots = min(lots, max_lots)
+    freeze_lots = max_lots_per_order(lot_size)
+    split_orders = 1
+    if lots > freeze_lots:
+        split_orders = (lots + freeze_lots - 1) // freeze_lots
     if lots < 1:
         return {
             "action": "HALT",
@@ -150,6 +181,12 @@ def compute_utilization_lots(
         }
 
     capital_deployed = round(lots * cost_per_lot, 2)
+    reason = (
+        f"{lots} lot(s) · ₹{capital_deployed:,.0f} deployed "
+        f"(premium ₹{option_premium:.2f} × {lot_size} × {lots})"
+    )
+    if split_orders > 1:
+        reason += f" · split into {split_orders} orders (exchange freeze {freeze_lots} lots each)"
     return {
         "action": "TRADE",
         "lots": lots,
@@ -158,12 +195,43 @@ def compute_utilization_lots(
         "deployable_capital": deployable_capital,
         "option_premium": round(option_premium, 2),
         "cost_per_lot": round(cost_per_lot, 2),
+        "exchange_freeze_lots": freeze_lots,
+        "split_orders": split_orders,
         "sizing_mode": "utilization",
-        "reason": (
-            f"{lots} lot(s) · ₹{capital_deployed:,.0f} deployed "
-            f"(premium ₹{option_premium:.2f} × {lot_size} × {lots})"
-        ),
+        "reason": reason,
     }
+
+
+def lots_affordable_from_cash(
+    cash: float,
+    premium: float,
+    lot_size: int,
+    *,
+    buffer_pct: float = CASH_BUFFER_PCT,
+) -> int:
+    """Whole lots that fit in cash after a small charges/slippage buffer."""
+    lot = max(int(lot_size or 1), 1)
+    prem = float(premium or 0)
+    if cash <= 0 or prem <= 0:
+        return 0
+    budget = float(cash) * (1.0 - min(max(buffer_pct, 0.0), 0.2))
+    cost = prem * lot
+    if cost <= 0:
+        return 0
+    return int(budget // cost)
+
+
+def parse_insufficient_funds_amounts(message: str) -> tuple[float | None, float | None]:
+    """Parse Angel 'Available funds / You require' amounts from a reject text."""
+    match = _INSUFFICIENT_FUNDS_RE.search(str(message or ""))
+    if not match:
+        return None, None
+    try:
+        available = float(match.group(1).replace(",", ""))
+        required = float(match.group(2).replace(",", ""))
+    except (TypeError, ValueError):
+        return None, None
+    return available, required
 
 
 def size_index_scalp_from_context(
@@ -211,10 +279,10 @@ def backtest_day_session_start(initial_capital: float, prior_days_pnl: float) ->
 def backtest_deployable_capital(
     session_start: float,
     day_pnl_so_far: float,
-    utilization_pct: float = 0.95,
+    utilization_pct: float = 1.0,
 ) -> float:
     """Deployable margin intraday — losses reduce size; same-day wins do not increase it."""
-    pct = min(max(float(utilization_pct or 0.95), 0.5), 1.0)
+    pct = min(max(float(utilization_pct if utilization_pct is not None else 1.0), 0.5), 1.0)
     adjusted = session_start + min(float(day_pnl_so_far or 0), 0.0)
     return max(0.0, adjusted * pct)
 

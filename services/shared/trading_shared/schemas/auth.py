@@ -16,6 +16,29 @@ class UserRegisterRequest(BaseModel):
     role: UserRoleEnum = UserRoleEnum.TRADER
 
 
+class AdminCreateUserRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=64)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=128)
+    role: UserRoleEnum = UserRoleEnum.TRADER
+    is_active: bool = True
+
+
+class AdminUpdateUserRequest(BaseModel):
+    email: EmailStr | None = None
+    role: UserRoleEnum | None = None
+    is_active: bool | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1, max_length=128)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
 class UserLoginRequest(BaseModel):
     username: str
     password: str

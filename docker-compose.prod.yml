@@ -101,13 +101,15 @@ services:
       <<: *prod-env
 
   scalping-stream-worker:
+    # Scalping auto-trading only. Market stream lives in market-data-service.
+    # 512M OOMs on import + Angel client + desk eval (exit 137); keep headroom vs celery-worker.
     environment:
       <<: *prod-env
       SCALPING_STREAM_INTERVAL_SEC: "1.0"
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1536M
 
   frontend:
     build:

@@ -66,7 +66,8 @@ def evaluate_ai_daily_stop(
     consecutive_wins = int(state.get("consecutive_wins") or 0)
     daily_pnl = float(state.get("daily_pnl") or 0)
     capital = float(config.get("capital") or 100_000)
-    max_trades = int(config.get("max_trades_per_day") or 5)
+    raw_max_trades = config.get("max_trades_per_day")
+    max_trades = 5 if raw_max_trades is None else int(raw_max_trades)
 
     if state.get("ai_daily_stop"):
         return {

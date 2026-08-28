@@ -17,6 +17,7 @@ import pandas as pd
 from trading_shared.strategies.scalping_desk.engine import (
     ScalpSignal,
     enrich_candles,
+    long_premium_brackets,
     max_hold_bars,
     pick_strike,
     premium_risk_from_index,
@@ -24,11 +25,13 @@ from trading_shared.strategies.scalping_desk.engine import (
 from trading_shared.strategies.scalping_desk.strategies import _two_bar_momentum
 from trading_shared.strategies.scalping_desk.orb_breakout_tuning import merge_orb_params
 from trading_shared.strategies.scalping_desk.ema_crossover_tuning import merge_ema_crossover_params
+from trading_shared.strategies.ta import ema
 
 IST = ZoneInfo("Asia/Kolkata")
 
-# Session: 09:20–10:30 and 13:30–14:45; skip 09:15–09:19 and after 15:15
+# Session: fixed battle-tested windows (IST).
 SESSION_WINDOWS = ((9, 20, 10, 30), (13, 30, 14, 45))
+SESSION_WINDOW_LABELS = ("09:20–10:30", "13:30–14:45")
 MARKET_OPEN = (9, 15)
 MARKET_CLOSE = (15, 30)
 SKIP_OPEN_MINUTES = 5
@@ -64,20 +67,81 @@ def _to_ist(ts: Any) -> datetime | None:
     return dt.astimezone(IST)
 
 
-def in_battle_session(ts: Any = None) -> bool:
-    """Trade only in approved IST windows; skip open/close buffers."""
-    now = _to_ist(ts) if ts is not None else datetime.now(IST)
-    if now is None:
-        return False
-    minutes = now.hour * 60 + now.minute
-    open_min = MARKET_OPEN[0] * 60 + MARKET_OPEN[1] + SKIP_OPEN_MINUTES
-    close_cutoff = MARKET_CLOSE[0] * 60 + MARKET_CLOSE[1] - SKIP_CLOSE_MINUTES
-    if minutes < open_min or minutes >= close_cutoff:
-        return False
-    for h1, m1, h2, m2 in SESSION_WINDOWS:
-        if h1 * 60 + m1 <= minutes <= h2 * 60 + m2:
-            return True
-    return False
+def _active_battle_window(ts: Any) -> str | None:
+    ist = _to_ist(ts)
+    if ist is None or ist.weekday() >= 5:
+        return None
+    minutes = ist.hour * 60 + ist.minute
+    for (h1, m1, h2, m2), label in zip(SESSION_WINDOWS, SESSION_WINDOW_LABELS, strict=True):
+        if (h1 * 60 + m1) <= minutes < (h2 * 60 + m2):
+            return label
+    return None
+
+
+def _resolve_live_session_ts(ts: Any) -> Any:
+    """Use wall clock only for same-day stream lag — never for historical/backtest bars."""
+    parsed = _to_ist(ts)
+    now = datetime.now(IST)
+    if parsed is None:
+        return now
+    age_sec = (now - parsed).total_seconds()
+    if parsed.date() == now.date() and 90 < age_sec <= 8 * 3600:
+        return now
+    return ts
+
+
+def in_battle_session(
+    ts: Any = None,
+    *,
+    df: pd.DataFrame | None = None,
+    instrument_key: str = "nifty50",
+    tick: dict[str, Any] | None = None,
+    mtf_context: dict[str, Any] | None = None,
+    macro_inputs: dict[str, Any] | None = None,
+    signal_type: str | None = None,
+) -> bool:
+    """Fixed battle windows: 09:20–10:30 and 13:30–14:45 IST (Mon–Fri)."""
+    if ts is None and df is not None and len(df):
+        ts = df.iloc[-1].get("timestamp")
+    ts = _resolve_live_session_ts(ts)
+    return _active_battle_window(ts) is not None
+
+
+def evaluate_battle_session(
+    ts: Any = None,
+    *,
+    instrument_key: str = "nifty50",
+) -> dict[str, Any]:
+    """Structured session status for desk UI and market context."""
+    active = _active_battle_window(ts)
+    ok = active is not None
+    ist = _to_ist(ts)
+    return {
+        "session_ok": ok,
+        "mode": "battle_windows",
+        "windows": list(SESSION_WINDOW_LABELS),
+        "active_window": active,
+        "checks": {
+            "battle_window": {
+                "ok": ok,
+                "detail": f"inside {active} IST" if ok else "outside 09:20–10:30 / 13:30–14:45 IST",
+            }
+        },
+        "failed": [] if ok else ["battle_window"],
+        "summary": f"battle window {active}" if ok else "outside battle windows (09:20–10:30 / 13:30–14:45 IST)",
+        "evaluated_at": ist.isoformat() if ist else None,
+        "instrument_key": instrument_key,
+    }
+
+
+def precompute_battle_session_mask(
+    data: pd.DataFrame,
+    instrument_key: str = "nifty50",
+) -> list[bool]:
+    """Fast per-bar mask for backtest replay."""
+    if data is None or data.empty:
+        return []
+    return [_active_battle_window(row.get("timestamp")) is not None for _, row in data.iterrows()]
 
 
 def is_expiry_day(ts: Any, instrument_key: str) -> bool:
@@ -157,15 +221,8 @@ def _build_battle_signal(
 
     option_ltp = float(strike_info.get("ltp") or strike_info.get("premium") or 1)
     sl_points, target_points = premium_risk_from_index(option_ltp, stop_pts, target_pts)
-
-    if signal_type == "CALL":
-        entry = option_ltp
-        stoploss = round(entry - sl_points, 2)
-        target = round(entry + target_points, 2)
-    else:
-        entry = option_ltp
-        stoploss = round(entry + sl_points, 2)
-        target = round(entry - target_points, 2)
+    entry = option_ltp
+    stoploss, target = long_premium_brackets(entry, sl_points, target_points)
 
     ts = row.get("timestamp")
     now_iso = _to_ist(ts).isoformat() if _to_ist(ts) else datetime.now(IST).isoformat()
@@ -215,12 +272,18 @@ def evaluate_ema_crossover_rsi(
     if len(df) < 25:
         return None
 
-    p = merge_ema_crossover_params(params) if instrument_key == "banknifty" else {}
+    p = merge_ema_crossover_params(params, instrument_key)
     data = df if enriched else enrich_candles(df)
+    fast = int(p.get("ema_fast") or 9)
+    slow = int(p.get("ema_slow") or 21)
+    if fast != 9 or slow != 21:
+        data = data.copy()
+        data["ema9"] = ema(data["close"], fast)
+        data["ema21"] = ema(data["close"], slow)
     row = data.iloc[-1]
     ts = row.get("timestamp")
 
-    if not skip_session and not in_battle_session(ts):
+    if not skip_session and not in_battle_session(ts, df=data, instrument_key=instrument_key):
         return None
     if _expiry_blocks_entry(ts, instrument_key):
         return None
@@ -233,24 +296,23 @@ def evaluate_ema_crossover_rsi(
     vol_ratio = float(row.get("volume_ratio") or 0)
     vol_spike = bool(row.get("vol_spike"))
 
-    if instrument_key == "banknifty":
-        sep_pct = float(p.get("ema_min_separation_pct") or 0)
-        if sep_pct > 0 and abs(ema9 - ema21) / max(spot, 1) * 100 < sep_pct:
+    sep_pct = float(p.get("ema_min_separation_pct") or 0)
+    if sep_pct > 0 and abs(ema9 - ema21) / max(spot, 1) * 100 < sep_pct:
+        return None
+    vol_min = float(p.get("ema_vol_min") or 0)
+    use_spike = bool(p.get("ema_use_vol_spike"))
+    if vol_min > 0 or use_spike:
+        vol_ok = vol_ratio >= vol_min or (use_spike and vol_spike)
+        if not vol_ok:
             return None
-        vol_min = float(p.get("ema_vol_min") or 0)
-        use_spike = bool(p.get("ema_use_vol_spike"))
-        if vol_min > 0 or use_spike:
-            vol_ok = vol_ratio >= vol_min or (use_spike and vol_spike)
-            if not vol_ok:
-                return None
 
-    lookback = int(p.get("ema_cross_lookback") or 3) if instrument_key == "banknifty" else 3
-    call_rsi_min = int(p.get("ema_rsi_call_min") or 50) if instrument_key == "banknifty" else 50
-    call_rsi_max = int(p.get("ema_rsi_call_max") or 65) if instrument_key == "banknifty" else 65
-    put_rsi_min = int(p.get("ema_rsi_put_min") or 35) if instrument_key == "banknifty" else 35
-    put_rsi_max = int(p.get("ema_rsi_put_max") or 50) if instrument_key == "banknifty" else 50
-    need_vwap = bool(p.get("ema_require_vwap", True)) if instrument_key == "banknifty" else True
-    need_momentum = bool(p.get("ema_require_two_bar_momentum", True)) if instrument_key == "banknifty" else True
+    lookback = int(p.get("ema_cross_lookback") or 3)
+    call_rsi_min = int(p.get("ema_rsi_call_min") or 50)
+    call_rsi_max = int(p.get("ema_rsi_call_max") or 65)
+    put_rsi_min = int(p.get("ema_rsi_put_min") or 35)
+    put_rsi_max = int(p.get("ema_rsi_put_max") or 50)
+    need_vwap = bool(p.get("ema_require_vwap", True))
+    need_momentum = bool(p.get("ema_require_two_bar_momentum", True))
 
     call_ok = (
         _recent_cross(data, "CALL", lookback=lookback)
@@ -272,13 +334,12 @@ def evaluate_ema_crossover_rsi(
 
     signal_type = "CALL" if call_ok else "PUT"
     risk = battle_risk(instrument_key)
-    if instrument_key == "banknifty":
-        risk = {
-            **risk,
-            "stop_pts": float(p.get("ema_stop_pts") or risk["stop_pts"]),
-            "target_pts": float(p.get("ema_target_pts") or risk["target_pts"]),
-            "max_hold_bars": int(p.get("ema_max_hold_bars") or risk["max_hold_bars"]),
-        }
+    risk = {
+        **risk,
+        "stop_pts": float(p.get("ema_stop_pts") or risk["stop_pts"]),
+        "target_pts": float(p.get("ema_target_pts") or risk["target_pts"]),
+        "max_hold_bars": int(p.get("ema_max_hold_bars") or risk["max_hold_bars"]),
+    }
     return _build_battle_signal(
         strategy_id="ema_crossover_rsi",
         strategy_label="EMA Crossover + RSI",
@@ -303,16 +364,31 @@ def evaluate_orb_breakout(
     params: dict[str, Any] | None = None,
     skip_session: bool = False,
 ) -> ScalpSignal | None:
-    """Opening-range breakout — Bank Nifty P&L-focused setup."""
+    """Opening-range breakout — Nifty / Bank Nifty battle setup."""
     if len(df) < 30:
         return None
 
-    p = merge_orb_params(params) if instrument_key == "banknifty" else {}
+    p = merge_orb_params(params, instrument_key)
     data = df if enriched else enrich_candles(df)
+    fast = int(p.get("orb_ema_fast") or 9)
+    slow = int(p.get("orb_ema_slow") or 21)
+    if fast != 9 or slow != 21:
+        data = data.copy()
+        data["ema9"] = ema(data["close"], fast)
+        data["ema21"] = ema(data["close"], slow)
+
+    vol_lb = int(p.get("orb_vol_lookback") or 0)
+    if vol_lb > 0 and len(data) >= vol_lb:
+        data = data.copy()
+        activity = data["volume"] if float(data["volume"].sum() or 0) > 0 else (data["high"] - data["low"]).abs()
+        avg = activity.rolling(vol_lb, min_periods=max(3, vol_lb // 3)).mean().replace(0, 1)
+        data["volume_ratio"] = activity / avg
+
     row = data.iloc[-1]
+    prev = data.iloc[-2]
     ts = row.get("timestamp")
 
-    if not skip_session and not in_battle_session(ts):
+    if not skip_session and not in_battle_session(ts, df=data, instrument_key=instrument_key):
         return None
     if _expiry_blocks_entry(ts, instrument_key):
         return None
@@ -326,66 +402,127 @@ def evaluate_orb_breakout(
         return None
 
     risk = battle_risk(instrument_key)
-    if instrument_key == "banknifty":
-        risk = {
-            **risk,
-            "stop_pts": float(p.get("orb_stop_pts") or risk["stop_pts"]),
-            "target_pts": float(p.get("orb_target_pts") or risk["target_pts"]),
-            "max_hold_bars": int(p.get("orb_max_hold_bars") or risk["max_hold_bars"]),
-            "orb_minutes": int(p.get("orb_minutes") or risk.get("orb_minutes") or 15),
-        }
+    risk = {
+        **risk,
+        "stop_pts": float(p.get("orb_stop_pts") or risk["stop_pts"]),
+        "target_pts": float(p.get("orb_target_pts") or risk["target_pts"]),
+        "max_hold_bars": int(p.get("orb_max_hold_bars") or risk["max_hold_bars"]),
+        "orb_minutes": int(p.get("orb_minutes") or risk.get("orb_minutes") or 15),
+    }
 
     orb = _session_orb(data, int(risk.get("orb_minutes", 15)))
     if not orb:
         return None
 
     or_range = float(orb["high"] - orb["low"])
-    if instrument_key == "banknifty":
-        rmin = float(p.get("orb_or_range_min") or 0)
-        rmax = float(p.get("orb_or_range_max") or 99999)
-        if or_range < rmin:
-            return None
-        if p.get("orb_skip_wide_or") and or_range > rmax:
-            return None
+    rmin = float(p.get("orb_or_range_min") or 0)
+    rmax = float(p.get("orb_or_range_max") or 99999)
+    if or_range < rmin:
+        return None
+    if p.get("orb_skip_wide_or") and or_range > rmax:
+        return None
 
     spot = float(row["close"])
-    prev_spot = float(data.iloc[-2]["close"])
+    prev_close = float(prev["close"])
+    prev_high = float(prev["high"])
+    prev_low = float(prev["low"])
     ema9 = float(row["ema9"])
     ema21 = float(row["ema21"])
     rsi_val = float(row["rsi14"])
+    prev_rsi = float(prev["rsi14"])
     vol_ratio = float(row.get("volume_ratio") or 0)
     vol_spike = bool(row.get("vol_spike"))
-    buffer = spot * float(p.get("orb_buffer_pct") or 0.0003) if instrument_key == "banknifty" else spot * 0.0003
-    vol_min = float(p.get("orb_vol_min") or 1.35) if instrument_key == "banknifty" else 1.35
-    use_vol_spike = bool(p.get("orb_use_vol_spike", True)) if instrument_key == "banknifty" else False
-    vol_ok = vol_ratio >= vol_min or (use_vol_spike and vol_spike)
+    vwap = float(row.get("vwap", spot))
+    atr = float(row.get("atr") or 0) or max(spot * 0.0004, 1.0)
 
-    require_inside = bool(p.get("orb_require_inside_or", True)) if instrument_key == "banknifty" else True
-    inside_or = orb["low"] <= prev_spot <= orb["high"]
-    if require_inside and not inside_or:
+    sep_pct = float(p.get("orb_min_separation_pct") or 0)
+    if sep_pct > 0 and abs(ema9 - ema21) / max(spot, 1) * 100 < sep_pct:
         return None
 
-    call_rsi_min = int(p.get("orb_rsi_call_min") or 52) if instrument_key == "banknifty" else 52
-    call_rsi_max = int(p.get("orb_rsi_call_max") or 66) if instrument_key == "banknifty" else 66
-    put_rsi_min = int(p.get("orb_rsi_put_min") or 34) if instrument_key == "banknifty" else 34
-    put_rsi_max = int(p.get("orb_rsi_put_max") or 48) if instrument_key == "banknifty" else 48
-    need_momentum = bool(p.get("orb_require_two_bar_momentum", True)) if instrument_key == "banknifty" else True
+    buffer = spot * float(p.get("orb_buffer_pct") or 0.0003)
+    vol_min = float(p.get("orb_vol_min") or 1.35)
+    use_vol_spike = bool(p.get("orb_use_vol_spike", False))
+    vol_ok = vol_ratio >= vol_min or (use_vol_spike and vol_spike)
+
+    prior_mode = str(p.get("orb_prior_mode") or "").lower().strip()
+    if not prior_mode:
+        prior_mode = "close_inside" if bool(p.get("orb_require_inside_or", True)) else "off"
+
+    if prior_mode in ("inside", "a", "complete"):
+        if not (orb["low"] <= prev_low and prev_high <= orb["high"]):
+            return None
+    elif prior_mode in ("close_inside", "b", "close"):
+        if not (orb["low"] <= prev_close <= orb["high"]):
+            return None
+    elif prior_mode in ("not_beyond", "c", "off", "d", "none"):
+        pass
+    else:
+        if not (orb["low"] <= prev_close <= orb["high"]):
+            return None
+
+    call_rsi_min = int(p.get("orb_rsi_call_min") or 50)
+    call_rsi_max = int(p.get("orb_rsi_call_max") or 65)
+    put_rsi_min = int(p.get("orb_rsi_put_min") or 34)
+    put_rsi_max = int(p.get("orb_rsi_put_max") or 48)
+    need_momentum = bool(p.get("orb_require_two_bar_momentum", True))
+    mom_mode = str(p.get("orb_momentum_mode") or "two_bar").lower()
+    mom_atr = float(p.get("orb_momentum_atr_mult") or 0)
+    need_vwap = bool(p.get("orb_require_vwap", False))
+    need_rsi_slope = bool(p.get("orb_require_rsi_slope", False))
+    min_body = float(p.get("orb_min_body_pct") or 0)
+
+    def _body_ok(direction: str) -> bool:
+        if min_body <= 0:
+            return True
+        hi, lo, op, cl = float(row["high"]), float(row["low"]), float(row["open"]), float(row["close"])
+        rng = max(hi - lo, 1e-9)
+        body = abs(cl - op) / rng
+        if body < min_body:
+            return False
+        return (cl > op) if direction == "CALL" else (cl < op)
+
+    def _momentum_ok(direction: str) -> bool:
+        if not need_momentum:
+            return True
+        if mom_mode in ("directional", "closes", "b"):
+            c0 = float(data.iloc[-1]["close"])
+            c1 = float(data.iloc[-2]["close"])
+            c2 = float(data.iloc[-3]["close"]) if len(data) >= 3 else c1
+            return (c0 > c1 > c2) if direction == "CALL" else (c0 < c1 < c2)
+        if mom_mode in ("atr", "c") and mom_atr > 0 and len(data) >= 3:
+            move = abs(float(data.iloc[-1]["close"]) - float(data.iloc[-3]["close"]))
+            return move >= mom_atr * atr
+        return _two_bar_momentum(data, direction)
+
+    call_prior_ok = True
+    put_prior_ok = True
+    if prior_mode in ("not_beyond", "c"):
+        call_prior_ok = prev_close <= orb["high"] + buffer
+        put_prior_ok = prev_close >= orb["low"] - buffer
 
     call_ok = (
-        spot > orb["high"] + buffer
+        call_prior_ok
+        and spot > orb["high"] + buffer
         and ema9 > ema21
         and call_rsi_min <= rsi_val <= call_rsi_max
         and vol_ok
         and float(row["close"]) > float(row["open"])
-        and (not need_momentum or _two_bar_momentum(data, "CALL"))
+        and _body_ok("CALL")
+        and _momentum_ok("CALL")
+        and (not need_vwap or spot > vwap)
+        and (not need_rsi_slope or rsi_val > prev_rsi)
     )
     put_ok = (
-        spot < orb["low"] - buffer
+        put_prior_ok
+        and spot < orb["low"] - buffer
         and ema9 < ema21
         and put_rsi_min <= rsi_val <= put_rsi_max
         and vol_ok
         and float(row["close"]) < float(row["open"])
-        and (not need_momentum or _two_bar_momentum(data, "PUT"))
+        and _body_ok("PUT")
+        and _momentum_ok("PUT")
+        and (not need_vwap or spot < vwap)
+        and (not need_rsi_slope or rsi_val < prev_rsi)
     )
     if not call_ok and not put_ok:
         return None
@@ -416,10 +553,10 @@ BATTLE_REGISTRY: dict[str, dict[str, Any]] = {
     "orb_breakout": {
         "id": "orb_breakout",
         "label": "ORB Breakout",
-        "description": "Bank Nifty opening-range breakout — higher P&L, slightly wider DD",
+        "description": "Opening-range breakout — Nifty / Bank Nifty battle setup",
         "evaluate": evaluate_orb_breakout,
         "best_regimes": ["TRENDING_UP", "TRENDING_DOWN", "HIGH_VOLATILITY"],
-        "instruments": ["banknifty"],
+        "instruments": ["nifty50", "banknifty"],
     },
 }
 
@@ -457,8 +594,10 @@ def evaluate_battle_best(
         order = ["ema_crossover_rsi", "orb_breakout"]
     elif fixed_strategy_id:
         order = [fixed_strategy_id]
+    elif instrument_key == "nifty50":
+        order = ["orb_breakout"]
     else:
-        order = ["ema_crossover_rsi"]
+        order = []
 
     meta = {
         "strategy_family": "battle",

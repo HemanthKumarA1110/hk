@@ -6,7 +6,8 @@ INSTRUMENTS: dict[str, dict] = {
     "nifty50": {
         "underlying": "NIFTY",
         "label": "Nifty 50",
-        "lot_size": 25,
+        # NSE Jan-2026 series lot (was 25 / 75 earlier — stale sizes cause AB4014)
+        "lot_size": 65,
         "exchange": "NSE",
         "option_exchange": "NFO",
         "points_step": 50,
@@ -14,7 +15,7 @@ INSTRUMENTS: dict[str, dict] = {
     "banknifty": {
         "underlying": "BANKNIFTY",
         "label": "Bank Nifty",
-        "lot_size": 15,
+        "lot_size": 30,
         "exchange": "NSE",
         "option_exchange": "NFO",
         "points_step": 100,
@@ -26,6 +27,8 @@ REDIS_CONFIG_SUFFIX = "config"
 REDIS_STATE_SUFFIX = "state"
 REDIS_VERSION_SUFFIX = "strategy_version"
 REDIS_OPTIMIZATION_SUFFIX = "optimizations"
+REDIS_STREAM_WORKER_HEARTBEAT = "scalping:stream_worker:heartbeat"
+STREAM_WORKER_HEARTBEAT_TTL_SEC = 30
 
 AI_CONFIDENCE_ENTER = 68
 AI_CONFIDENCE_EXIT = 65

@@ -13,10 +13,13 @@ import pandas as pd
 from trading_shared.strategies.scalping_desk.engine import (
     enrich_candles,
     estimate_option_mark_premium,
+    long_premium_brackets,
+    premium_risk_from_index,
     max_hold_bars,
     should_exit,
     should_exit_index,
 )
+from trading_shared.strategies.scalping_desk.daily_stop import evaluate_ai_daily_stop
 from trading_shared.strategies.scalping_desk.smc_scalping_engine import (
     DEFAULT_SMC_PARAMS,
     SMC_EVALUATORS,
@@ -56,6 +59,45 @@ def _trade_day(ts: str) -> str:
     return ts[:10] if len(ts) >= 10 else "unknown"
 
 
+def _setup_signal_stub(
+    *,
+    strategy_id: str,
+    setup: Any,
+    spot: float,
+    atr: float,
+    row: pd.Series,
+    entry_premium: float,
+    stop_pts: float,
+    target_pts: float,
+    hold_limit: int,
+    ts: str,
+) -> dict[str, Any]:
+    """Minimal signal shape so AI entry/targets match the live desk path."""
+    return {
+        "signal_type": setup.signal_type,
+        "strategy_id": strategy_id,
+        "timestamp": ts,
+        "entry": round(float(entry_premium), 2),
+        "timeframe": "1m",
+        "indicators": {
+            "spot": spot,
+            "atr": atr,
+            "rsi": float(row.get("rsi14") or row.get("rsi") or 50),
+            "volume_ratio": float(row.get("volume_ratio") or 1),
+            "ema9": float(row.get("ema9") or spot),
+            "ema21": float(row.get("ema21") or spot),
+            "vwap": float(row.get("vwap") or spot),
+            "supertrend": float(row.get("supertrend") or 0),
+            "index_stop_pts": stop_pts,
+            "index_target_pts": target_pts,
+            "max_hold_bars": hold_limit,
+            "strategy_id": strategy_id,
+            "smc_bias": getattr(setup, "bias", None),
+            "entry_zone": list(getattr(setup, "entry_zone", ()) or ()),
+        },
+    }
+
+
 def _run_single_strategy(
     candles: pd.DataFrame,
     strategy_id: str,
@@ -69,6 +111,7 @@ def _run_single_strategy(
     capital_utilization_pct: float = 0.95,
     max_lots_per_trade: int = 0,
     option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
+    ai_entry: bool = False,
 ) -> dict[str, Any]:
     """Replay one SMC strategy on historical 1m candles."""
     if candles.empty or len(candles) < 60:
@@ -80,10 +123,10 @@ def _run_single_strategy(
         from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
 
         max_bars = int(merge_smc_fvg_ob_bos_params(params).get("smc_max_bars", SMC_MAX_BARS))
-    elif instrument_key == "banknifty" and strategy_id == "smc_orb_fvg":
+    elif strategy_id == "smc_orb_fvg" and instrument_key in ("nifty50", "banknifty"):
         from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
 
-        max_bars = int(merge_smc_orb_fvg_params(params).get("smc_max_bars", SMC_MAX_BARS))
+        max_bars = int(merge_smc_orb_fvg_params(params, instrument_key).get("smc_max_bars", SMC_MAX_BARS))
     if len(frame) > max_bars:
         frame = frame.tail(max_bars).reset_index(drop=True)
 
@@ -93,17 +136,19 @@ def _run_single_strategy(
         from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
 
         merged = merge_smc_fvg_ob_bos_params(params)
-    elif instrument_key == "banknifty" and strategy_id == "smc_orb_fvg":
+    elif strategy_id == "smc_orb_fvg" and instrument_key in ("nifty50", "banknifty"):
         from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
 
-        merged = merge_smc_orb_fvg_params(params)
+        merged = merge_smc_orb_fvg_params(params, instrument_key)
     else:
         merged = {**DEFAULT_SMC_PARAMS, **(params or {})}
     evaluator = SMC_EVALUATORS.get(strategy_id)
     if not evaluator:
         return _empty(strategy_id, f"Unknown strategy {strategy_id}", capital=capital)
 
-    entry_scan = int(merged.get("smc_entry_scan_every", ENTRY_SCAN_EVERY))
+    # Live stream evaluates every cycle; smc_entry_scan_every is optimizer-only.
+    # Desk parity runs force scan=1 via params; still clamp to >=1 here.
+    entry_scan = max(1, int(merged.get("smc_entry_scan_every", ENTRY_SCAN_EVERY)))
     min_between = int(merged.get("smc_min_bars_between", MIN_BARS_BETWEEN_TRADES))
     trades: list[SMCTrade] = []
     equity = capital
@@ -112,6 +157,10 @@ def _run_single_strategy(
     last_exit = -min_between
     day_pnl: dict[str, float] = {}
     day_trades: dict[str, int] = {}
+    day_wins: dict[str, int] = {}
+    day_consecutive_wins: dict[str, int] = {}
+    day_stopped: dict[str, bool] = {}
+    day_stop_count = 0
     hold_limit = int(merged.get("max_hold_bars", max_hold_bars(instrument_key)))
     trailing_mult = float(merged.get("trailing_atr_mult", 0.75))
     max_lots = int(max_lots_per_trade or 0)
@@ -123,6 +172,13 @@ def _run_single_strategy(
         spot = float(row["close"])
         day = _trade_day(ts)
         atr = float(row.get("atr") or spot * 0.002)
+        bar_market_ctx = {
+            "regime": "RANGING",
+            "volume_ratio": float(row.get("volume_ratio") or 1),
+            "trend_strength": abs(float(row.get("ema9") or spot) - float(row.get("ema21") or spot))
+            / max(spot, 1),
+            "rsi": float(row.get("rsi14") or row.get("rsi") or 50),
+        }
 
         if active:
             bars_held = i - active["entry_index"]
@@ -183,6 +239,28 @@ def _run_single_strategy(
                     bankrupt = True
                 day_pnl[day] = day_pnl.get(day, 0.0) + pnl
                 day_trades[day] = day_trades.get(day, 0) + 1
+                if pnl > 0:
+                    day_wins[day] = day_wins.get(day, 0) + 1
+                    day_consecutive_wins[day] = day_consecutive_wins.get(day, 0) + 1
+                else:
+                    day_consecutive_wins[day] = 0
+
+                # Live desk uses AI daily-stop; backtest must replicate that gating.
+                daily_stop_state = {
+                    "trades_today": day_trades.get(day, 0),
+                    "wins_today": day_wins.get(day, 0),
+                    "consecutive_wins": day_consecutive_wins.get(day, 0),
+                    "daily_pnl": day_pnl.get(day, 0.0),
+                    "ai_daily_stop": day_stopped.get(day, False),
+                }
+                stop_decision = evaluate_ai_daily_stop(
+                    daily_stop_state,
+                    {"capital": capital, "max_trades_per_day": max_trades_per_day},
+                    bar_market_ctx,
+                )
+                if stop_decision.get("stop_trading") and not day_stopped.get(day, False):
+                    day_stopped[day] = True
+                    day_stop_count += 1
                 rr = active["target_pts"] / max(active["stop_pts"], 0.01)
                 trades.append(
                     SMCTrade(
@@ -207,10 +285,11 @@ def _run_single_strategy(
             active is None
             and not bankrupt
             and equity > 0
+            and not day_stopped.get(day, False)
             and (i - BACKTEST_LOOKBACK) % entry_scan == 0
             and i - last_exit >= min_between
             and daily_pnl > -abs(max_loss_per_day)
-            and day_trades.get(day, 0) < max_trades_per_day
+            and (max_trades_per_day <= 0 or day_trades.get(day, 0) < max_trades_per_day)
         ):
             mtf = mtf_context_at(pre, i, BACKTEST_LOOKBACK)
             setup = evaluator(mtf, merged)
@@ -229,16 +308,88 @@ def _run_single_strategy(
                 )
                 if lots < 1:
                     continue
+
+                # SMC backtest must model premium targets/stops to match live exits.
+                # backtest_size_for_bar returns an estimated option premium for sizing (aka entry_premium).
+                entry_premium = float(premium)
+                trade_hold = hold_limit
+                if ai_entry:
+                    from trading_shared.strategies.scalping_desk.ai_decision import (
+                        evaluate_ai_decision,
+                        apply_ai_targets,
+                    )
+                    from trading_shared.strategies.scalping_desk.constants import AI_CONFIDENCE_ENTER
+
+                    sig = _setup_signal_stub(
+                        strategy_id=strategy_id,
+                        setup=setup,
+                        spot=spot,
+                        atr=atr,
+                        row=row,
+                        entry_premium=entry_premium,
+                        stop_pts=float(stop_pts),
+                        target_pts=float(target_pts),
+                        hold_limit=hold_limit,
+                        ts=ts,
+                    )
+                    ai_ctx = {
+                        "capital": capital,
+                        "lot_size": lot_size,
+                        "current_pnl": day_pnl.get(day, 0.0),
+                        "trades_today": day_trades.get(day, 0),
+                        "max_loss_per_day": max_loss_per_day,
+                        "max_trades_per_day": max_trades_per_day,
+                        "max_lots_per_trade": max_lots,
+                        "capital_utilization_pct": capital_utilization_pct,
+                        "market_context": bar_market_ctx,
+                        "strategy_selection": {
+                            "strategy_family": "smc",
+                            "selected_strategy_id": strategy_id,
+                        },
+                        "strategy_family": "smc",
+                        "recent_candles": data.iloc[max(0, i - 10) : i + 1][
+                            ["open", "high", "low", "close", "volume"]
+                        ].to_dict("records")
+                        if {"open", "high", "low", "close", "volume"}.issubset(data.columns)
+                        else [],
+                    }
+                    ai_decision = evaluate_ai_decision(instrument_key, sig, ai_ctx)
+                    if ai_decision.get("action") != "ENTER":
+                        continue
+                    if float(ai_decision.get("confidence") or 0) < AI_CONFIDENCE_ENTER:
+                        continue
+                    if ai_decision.get("targets"):
+                        apply_ai_targets(sig, ai_decision["targets"])
+                        entry_premium = float(sig.get("entry") or entry_premium)
+                        stop_pts = float(ai_decision["targets"].get("stop_pts") or stop_pts)
+                        target_pts = float(ai_decision["targets"].get("target_pts") or target_pts)
+                        trade_hold = int(
+                            ai_decision["targets"].get("max_hold_bars")
+                            or sig.get("indicators", {}).get("max_hold_bars")
+                            or hold_limit
+                        )
+                    sizing = ai_decision.get("position_size") or {}
+                    ai_lots = int(ai_decision.get("lots") or sizing.get("lots") or 0)
+                    if ai_lots > 0:
+                        lots = ai_lots
+                    elif sizing.get("action") == "HALT":
+                        continue
+
+                sl_points, tgt_points = premium_risk_from_index(entry_premium, stop_pts, target_pts)
+                stoploss_px, target_px = long_premium_brackets(entry_premium, sl_points, tgt_points)
                 active = {
                     "signal_type": setup.signal_type,
                     "entry_time": ts,
                     "entry_index": i,
                     "entry_spot": spot,
+                    "entry": round(entry_premium, 2),
+                    "stoploss": float(stoploss_px),
+                    "target": float(target_px),
                     "lots": lots,
-                    "capital_deployed": round(lots * premium * lot_size, 2),
+                    "capital_deployed": round(lots * entry_premium * lot_size, 2),
                     "stop_pts": stop_pts,
                     "target_pts": target_pts,
-                    "max_hold_bars": hold_limit,
+                    "max_hold_bars": trade_hold,
                     "peak_spot": spot,
                     "trough_spot": spot,
                     "trail_stop_pts": 0,
@@ -247,7 +398,15 @@ def _run_single_strategy(
         if i % 20 == 0 or i == len(data) - 1:
             equity_curve.append({"index": i, "equity": round(equity, 2), "date": ts})
 
-    return _summarize(trades, equity_curve, capital, strategy_id, len(data), merged)
+    return _summarize(
+        trades,
+        equity_curve,
+        capital,
+        strategy_id,
+        len(data),
+        merged,
+        ai_early_stop_days=day_stop_count,
+    )
 
 
 def run_single_smc_backtest(
@@ -263,6 +422,7 @@ def run_single_smc_backtest(
     capital_utilization_pct: float = 0.95,
     max_lots_per_trade: int = 0,
     option_execution_mode: str = OPTION_EXECUTION_BUY_ONLY,
+    ai_entry: bool = False,
 ) -> dict[str, Any]:
     """Public wrapper — backtest one SMC strategy by internal id."""
     return _run_single_strategy(
@@ -277,6 +437,7 @@ def run_single_smc_backtest(
         capital_utilization_pct=capital_utilization_pct,
         max_lots_per_trade=max_lots_per_trade,
         option_execution_mode=option_execution_mode,
+        ai_entry=ai_entry,
     )
 
 
@@ -287,6 +448,7 @@ def _summarize(
     strategy_id: str,
     bars_processed: int,
     params: dict[str, Any],
+    ai_early_stop_days: int = 0,
 ) -> dict[str, Any]:
     label = SMC_REGISTRY.get(strategy_id, {}).get("label", strategy_id)
     if not trades:
@@ -322,6 +484,7 @@ def _summarize(
         "strategy_label": label,
         "initial_capital": round(capital, 2),
         "final_capital": round(max(0.0, final_equity), 2),
+        "ai_early_stop_days": int(ai_early_stop_days or 0),
         "total_trades": len(trades),
         "win_rate": round(win_rate, 2),
         "total_pnl": round(total_pnl, 2),
@@ -364,6 +527,7 @@ def _empty(strategy_id: str, message: str, bars_processed: int = 0, capital: flo
         "strategy_label": SMC_REGISTRY.get(strategy_id, {}).get("label", strategy_id),
         "initial_capital": round(capital, 2),
         "final_capital": round(capital, 2),
+        "ai_early_stop_days": 0,
         "total_trades": 0,
         "win_rate": 0,
         "total_pnl": 0,
@@ -483,8 +647,8 @@ def _live_recommendation(best: dict[str, Any] | None) -> dict[str, Any]:
         "strategy_mode": "manual",
         "fixed_strategy_id": best.get("strategy_id"),
         "smc_params": best.get("params") or DEFAULT_SMC_PARAMS,
-        "paper_mode_first": True,
-        "notes": "Run paper mode for 2–3 sessions before enabling live auto-trading.",
+        "paper_mode_first": False,
+        "notes": "Review backtest stats before enabling live auto-trading.",
     }
 
 

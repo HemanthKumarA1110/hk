@@ -12,8 +12,7 @@ from sqlalchemy.orm import Session
 
 from trading_shared.ai.orchestrator import AIOrchestrator
 from trading_shared.execution.executor import OrderExecutor, OrderRejectedError
-from trading_shared.execution.paper import PaperTradeExecutor
-from trading_shared.execution.trading_mode import MODE_LIVE, MODE_PAPER, TradingModeStore
+from trading_shared.execution.trading_mode import TradingModeStore
 from trading_shared.risk.manager import RiskManager
 from trading_shared.schemas.order import OrderCreateRequest
 
@@ -316,16 +315,8 @@ class AutoTradingRunner:
             )
 
             try:
-                if mode == MODE_PAPER:
-                    executor = PaperTradeExecutor(self.db, user_id)
-                    order = await executor.place_order(
-                        payload,
-                        desk=engine,
-                        strategy_code=signal.get("metadata", {}).get("strategy_code"),
-                    )
-                else:
-                    executor = OrderExecutor(self.db, user_id)
-                    order = await executor.place_order(payload)
+                executor = OrderExecutor(self.db, user_id)
+                order = await executor.place_order(payload)
                 self.redis.setex(dedupe_key, 86400, order.get("broker_order_id") or str(order.get("id")))
                 now = datetime.now(timezone.utc).isoformat()
                 engine_stats["orders_today"] += 1

@@ -41,7 +41,6 @@ export default function LiveOrderForm({ onPlaced, orderStatus: externalStatus })
     fetchOrderStatus().then(setOrderStatus).catch(() => null)
   }, [externalStatus])
 
-  const isPaper = orderStatus?.trading_mode === 'paper'
   const canSubmit = orderStatus?.can_trade !== false
   const effectivePrice = form.order_type === 'LIMIT' && form.price > 0 ? form.price : form.price
 
@@ -121,8 +120,8 @@ export default function LiveOrderForm({ onPlaced, orderStatus: externalStatus })
     <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <p className={`text-xs uppercase tracking-widest ${isPaper ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {isPaper ? 'Paper Trading' : 'Live Trading'}
+          <p className="text-xs uppercase tracking-widest text-emerald-400">
+            Live Trading
           </p>
           <h3 className="font-semibold text-lg">Place Order</h3>
           <p className="text-xs text-slate-500 mt-0.5">Broker-style entry · stock search · qty or amount</p>
@@ -133,16 +132,10 @@ export default function LiveOrderForm({ onPlaced, orderStatus: externalStatus })
               canSubmit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
             }`}
           >
-            {canSubmit ? (isPaper ? 'Paper OK' : 'Risk OK') : 'Trading Blocked'}
+            {canSubmit ? 'Risk OK' : 'Trading Blocked'}
           </span>
         )}
       </div>
-
-      {isPaper && (
-        <p className="mb-4 text-xs text-amber-200/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
-          Paper mode uses simulated fills. Switch to Live mode when Angel One is connected.
-        </p>
-      )}
 
       <div className="flex flex-wrap gap-2 mb-4">
         {TRADE_STYLES.map((style) => (
@@ -345,15 +338,13 @@ export default function LiveOrderForm({ onPlaced, orderStatus: externalStatus })
             disabled={loading || !canSubmit}
             className={`rounded-lg px-5 py-2 text-sm font-semibold disabled:opacity-50 ${
               form.side === 'BUY'
-                ? isPaper
-                  ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+                ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
                 : 'bg-rose-500 hover:bg-rose-400 text-white'
             }`}
           >
             {loading
               ? 'Submitting…'
-              : `${form.side} ${computedQty || form.qty} · ${isPaper ? 'Paper' : 'Live'}`}
+              : `${form.side} ${computedQty || form.qty} · Live`}
           </button>
         </div>
       </form>
@@ -367,11 +358,9 @@ export default function LiveOrderForm({ onPlaced, orderStatus: externalStatus })
       {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
       {result && (
         <div
-          className={`mt-3 rounded-lg border p-3 text-sm ${
-            isPaper ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'
-          }`}
+          className="mt-3 rounded-lg border p-3 text-sm bg-emerald-500/10 border-emerald-500/20"
         >
-          <p className={`font-medium ${isPaper ? 'text-amber-300' : 'text-emerald-400'}`}>
+          <p className="font-medium text-emerald-400">
             Order {result.status}
           </p>
           <p className="text-slate-300">ID: {result.broker_order_id || result.id}</p>

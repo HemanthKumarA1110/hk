@@ -16,7 +16,7 @@ db = SessionLocal()
 loader = BacktestDataLoader(db)
 print("INTRADAY + SWING · baseline vs AI (entry score>=40, dynamic exit)")
 print("-" * 90)
-for code in ("INTRA-ORB", "INTRA-VWAP", "INTRA-EMA-RSI"):
+for code in ("INTRA-ORB", "INTRA-VWAP-ORB"):
     b = run_intraday_universe_backtest(
         loader, user_id=user_id, strategy_code=code, exchange="NSE", interval="5m",
         from_date=from_date.isoformat(), to_date=to_date.isoformat(), use_demo_data=False,

@@ -25,6 +25,30 @@ from trading_shared.broker.angel_one.schemas import (
 
 logger = logging.getLogger(__name__)
 
+RATE_LIMIT_USER_MESSAGE = "Angel One API rate limit exceeded. Wait a minute, then retry."
+
+
+def normalize_angel_error(message: str) -> str:
+    lowered = (message or "").lower()
+    if "exceeding access rate" in lowered or (
+        "access denied" in lowered and "rate" in lowered
+    ):
+        return RATE_LIMIT_USER_MESSAGE
+    if "couldn't parse the json response" in lowered:
+        return RATE_LIMIT_USER_MESSAGE
+    return message or "Angel One API error"
+
+
+def is_rate_limit_error(message: str | None) -> bool:
+    if not message:
+        return False
+    lowered = message.lower()
+    return (
+        "exceeding access rate" in lowered
+        or ("access denied" in lowered and "rate" in lowered)
+        or "couldn't parse the json response" in lowered
+    )
+
 
 class AngelOneClient:
     """Async-first Angel One SmartAPI wrapper with sync compatibility."""
@@ -316,6 +340,10 @@ class AngelOneClient:
         lowered = message.lower()
         return "token" in lowered or "session" in lowered or "unauthorized" in lowered
 
+    @staticmethod
+    def _rate_limit_backoff_sec(attempt: int) -> float:
+        return min(30.0, 5.0 * (attempt + 1))
+
     async def _recover_session(self, attempt: int) -> None:
         logger.warning(
             "Angel One session recovery attempt=%s client_code=%s",
@@ -365,16 +393,23 @@ class AngelOneClient:
                 raise
             except AngelOneAPIError as exc:
                 last_error = exc
+                if is_rate_limit_error(str(exc)) and attempt < retries:
+                    await asyncio.sleep(self._rate_limit_backoff_sec(attempt))
+                    continue
                 if self._is_token_error(str(exc)) and attempt < retries:
                     await self._recover_session(attempt)
                     continue
                 raise
             except Exception as exc:
                 last_error = exc
+                msg = str(exc)
+                if is_rate_limit_error(msg) and attempt < retries:
+                    await asyncio.sleep(self._rate_limit_backoff_sec(attempt))
+                    continue
                 if attempt < retries:
                     await asyncio.sleep(0.5 * (attempt + 1))
                     continue
-                raise AngelOneAPIError(str(exc)) from exc
+                raise AngelOneAPIError(normalize_angel_error(msg), payload={"raw": msg}) from exc
         raise last_error or AngelOneAPIError("Unknown Angel One request failure")
 
     async def _request(
@@ -406,6 +441,11 @@ class AngelOneClient:
                         payload = response.json()
                     except ValueError as exc:
                         snippet = response.text[:200] if response.text else ""
+                        if is_rate_limit_error(snippet):
+                            if attempt < retries:
+                                await asyncio.sleep(self._rate_limit_backoff_sec(attempt))
+                                continue
+                            raise AngelOneAPIError(RATE_LIMIT_USER_MESSAGE, payload={"raw": snippet}) from exc
                         raise AngelOneAPIError(
                             f"Angel One returned non-JSON response (HTTP {response.status_code})",
                             status_code=response.status_code,
@@ -413,20 +453,27 @@ class AngelOneClient:
                         ) from exc
                 if response.status_code >= 400:
                     raise AngelOneAPIError(
-                        payload.get("message", f"HTTP {response.status_code}"),
+                        normalize_angel_error(payload.get("message", f"HTTP {response.status_code}")),
                         status_code=response.status_code,
                         payload=payload,
                     )
                 if isinstance(payload, dict) and self._is_api_error(payload):
                     message = payload.get("message", "Angel One API error")
+                    if is_rate_limit_error(message) and attempt < retries:
+                        await asyncio.sleep(self._rate_limit_backoff_sec(attempt))
+                        headers = self._base_headers(authenticated=authenticated)
+                        continue
                     if self._is_token_error(message) and attempt < retries:
                         await self._recover_session(attempt)
                         headers = self._base_headers(authenticated=authenticated)
                         continue
-                    raise AngelOneAPIError(message, payload=payload)
+                    raise AngelOneAPIError(normalize_angel_error(message), payload=payload)
                 return payload
             except (httpx.HTTPError, AngelOneAPIError) as exc:
                 last_error = exc
+                if is_rate_limit_error(str(exc)) and attempt < retries:
+                    await asyncio.sleep(self._rate_limit_backoff_sec(attempt))
+                    continue
                 if attempt < retries:
                     await asyncio.sleep(0.5 * (attempt + 1))
                     continue
@@ -437,15 +484,7 @@ class AngelOneClient:
         return await self._request("GET", "profile")
 
     async def get_rms_limits(self) -> dict[str, Any]:
-        await self.ensure_session()
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, self._rms_sync)
-        if isinstance(result, dict) and self._is_api_error(result):
-            raise AngelOneAPIError(
-                result.get("message", "RMS fetch failed"),
-                payload=result,
-            )
-        return result if isinstance(result, dict) else {"status": True, "data": result}
+        return await self._execute_with_session_recovery(self._rms_sync, retries=3)
 
     def _rms_sync(self) -> dict[str, Any]:
         smart = self._ensure_smart_connect()
@@ -472,8 +511,8 @@ class AngelOneClient:
     async def get_ltp(self, request: LTPRequest) -> dict[str, Any]:
         return await self._request("POST", "ltp", json_body=request.model_dump())
 
-    async def get_candles(self, request: CandleRequest) -> dict[str, Any]:
-        return await self._request("POST", "candles", json_body=request.model_dump())
+    async def get_candles(self, request: CandleRequest, *, retries: int = 4) -> dict[str, Any]:
+        return await self._request("POST", "candles", json_body=request.model_dump(), retries=retries)
 
     async def search_scrip(self, request: SearchScripRequest) -> dict[str, Any]:
         return await self._request("POST", "search_scrip", json_body=request.model_dump())

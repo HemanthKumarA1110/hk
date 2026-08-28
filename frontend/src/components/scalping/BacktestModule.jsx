@@ -38,12 +38,12 @@ export default function BacktestModule({
   strategies = [],
   defaultOpen = false,
   deskCapital,
-  capitalUtilizationPct = 0.95,
+  capitalUtilizationPct = 1,
 }) {
   const [open, setOpen] = useState(defaultOpen)
   const options = useMemo(() => {
     const filtered = filterStrategiesForDesk('scalping', strategies)
-    const fallbackCode = instrument === 'banknifty' ? 'SCALP-BT-003' : 'SCALP-BT-001'
+    const fallbackCode = instrument === 'banknifty' ? 'SCALP-BT-003' : 'SCALP-AD-002'
     const fallbackLabel = instrument === 'banknifty' ? 'EMA Crossover + RSI (Bank Nifty)' : 'EMA Crossover + RSI'
     const list =
       filtered.length > 0
@@ -58,8 +58,9 @@ export default function BacktestModule({
   const [form, setForm] = useState({
     ...defaultBacktestDates(),
     timeframe: '1m',
-    strategy_code: options[0]?.code || (instrument === 'banknifty' ? 'SCALP-BT-003' : 'SCALP-BT-001'),
-    ai_entry: false,
+    strategy_code: options[0]?.code || (instrument === 'banknifty' ? 'SCALP-BT-003' : 'SCALP-AD-002'),
+    // Live desk always runs AI entry; default on so same-day BT matches live more closely.
+    ai_entry: true,
     ai_exit: false,
   })
 
@@ -206,8 +207,20 @@ export default function BacktestModule({
           {result?.warning && <p className="text-amber-400/90 text-xs">{result.warning}</p>}
           {result?.data_insufficient && (
             <p className="text-rose-400/90 text-xs font-medium">
+              {(() => {
+                const instrumentLabel =
+                  result?.instrument === 'banknifty'
+                    ? 'Bank Nifty'
+                    : result?.instrument === 'nifty'
+                      ? 'Nifty'
+                      : 'index'
+                return (
+                  <>
               Incomplete history — only {result.bars_loaded?.toLocaleString('en-IN')} bars loaded. Re-run after Angel One
-              is connected; expect ~30–40 trades on a full 60-day Nifty run.
+              is connected; expect ~30–40 trades on a full 60-day {instrumentLabel} run.
+                  </>
+                )
+              })()}
             </p>
           )}
           {result?.data_source && (
@@ -222,6 +235,11 @@ export default function BacktestModule({
                 ? ` · ${result.date_range.from} → ${result.date_range.to}`
                 : ` · ${form.from_date} → ${form.to_date}`}
               {result.bars_loaded != null ? ` · ${result.bars_loaded.toLocaleString('en-IN')} bars` : ''}
+            </p>
+          )}
+          {result?.load_notes?.length > 0 && (
+            <p className="text-xs text-slate-500">
+              Load notes: {result.load_notes.join(' | ')}
             </p>
           )}
           {backtest.error && <p className="text-rose-400 text-sm">{backtest.error}</p>}

@@ -67,6 +67,48 @@ def opening_range(df: pd.DataFrame, bars: int = 15) -> tuple[float, float]:
     return float(segment["high"].max()), float(segment["low"].min())
 
 
+def adx_components(
+    high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14
+) -> pd.DataFrame:
+    """Wilder ADX + DI components for trend-strength gating."""
+    high = pd.to_numeric(high, errors="coerce").fillna(0.0)
+    low = pd.to_numeric(low, errors="coerce").fillna(0.0)
+    close = pd.to_numeric(close, errors="coerce").fillna(0.0)
+    prev_close = close.shift(1)
+    tr = pd.concat(
+        [
+            (high - low).abs(),
+            (high - prev_close).abs(),
+            (low - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    up_move = high.diff()
+    down_move = -low.diff()
+    plus_dm = up_move.where((up_move > down_move) & (up_move > 0), 0.0)
+    minus_dm = down_move.where((down_move > up_move) & (down_move > 0), 0.0)
+    alpha = 1 / period
+    atr_w = tr.ewm(alpha=alpha, adjust=False).mean().replace(0, pd.NA)
+    plus_di = 100 * plus_dm.ewm(alpha=alpha, adjust=False).mean() / atr_w
+    minus_di = 100 * minus_dm.ewm(alpha=alpha, adjust=False).mean() / atr_w
+    di_sum = (plus_di + minus_di).replace(0, pd.NA)
+    dx = 100 * (plus_di - minus_di).abs() / di_sum
+    dx = pd.to_numeric(dx, errors="coerce").fillna(0.0)
+    adx_s = dx.ewm(alpha=alpha, adjust=False).mean().fillna(0.0)
+    return pd.DataFrame(
+        {
+            "adx": adx_s,
+            "plus_di": pd.to_numeric(plus_di, errors="coerce").fillna(0.0),
+            "minus_di": pd.to_numeric(minus_di, errors="coerce").fillna(0.0),
+        }
+    )
+
+
+def adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+    """Wilder ADX(period) for trend-strength gating."""
+    return adx_components(high, low, close, period=period)["adx"]
+
+
 def add_common_indicators(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     out["ema9"] = ema(out["close"], 9)

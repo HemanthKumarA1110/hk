@@ -18,8 +18,7 @@ from trading_shared.ai.learning import AdaptiveLearner
 from trading_shared.config import get_settings
 from trading_shared.execution.auto_trading import AutoTradingStore, compute_auto_trade_qty
 from trading_shared.execution.executor import OrderExecutor, OrderRejectedError
-from trading_shared.execution.paper import PaperTradeExecutor
-from trading_shared.execution.trading_mode import MODE_PAPER, TradingModeStore
+from trading_shared.execution.trading_mode import TradingModeStore
 from trading_shared.market.redis_bus import MarketRedisBus
 from trading_shared.market.scrip_master import ScripMasterService
 from trading_shared.risk.manager import RiskManager
@@ -27,7 +26,7 @@ from trading_shared.schemas.order import OrderCreateRequest
 from trading_shared.strategies.data_provider import StrategyDataProvider
 from trading_shared.strategies.intraday_desk.catalog import default_strategy_settings, merge_strategy_settings
 from trading_shared.strategies.intraday_desk.guards import guard_status
-from trading_shared.strategies.intraday_desk.session import enrich_intraday_frame, is_force_exit_bar, position_qty
+from trading_shared.strategies.intraday_desk.session import enrich_for_strategy, enrich_intraday_frame, is_force_exit_bar, position_qty
 from trading_shared.strategies.intraday_desk.stock_picker import score_intraday_candidate
 from trading_shared.strategies.intraday_desk.strategies import get_strategy
 from trading_shared.strategies.intraday_engine import IntradayEngine
@@ -145,7 +144,7 @@ class IntradayDeskService:
         return {
             "auto_trading_enabled": enabled,
             "trading_mode": mode,
-            "paper_mode": mode == MODE_PAPER,
+            "paper_mode": False,
         }
 
     def get_desk_payload(self) -> dict[str, Any]:
@@ -262,14 +261,7 @@ class IntradayDeskService:
             )
 
             try:
-                if trading_mode == MODE_PAPER:
-                    order = await PaperTradeExecutor(self.db, self.user_id).place_order(
-                        payload,
-                        desk="intraday",
-                        strategy_code=signal.get("metadata", {}).get("strategy_code"),
-                    )
-                else:
-                    order = await OrderExecutor(self.db, self.user_id).place_order(payload)
+                order = await OrderExecutor(self.db, self.user_id).place_order(payload)
 
                 position = {
                     "symbol": symbol,
@@ -333,7 +325,9 @@ class IntradayDeskService:
             if len(df) < 25:
                 continue
             score = score_intraday_candidate(
-                enrich_intraday_frame(df) if "timestamp" in df.columns else df,
+                enrich_for_strategy(df, sig_dict.get("metadata", {}).get("strategy_code") or cfg.get("manual_strategy_code") or "INTRA-ORB")
+                if "timestamp" in df.columns
+                else df,
                 sig_dict.get("metadata", {}).get("strategy_code") or cfg.get("manual_strategy_code") or "INTRA-ORB",
             )
             scored.append((score, sig_dict))
@@ -372,33 +366,72 @@ class IntradayDeskService:
                 remaining.append(pos)
                 continue
 
-            enriched = enrich_intraday_frame(df)
+            enriched = enrich_for_strategy(df, pos.get("strategy_code") or "INTRA-ORB")
             idx = len(enriched) - 1
             row = enriched.iloc[idx]
             exit_price = None
             exit_reason = ""
 
-            if guards.get("must_force_exit") or is_force_exit_bar(row["timestamp"]):
+            force_exit = None
+            code = pos.get("strategy_code") or "INTRA-ORB"
+            if code == "INTRA-ORB":
+                from trading_shared.strategies.intraday_desk.intra_orb_tuning import (
+                    merge_intra_orb_params,
+                    minutes_to_time,
+                )
+
+                force_exit = minutes_to_time(int(merge_intra_orb_params(None)["force_exit_min"]))
+            elif code == "INTRA-VWAP-ORB":
+                from trading_shared.strategies.intraday_desk.strategies.vwap_orb_trend import FORCE_EXIT
+
+                force_exit = FORCE_EXIT
+
+            if guards.get("must_force_exit") or is_force_exit_bar(row["timestamp"], force_exit_time=force_exit):
                 exit_price = float(row["close"])
                 exit_reason = "eod"
             else:
-                code = pos.get("strategy_code") or "INTRA-ORB"
                 try:
+                    exit_ctx = {
+                        "side": pos.get("side", "BUY"),
+                        "entry_price": pos["entry"],
+                        "stoploss": pos["stoploss"],
+                        "initial_stoploss": pos.get("initial_stoploss") or pos["stoploss"],
+                        "target": pos.get("target"),
+                        "trailing_pct": pos.get("trailing_pct"),
+                        "highest_price": pos.get("highest_price") or pos["entry"],
+                        "lowest_price": pos.get("lowest_price") or pos["entry"],
+                        "scaled_out": bool(pos.get("scaled_out")),
+                        "breakeven_moved": bool(pos.get("breakeven_moved")),
+                    }
                     strategy = get_strategy(strategy_code=code)
-                    hit = strategy.try_exit(
-                        {
-                            "side": pos.get("side", "BUY"),
-                            "entry_price": pos["entry"],
-                            "stoploss": pos["stoploss"],
-                            "target": pos.get("target"),
-                            "trailing_pct": None,
-                            "entry_idx": 0,
-                        },
-                        enriched,
-                        idx,
-                    )
+                    hit = strategy.try_exit(exit_ctx, enriched, idx)
                     if hit:
-                        exit_price, exit_reason = hit
+                        if len(hit) == 3:
+                            exit_price, exit_reason, qty_frac = hit
+                            # Live desk currently closes full size; mark scaled_out for trail logic.
+                            if 0 < float(qty_frac) < 1:
+                                pos["scaled_out"] = True
+                                pos["stoploss"] = exit_ctx["stoploss"]
+                                if exit_ctx.get("highest_price") is not None:
+                                    pos["highest_price"] = exit_ctx["highest_price"]
+                                if exit_ctx.get("lowest_price") is not None:
+                                    pos["lowest_price"] = exit_ctx["lowest_price"]
+                                # Keep position open after scale-out signal (runner trail handles rest).
+                                # For simplicity in live path, treat scale-out as full exit of half
+                                # by recording reason; executor still closes full qty if we set price.
+                                # Prefer keeping open: skip full exit this bar.
+                                exit_price = None
+                                exit_reason = ""
+                        else:
+                            exit_price, exit_reason = hit
+                    else:
+                        pos["stoploss"] = exit_ctx["stoploss"]
+                        pos["scaled_out"] = bool(exit_ctx.get("scaled_out"))
+                        pos["breakeven_moved"] = bool(exit_ctx.get("breakeven_moved"))
+                        if exit_ctx.get("highest_price") is not None:
+                            pos["highest_price"] = exit_ctx["highest_price"]
+                        if exit_ctx.get("lowest_price") is not None:
+                            pos["lowest_price"] = exit_ctx["lowest_price"]
                 except ValueError:
                     pass
 
@@ -446,14 +479,7 @@ class IntradayDeskService:
                     price=exit_price,
                     product="INTRADAY",
                 )
-                if trading_mode == MODE_PAPER:
-                    await PaperTradeExecutor(self.db, self.user_id).close_open_order(
-                        symbol=symbol,
-                        exit_price=exit_price,
-                        reason=exit_reason,
-                    )
-                else:
-                    await OrderExecutor(self.db, self.user_id).place_order(payload)
+                await OrderExecutor(self.db, self.user_id).place_order(payload, is_closing_order=True)
 
                 pnl = (exit_price - float(pos["entry"])) * int(pos["qty"])
                 if pos.get("side") == "SELL":

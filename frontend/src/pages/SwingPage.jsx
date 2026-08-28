@@ -5,7 +5,6 @@ import DeskBacktestModule from '../components/DeskBacktestModule'
 import SwingAutoTradingPanel from '../components/SwingAutoTradingPanel'
 import SwingStrategyPanel from '../components/SwingStrategyPanel'
 import SwingOrderCell from '../components/SwingOrderCell'
-import TradingModeToggle from '../components/TradingModeToggle'
 import TradingViewChart from '../components/TradingViewChart'
 import { useDeskBacktest } from '../hooks/useDeskBacktest'
 import { filterStrategiesForDesk } from '../utils/strategyFilters'
@@ -58,10 +57,6 @@ export default function SwingPage() {
       .catch(() => null)
   }, [load])
 
-  const handleTradingModeChange = useCallback((status) => {
-    setOrderStatus(status)
-  }, [])
-
   const runScan = async () => {
     setScanning(true)
     setError('')
@@ -77,7 +72,6 @@ export default function SwingPage() {
 
   const signals = payload.signals || []
   const chartSymbol = selected ? tvSymbol(selected.symbol) : 'NSE:RELIANCE'
-  const isPaper = orderStatus?.trading_mode === 'paper'
   const canTrade = orderStatus?.can_trade !== false
 
   return (
@@ -98,7 +92,7 @@ export default function SwingPage() {
           )}
           {orderStatus && (
             <p className="text-xs mt-2 text-slate-500">
-              Orders use {isPaper ? 'paper' : 'live'} · Delivery · Market
+              Orders use live Angel One · Delivery · Market
             </p>
           )}
         </div>
@@ -111,10 +105,6 @@ export default function SwingPage() {
           {scanning ? 'Scanning Nifty 50…' : 'Scan Top 10 Picks'}
         </button>
       </header>
-
-      <div className="mb-6">
-        <TradingModeToggle onChange={handleTradingModeChange} />
-      </div>
 
       {error && <p className="text-rose-400 text-sm mb-4">{error}</p>}
 
@@ -196,7 +186,6 @@ export default function SwingPage() {
                       <SwingOrderCell
                         signal={signal}
                         canTrade={canTrade}
-                        isPaper={isPaper}
                       />
                     </td>
                   </tr>
@@ -209,7 +198,7 @@ export default function SwingPage() {
 
       <AngelOneAccountPanel />
 
-      <SwingAutoTradingPanel strategies={strategies} isPaper={isPaper} />
+      <SwingAutoTradingPanel strategies={strategies} />
 
       <div className="grid gap-4 lg:grid-cols-2 mb-6">
         <SwingStrategyPanel strategies={strategies} />

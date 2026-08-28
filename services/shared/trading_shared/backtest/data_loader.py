@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 from sqlalchemy.orm import Session
+
+from trading_shared.market.candle_window import angel_candle_window
 
 from trading_shared.broker.angel_one.schemas import CandleRequest
 from trading_shared.broker.angel_one.session_manager import AngelOneSessionManager
@@ -94,13 +96,17 @@ class BacktestDataLoader:
         redis_client = redis.from_url(self.settings.REDIS_URL, decode_responses=True)
         manager = AngelOneSessionManager(self.db, redis_client)
         client = await manager.get_client_for_user(user_id)
+        window = angel_candle_window(from_date, to_date)
+        if window is None:
+            return pd.DataFrame()
+        from_str, to_str = window
         response = await client.get_candles(
             CandleRequest(
                 exchange=exchange,
                 symboltoken=token,
                 interval=INTERVAL_MAP.get(interval, "FIVE_MINUTE"),
-                fromdate=f"{from_date} 09:15",
-                todate=f"{to_date} 15:30",
+                fromdate=from_str,
+                todate=to_str,
             )
         )
         candles = response.get("data") or []
@@ -167,7 +173,7 @@ class BacktestDataLoader:
         )
         if not rows:
             return pd.DataFrame()
-        return pd.DataFrame(
+        df = pd.DataFrame(
             [
                 {
                     "timestamp": r.candle_ts,
@@ -180,6 +186,72 @@ class BacktestDataLoader:
                 for r in rows
             ]
         )
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=True)
+        return df.dropna(subset=["timestamp"]).drop_duplicates(subset=["timestamp"]).sort_values(
+            "timestamp"
+        ).reset_index(drop=True)
+
+    def save_candles(
+        self,
+        token: str,
+        symbol: str,
+        exchange: str,
+        interval: str,
+        df: pd.DataFrame,
+    ) -> int:
+        """Persist fetched candles so later backtests can reuse them."""
+        if df is None or df.empty:
+            return 0
+        work = df.copy()
+        work["timestamp"] = pd.to_datetime(work["timestamp"], errors="coerce", utc=True)
+        work = work.dropna(subset=["timestamp"])
+        if work.empty:
+            return 0
+        start = work["timestamp"].min().to_pydatetime()
+        end = work["timestamp"].max().to_pydatetime()
+        existing = {
+            row[0]
+            for row in self.db.query(MarketCandle.candle_ts)
+            .filter(
+                MarketCandle.token == token,
+                MarketCandle.interval == interval,
+                MarketCandle.candle_ts >= start,
+                MarketCandle.candle_ts <= end,
+            )
+            .all()
+        }
+        added = 0
+        for row in work.itertuples(index=False):
+            ts = row.timestamp.to_pydatetime() if hasattr(row.timestamp, "to_pydatetime") else row.timestamp
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            if ts in existing:
+                continue
+            self.db.add(
+                MarketCandle(
+                    token=token,
+                    symbol=symbol,
+                    exchange=exchange,
+                    interval=interval,
+                    candle_ts=ts,
+                    open=float(row.open),
+                    high=float(row.high),
+                    low=float(row.low),
+                    close=float(row.close),
+                    volume=float(row.volume),
+                )
+            )
+            existing.add(ts)
+            added += 1
+        if not added:
+            return 0
+        try:
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            logger.exception("Failed to persist %s %s candles for token=%s", interval, symbol, token)
+            return 0
+        return added
 
     def _load_from_angel(
         self,
@@ -197,13 +269,17 @@ class BacktestDataLoader:
 
         async def fetch() -> dict:
             client = await manager.get_client_for_user(user_id)
+            window = angel_candle_window(from_date, to_date)
+            if window is None:
+                return {"data": []}
+            from_str, to_str = window
             return await client.get_candles(
                 CandleRequest(
                     exchange=exchange,
                     symboltoken=token,
                     interval=INTERVAL_MAP.get(interval, "FIVE_MINUTE"),
-                    fromdate=f"{from_date} 09:15",
-                    todate=f"{to_date} 15:30",
+                    fromdate=from_str,
+                    todate=to_str,
                 )
             )
 

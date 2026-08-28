@@ -65,7 +65,7 @@ def main() -> int:
     summary: list[tuple[str, dict | None, str | None]] = []
 
     try:
-        for code in ("INTRA-ORB", "INTRA-VWAP", "INTRA-EMA-RSI"):
+        for code in ("INTRA-ORB", "INTRA-VWAP-ORB"):
             try:
                 result = run_intraday_universe_backtest(
                     loader,

@@ -386,7 +386,7 @@ def confirm_orb_from_df(
     if not macro_ctx.get("regime") and not macro_ctx.get("scalp_regime"):
         pass
 
-    return confirm_orb_breakout(
+    result = confirm_orb_breakout(
         instrument_key=instrument_key,
         or_high=float(orb["high"]),
         or_low=float(orb["low"]),
@@ -400,6 +400,8 @@ def confirm_orb_from_df(
         macro=macro_ctx,
         orb_minutes=orb_minutes,
     )
+    result["in_session"] = in_battle_session(row.get("timestamp"), df=data, instrument_key=instrument_key)
+    return result
 
 
 def orb_confirmation_allows_entry(

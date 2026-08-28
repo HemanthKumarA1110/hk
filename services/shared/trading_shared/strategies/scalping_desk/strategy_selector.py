@@ -172,7 +172,12 @@ def select_and_evaluate(
         return signal, meta
 
     context = build_market_context(
-        df, tick=tick, chain=option_chain, underlying=underlying, pre_enriched=enriched
+        df,
+        tick=tick,
+        chain=option_chain,
+        underlying=underlying,
+        instrument_key=instrument_key,
+        pre_enriched=enriched,
     )
     rankings = score_strategies(context)
 
@@ -292,6 +297,45 @@ def _evaluate_catalog_strategy(
     return signal, sel
 
 
+def priority_try_order(codes: list[str], rankings: list[dict[str, Any]] | None = None) -> list[str]:
+    """Order strategies: battle → adaptive (regime-scored) → SMC. First valid signal wins."""
+    catalog_rank = {code: i for i, code in enumerate(STRATEGY_CATALOG.keys())}
+    valid = [c for c in codes if c in STRATEGY_CATALOG]
+    battle = sorted(
+        [c for c in valid if STRATEGY_CATALOG[c]["family"] == "battle"],
+        key=lambda c: catalog_rank.get(c, 999),
+    )
+    smc = sorted(
+        [c for c in valid if STRATEGY_CATALOG[c]["family"] == "smc"],
+        key=lambda c: catalog_rank.get(c, 999),
+    )
+    adaptive = [c for c in valid if STRATEGY_CATALOG[c]["family"] == "adaptive"]
+    score_map = {r["strategy_id"]: r["score"] for r in (rankings or [])}
+    adaptive.sort(
+        key=lambda c: (
+            -score_map.get(STRATEGY_CATALOG[c]["id"], 0),
+            catalog_rank.get(c, 999),
+        ),
+    )
+    return battle + adaptive + smc
+
+
+def monitor_codes_for_config(config: dict[str, Any], instrument_key: str) -> list[str]:
+    """
+    Strategies continuously evaluated while auto-trading is on.
+
+    - auto: entire instrument catalog (all Bank Nifty / Nifty strategies)
+    - manual: only checkbox-enabled strategies (one or more)
+    """
+    from trading_shared.strategies.scalping_desk.strategy_catalog import catalog_for_instrument
+
+    settings = merge_strategy_settings(config, instrument_key)
+    mode = str(config.get("strategy_mode") or "auto").lower()
+    if mode == "manual":
+        return [c for c, s in settings.items() if s.get("enabled")]
+    return [meta["code"] for meta in catalog_for_instrument(instrument_key)]
+
+
 def select_from_catalog(
     df: pd.DataFrame,
     timeframe: str,
@@ -307,36 +351,34 @@ def select_from_catalog(
     enriched: bool = False,
 ) -> tuple[ScalpSignal | None, dict[str, Any]]:
     """
-    Evaluate enabled catalog strategies for this instrument.
-    Manual mode locks to fixed_strategy_code; auto mode tries enabled strategies in priority order.
+    Continuously evaluate monitored catalog strategies for this instrument.
+    Auto mode monitors the full catalog; manual mode monitors enabled (multi-select).
+    First valid signal in priority order wins; caller enforces one open trade at a time.
     """
     settings = merge_strategy_settings(config, instrument_key)
     active_codes = [c for c, s in settings.items() if s.get("enabled")]
-    mode = config.get("strategy_mode", "auto")
+    mode = str(config.get("strategy_mode") or "auto").lower()
     fixed_code = config.get("fixed_strategy_code") or code_for_id(
         config.get("fixed_strategy_id") or "",
         instrument_key,
     )
 
     context = build_market_context(
-        df, tick=tick, chain=option_chain, underlying=underlying, pre_enriched=enriched
+        df,
+        tick=tick,
+        chain=option_chain,
+        underlying=underlying,
+        instrument_key=instrument_key,
+        pre_enriched=enriched,
     )
     rankings = score_strategies(context)
 
-    if mode == "manual" and fixed_code and fixed_code in STRATEGY_CATALOG:
+    monitor_codes = monitor_codes_for_config(config, instrument_key)
+    try_order = priority_try_order(monitor_codes, rankings)
+    if not try_order and fixed_code and fixed_code in STRATEGY_CATALOG:
         try_order = [fixed_code]
-    else:
-        battle = [c for c in active_codes if STRATEGY_CATALOG[c]["family"] == "battle"]
-        smc = [c for c in active_codes if STRATEGY_CATALOG[c]["family"] == "smc"]
-        adaptive = [c for c in active_codes if STRATEGY_CATALOG[c]["family"] == "adaptive"]
-        score_map = {r["strategy_id"]: r["score"] for r in rankings}
-        adaptive.sort(
-            key=lambda c: score_map.get(STRATEGY_CATALOG[c]["id"], 0),
-            reverse=True,
-        )
-        try_order = battle + adaptive + smc
-        if not try_order:
-            try_order = [meta["code"] for meta in catalog_for_api(instrument_key, config) if meta.get("enabled")]
+    if not try_order:
+        try_order = [meta["code"] for meta in catalog_for_api(instrument_key, config) if meta.get("enabled")]
 
     selection: dict[str, Any] = {
         "mode": mode,
@@ -344,12 +386,15 @@ def select_from_catalog(
         "market_context": context,
         "rankings": rankings[:6],
         "enabled_codes": active_codes,
+        "monitor_codes": monitor_codes,
         "try_order": try_order,
         "selected_strategy": None,
         "selected_strategy_code": None,
         "selected_score": 0,
         "selection_reason": "",
     }
+    if mode == "manual" and not monitor_codes:
+        selection["selection_reason"] = "Manual mode — enable at least one strategy to monitor"
 
     for code in try_order:
         signal, partial = _evaluate_catalog_strategy(

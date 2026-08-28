@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -23,13 +23,33 @@ class BacktestOrchestrator:
     def __init__(self, db: Session):
         self.db = db
 
-    def create_run(self, user_id: int, payload: BacktestRunRequest) -> BacktestRun:
+    def create_run(self, user_id: int, payload: BacktestRunRequest) -> tuple[BacktestRun, bool]:
         validate_strategy_code_for_engine(payload.engine, payload.strategy_code)
         loader = BacktestDataLoader(self.db)
         if payload.engine in ("intraday", "swing") and payload.auto_pick_universe:
             token, symbol = "0", "AUTO-PICK"
         else:
             token, symbol = loader.resolve_token(payload.symbol, payload.token)
+        config_json = payload.model_dump_json()
+        recent_cutoff = datetime.now(timezone.utc) - timedelta(hours=2)
+        existing = (
+            self.db.query(BacktestRun)
+            .filter(BacktestRun.user_id == user_id)
+            .filter(BacktestRun.engine == payload.engine)
+            .filter(BacktestRun.symbol == symbol)
+            .filter(BacktestRun.token == token)
+            .filter(BacktestRun.exchange == payload.exchange)
+            .filter(BacktestRun.interval == payload.interval)
+            .filter(BacktestRun.from_date == payload.from_date)
+            .filter(BacktestRun.to_date == payload.to_date)
+            .filter(BacktestRun.config_json == config_json)
+            .filter(BacktestRun.status.in_(("pending", "running")))
+            .filter(BacktestRun.created_at >= recent_cutoff)
+            .order_by(BacktestRun.created_at.desc())
+            .first()
+        )
+        if existing:
+            return existing, False
         run = BacktestRun(
             user_id=user_id,
             engine=payload.engine,
@@ -40,12 +60,12 @@ class BacktestOrchestrator:
             from_date=payload.from_date,
             to_date=payload.to_date,
             status="pending",
-            config_json=payload.model_dump_json(),
+            config_json=config_json,
         )
         self.db.add(run)
         self.db.commit()
         self.db.refresh(run)
-        return run
+        return run, True
 
     def execute_run(self, run_id: int) -> dict:
         run = self.db.query(BacktestRun).filter(BacktestRun.id == run_id).first()

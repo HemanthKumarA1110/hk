@@ -34,7 +34,7 @@ const AI_FEATURES = [
     title: 'Entry validator (scalping)',
     desk: 'Scalping',
     detail:
-      '5-factor gate: EMA alignment, RSI band, VWAP position, volume ≥ 1.05×, session window. Score ≥ 3 = TAKE.',
+      'Battle session windows: 09:20–10:30 and 13:30–14:45 IST. Entry validator also scores volume, RSI, VWAP, and alignment. Score ≥ 3 = TAKE.',
   },
   {
     title: 'Regime & MTF filters',

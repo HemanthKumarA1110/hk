@@ -62,28 +62,55 @@ class AngelOneSessionManager:
     def save_broker_credential(
         self,
         user: User,
-        api_key: str,
-        client_code: str,
-        password: str,
-        totp_secret: str,
+        api_key: str | None = None,
+        client_code: str | None = None,
+        password: str | None = None,
+        totp_secret: str | None = None,
     ) -> BrokerCredential:
+        """Create or partially update encrypted Angel One credentials.
+
+        Omitted / empty fields keep existing secrets. First-time setup requires
+        all four fields.
+        """
         key = self.settings.ENCRYPTION_KEY
-        normalized_totp = totp_secret.replace(" ", "").strip().upper()
         existing = self.get_broker_credential(user.id)
+
         if existing:
-            existing.encrypted_api_key = encrypt_value(api_key, key)
-            existing.encrypted_client_code = encrypt_value(client_code, key)
-            existing.encrypted_password = encrypt_value(password, key)
-            existing.encrypted_totp_secret = encrypt_value(normalized_totp, key)
+            current = self._decrypt_credentials(existing)
+            merged_api_key = (api_key or "").strip() or current["api_key"]
+            merged_client_code = (client_code or "").strip() or current["client_code"]
+            merged_password = password if password not in (None, "") else current["password"]
+            raw_totp = (totp_secret or "").replace(" ", "").strip().upper()
+            merged_totp = raw_totp or current["totp_secret"]
+
+            existing.encrypted_api_key = encrypt_value(merged_api_key, key)
+            existing.encrypted_client_code = encrypt_value(merged_client_code, key)
+            existing.encrypted_password = encrypt_value(merged_password, key)
+            existing.encrypted_totp_secret = encrypt_value(merged_totp, key)
             existing.is_active = True
             cred = existing
         else:
+            missing = [
+                name
+                for name, value in (
+                    ("api_key", api_key),
+                    ("client_code", client_code),
+                    ("password", password),
+                    ("totp_secret", totp_secret),
+                )
+                if not (value or "").strip()
+            ]
+            if missing:
+                raise ValueError(
+                    "First-time Angel One setup requires all fields: " + ", ".join(missing)
+                )
+            normalized_totp = (totp_secret or "").replace(" ", "").strip().upper()
             cred = BrokerCredential(
                 user_id=user.id,
                 broker_name="angel_one",
-                encrypted_api_key=encrypt_value(api_key, key),
-                encrypted_client_code=encrypt_value(client_code, key),
-                encrypted_password=encrypt_value(password, key),
+                encrypted_api_key=encrypt_value((api_key or "").strip(), key),
+                encrypted_client_code=encrypt_value((client_code or "").strip(), key),
+                encrypted_password=encrypt_value(password or "", key),
                 encrypted_totp_secret=encrypt_value(normalized_totp, key),
             )
             self.db.add(cred)
@@ -294,12 +321,18 @@ class AngelOneSessionManager:
         stale_key = f"{self.SESSION_STALE_PREFIX}{user_id}"
         needs_reconnect = self.redis.exists(stale_key) == 1
         has_session = session is not None and bool(session.jwt_token)
+        client_code = session.client_code if session else None
+        if not client_code and cred is not None:
+            try:
+                client_code = self._decrypt_credentials(cred)["client_code"]
+            except ValueError:
+                client_code = None
         return {
             "credentials_configured": cred is not None,
             "connected": has_session,
             "session_valid": has_session and not needs_reconnect,
             "needs_reconnect": needs_reconnect,
-            "client_code": session.client_code if session else None,
+            "client_code": client_code,
             "feed_token_available": bool(session and session.feed_token),
             "expires_at": session.expires_at.isoformat() if session and session.expires_at else None,
             "cached_in_redis": self.redis.exists(self._cache_key(user_id)) == 1,

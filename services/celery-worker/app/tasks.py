@@ -144,13 +144,6 @@ def run_swing_desk_auto() -> dict:
         db.close()
 
 
-@celery_app.task(name="paper_trading.sync")
-def sync_paper_trading_quotes() -> dict:
-    from trading_shared.execution.paper_sync import sync_paper_orders_sync
-
-    return sync_paper_orders_sync()
-
-
 @celery_app.task(name="backtest.run")
 def run_backtest_job(run_id: int) -> dict:
     from trading_shared.backtest.orchestrator import BacktestOrchestrator

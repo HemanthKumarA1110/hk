@@ -1,0 +1,6563 @@
+{
+  "source": "angel_one",
+  "from": "2026-06-10",
+  "to": "2026-08-09",
+  "rows": [
+    {
+      "name": "baseline_code",
+      "dataset": "train",
+      "metrics": {
+        "trades": 1,
+        "win_rate": 100.0,
+        "wins": 1,
+        "losses": 0,
+        "profit_factor": 5041.57,
+        "expectancy": 5041.57,
+        "total_pnl": 5041.57,
+        "max_drawdown": 0.0,
+        "avg_win": 5041.57,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 1,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 1,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 0
+      },
+      "score": -99.0,
+      "params": {
+        "vb_near_atr_mult": 0.25,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 55,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "baseline_code",
+      "dataset": "val",
+      "metrics": {
+        "trades": 0,
+        "win_rate": 0.0,
+        "wins": 0,
+        "losses": 0,
+        "profit_factor": 0.0,
+        "expectancy": 0.0,
+        "total_pnl": 0.0,
+        "max_drawdown": 0.0,
+        "avg_win": 0.0,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": null,
+        "put_n": 0,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {},
+        "max_consec_wins": 0,
+        "max_consec_losses": 0
+      },
+      "score": -100.0,
+      "params": {
+        "vb_near_atr_mult": 0.25,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 55,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "baseline_code",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 1,
+        "win_rate": 0.0,
+        "wins": 0,
+        "losses": 1,
+        "profit_factor": 0.0,
+        "expectancy": -3682.8,
+        "total_pnl": -3682.8,
+        "max_drawdown": 3682.8,
+        "avg_win": 0.0,
+        "avg_loss": -3682.8,
+        "call_wr": 0.0,
+        "call_n": 1,
+        "put_wr": null,
+        "put_n": 0,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 0.0,
+        "afternoon_n": 1,
+        "regimes": {
+          "low_volatility": {
+            "wr": 0.0,
+            "n": 1,
+            "pnl": -3682.8
+          }
+        },
+        "max_consec_wins": 0,
+        "max_consec_losses": 1
+      },
+      "score": -99.0,
+      "params": {
+        "vb_near_atr_mult": 0.25,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 55,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "baseline_code",
+      "dataset": "full",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 50.0,
+        "wins": 1,
+        "losses": 1,
+        "profit_factor": 0.71,
+        "expectancy": -1018.91,
+        "total_pnl": -2037.83,
+        "max_drawdown": 7079.4,
+        "avg_win": 5041.57,
+        "avg_loss": -7079.4,
+        "call_wr": 0.0,
+        "call_n": 1,
+        "put_wr": 100.0,
+        "put_n": 1,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 2,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          },
+          "low_volatility": {
+            "wr": 0.0,
+            "n": 1,
+            "pnl": -7079.4
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 1
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.25,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 55,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ofat_rec_raw",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.6,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.3,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ofat_rec_raw",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.6,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.3,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ofat_rec_raw",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.6,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.3,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ofat_rec_raw",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.6,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.3,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_code",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_code",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_code",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_code",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_doc",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_doc",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_doc",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_doc",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold6_risk_code",
+      "dataset": "train",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 70.0,
+        "wins": 7,
+        "losses": 3,
+        "profit_factor": 3.26,
+        "expectancy": 3876.26,
+        "total_pnl": 38762.55,
+        "max_drawdown": 16399.47,
+        "avg_win": 7983.42,
+        "avg_loss": -5707.13,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 62.5,
+        "put_n": 8,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 66.67,
+        "afternoon_n": 6,
+        "regimes": {
+          "ranging": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 7263.0
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 27092.81
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 4406.74
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 198.73,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold6_risk_code",
+      "dataset": "val",
+      "metrics": {
+        "trades": 7,
+        "win_rate": 71.43,
+        "wins": 5,
+        "losses": 2,
+        "profit_factor": 1.83,
+        "expectancy": 1050.2,
+        "total_pnl": 7351.42,
+        "max_drawdown": 8851.95,
+        "avg_win": 3240.67,
+        "avg_loss": -4425.98,
+        "call_wr": 100.0,
+        "call_n": 3,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 4,
+        "afternoon_wr": 33.33,
+        "afternoon_n": 3,
+        "regimes": {
+          "low_volatility": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -6796.58
+          },
+          "ranging": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 7866.45
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 6281.55
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": -93.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold6_risk_code",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 87.5,
+        "wins": 7,
+        "losses": 1,
+        "profit_factor": 13.99,
+        "expectancy": 2531.25,
+        "total_pnl": 20250.0,
+        "max_drawdown": 1559.25,
+        "avg_win": 3115.61,
+        "avg_loss": -1559.25,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 83.33,
+        "put_n": 6,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 83.33,
+        "afternoon_n": 6,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 6104.02
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 10396.69
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3749.29
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 1
+      },
+      "score": 233.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold6_risk_code",
+      "dataset": "full",
+      "metrics": {
+        "trades": 16,
+        "win_rate": 81.25,
+        "wins": 13,
+        "losses": 3,
+        "profit_factor": 4.72,
+        "expectancy": 3978.07,
+        "total_pnl": 63649.13,
+        "max_drawdown": 16399.47,
+        "avg_win": 6213.12,
+        "avg_loss": -5707.13,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 72.73,
+        "put_n": 11,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 80.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 12325.5
+          },
+          "low_volatility": {
+            "wr": 85.71,
+            "n": 7,
+            "pnl": 41204.36
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 10119.27
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 2
+      },
+      "score": 229.27,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold8_risk_doc",
+      "dataset": "train",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 100.0,
+        "wins": 8,
+        "losses": 0,
+        "profit_factor": 60082.77,
+        "expectancy": 7510.35,
+        "total_pnl": 60082.77,
+        "max_drawdown": 0.0,
+        "avg_win": 7510.35,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 6,
+        "morning_wr": 100.0,
+        "morning_n": 4,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 4,
+            "pnl": 19821.71
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 31878.57
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 8382.49
+          }
+        },
+        "max_consec_wins": 8,
+        "max_consec_losses": 0
+      },
+      "score": 272.42,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 8,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold8_risk_doc",
+      "dataset": "val",
+      "metrics": {
+        "trades": 7,
+        "win_rate": 71.43,
+        "wins": 5,
+        "losses": 2,
+        "profit_factor": 2.45,
+        "expectancy": 1391.66,
+        "total_pnl": 9741.59,
+        "max_drawdown": 6709.17,
+        "avg_win": 3290.15,
+        "avg_loss": -3354.59,
+        "call_wr": 100.0,
+        "call_n": 3,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 4,
+        "afternoon_wr": 33.33,
+        "afternoon_n": 3,
+        "regimes": {
+          "low_volatility": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -4653.8
+          },
+          "ranging": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8113.84
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 6281.55
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": -93.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 8,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold8_risk_doc",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 87.5,
+        "wins": 7,
+        "losses": 1,
+        "profit_factor": 8.6,
+        "expectancy": 2391.99,
+        "total_pnl": 19135.92,
+        "max_drawdown": 2517.07,
+        "avg_win": 3093.28,
+        "avg_loss": -2517.07,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 83.33,
+        "put_n": 6,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 83.33,
+        "afternoon_n": 6,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 5947.76
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 9438.87
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3749.29
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 1
+      },
+      "score": 231.17,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 8,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold8_risk_doc",
+      "dataset": "full",
+      "metrics": {
+        "trades": 14,
+        "win_rate": 100.0,
+        "wins": 14,
+        "losses": 0,
+        "profit_factor": 91979.56,
+        "expectancy": 6569.97,
+        "total_pnl": 91979.56,
+        "max_drawdown": 0.0,
+        "avg_win": 6569.97,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 100.0,
+        "put_n": 9,
+        "morning_wr": 100.0,
+        "morning_n": 6,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 8,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 25727.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 6,
+            "pnl": 51235.21
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 15016.39
+          }
+        },
+        "max_consec_wins": 14,
+        "max_consec_losses": 0
+      },
+      "score": 280.2,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 8,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_color",
+      "dataset": "train",
+      "metrics": {
+        "trades": 12,
+        "win_rate": 58.33,
+        "wins": 7,
+        "losses": 5,
+        "profit_factor": 1.79,
+        "expectancy": 1195.79,
+        "total_pnl": 14349.48,
+        "max_drawdown": 10706.17,
+        "avg_win": 4646.94,
+        "avg_loss": -3635.82,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 50.0,
+        "put_n": 10,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 8,
+        "regimes": {
+          "ranging": {
+            "wr": 57.14,
+            "n": 7,
+            "pnl": -319.28
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9418.95
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 5249.81
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": 144.96,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_color",
+      "dataset": "val",
+      "metrics": {
+        "trades": 4,
+        "win_rate": 25.0,
+        "wins": 1,
+        "losses": 3,
+        "profit_factor": 0.2,
+        "expectancy": -2791.63,
+        "total_pnl": -11166.53,
+        "max_drawdown": 11166.52,
+        "avg_win": 2794.5,
+        "avg_loss": -4653.68,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 0.0,
+        "put_n": 2,
+        "morning_wr": 0.0,
+        "morning_n": 1,
+        "afternoon_wr": 33.33,
+        "afternoon_n": 3,
+        "regimes": {
+          "low_volatility": {
+            "wr": 0.0,
+            "n": 2,
+            "pnl": -5689.92
+          },
+          "ranging": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -5476.61
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 2
+      },
+      "score": -96.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_color",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 75.0,
+        "wins": 6,
+        "losses": 2,
+        "profit_factor": 7.83,
+        "expectancy": 1748.46,
+        "total_pnl": 13987.69,
+        "max_drawdown": 2049.3,
+        "avg_win": 2672.83,
+        "avg_loss": -1024.65,
+        "call_wr": 50.0,
+        "call_n": 4,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 71.43,
+        "afternoon_n": 7,
+        "regimes": {
+          "low_volatility": {
+            "wr": 71.43,
+            "n": 7,
+            "pnl": 10401.41
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 204.89,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_color",
+      "dataset": "full",
+      "metrics": {
+        "trades": 19,
+        "win_rate": 68.42,
+        "wins": 13,
+        "losses": 6,
+        "profit_factor": 2.14,
+        "expectancy": 1380.55,
+        "total_pnl": 26230.5,
+        "max_drawdown": 10706.17,
+        "avg_win": 3789.4,
+        "avg_loss": -3838.61,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 57.14,
+        "put_n": 14,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 61.54,
+        "afternoon_n": 13,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 1916.66
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 14457.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9856.69
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": 178.32,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "color",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_body40",
+      "dataset": "train",
+      "metrics": {
+        "trades": 11,
+        "win_rate": 45.45,
+        "wins": 5,
+        "losses": 6,
+        "profit_factor": 1.16,
+        "expectancy": 273.99,
+        "total_pnl": 3013.87,
+        "max_drawdown": 9874.58,
+        "avg_win": 4489.15,
+        "avg_loss": -3238.65,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 33.33,
+        "put_n": 9,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 28.57,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 40.0,
+            "n": 5,
+            "pnl": -6379.77
+          },
+          "trending_down": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 765.12
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 8628.52
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 3
+      },
+      "score": 103.59,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "body40",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_body40",
+      "dataset": "val",
+      "metrics": {
+        "trades": 4,
+        "win_rate": 25.0,
+        "wins": 1,
+        "losses": 3,
+        "profit_factor": 0.2,
+        "expectancy": -2791.63,
+        "total_pnl": -11166.53,
+        "max_drawdown": 11166.52,
+        "avg_win": 2794.5,
+        "avg_loss": -4653.68,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 0.0,
+        "put_n": 2,
+        "morning_wr": 0.0,
+        "morning_n": 1,
+        "afternoon_wr": 33.33,
+        "afternoon_n": 3,
+        "regimes": {
+          "low_volatility": {
+            "wr": 0.0,
+            "n": 2,
+            "pnl": -5689.92
+          },
+          "ranging": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -5476.61
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 2
+      },
+      "score": -96.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "body40",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_body40",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 66.67,
+        "wins": 4,
+        "losses": 2,
+        "profit_factor": 3.76,
+        "expectancy": 1196.66,
+        "total_pnl": 7179.99,
+        "max_drawdown": 2598.75,
+        "avg_win": 2444.68,
+        "avg_loss": -1299.37,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 66.67,
+        "afternoon_n": 6,
+        "regimes": {
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 7179.99
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "body40",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_candle_body40",
+      "dataset": "full",
+      "metrics": {
+        "trades": 18,
+        "win_rate": 61.11,
+        "wins": 11,
+        "losses": 7,
+        "profit_factor": 1.58,
+        "expectancy": 764.01,
+        "total_pnl": 13752.11,
+        "max_drawdown": 9874.58,
+        "avg_win": 3423.94,
+        "avg_loss": -3415.89,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 46.15,
+        "put_n": 13,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 12,
+        "regimes": {
+          "ranging": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -4412.15
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 4,
+            "pnl": 5003.45
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 13160.81
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 3
+      },
+      "score": 149.53,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "body40",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.40",
+      "dataset": "train",
+      "metrics": {
+        "trades": 1,
+        "win_rate": 100.0,
+        "wins": 1,
+        "losses": 0,
+        "profit_factor": 5041.57,
+        "expectancy": 5041.57,
+        "total_pnl": 5041.57,
+        "max_drawdown": 0.0,
+        "avg_win": 5041.57,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 1,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 1,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 0
+      },
+      "score": -99.0,
+      "params": {
+        "vb_near_atr_mult": 0.4,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.40",
+      "dataset": "val",
+      "metrics": {
+        "trades": 1,
+        "win_rate": 100.0,
+        "wins": 1,
+        "losses": 0,
+        "profit_factor": 2055.37,
+        "expectancy": 2055.37,
+        "total_pnl": 2055.37,
+        "max_drawdown": 0.0,
+        "avg_win": 2055.37,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 1,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 2055.37
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 0
+      },
+      "score": -99.0,
+      "params": {
+        "vb_near_atr_mult": 0.4,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.40",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 50.0,
+        "wins": 1,
+        "losses": 1,
+        "profit_factor": 7.22,
+        "expectancy": 831.6,
+        "total_pnl": 1663.2,
+        "max_drawdown": 267.3,
+        "avg_win": 1930.5,
+        "avg_loss": -267.3,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": null,
+        "put_n": 0,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 2,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 1663.2
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 1
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.4,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.40",
+      "dataset": "full",
+      "metrics": {
+        "trades": 4,
+        "win_rate": 75.0,
+        "wins": 3,
+        "losses": 1,
+        "profit_factor": 2.34,
+        "expectancy": 820.97,
+        "total_pnl": 3283.87,
+        "max_drawdown": 2445.19,
+        "avg_win": 1909.69,
+        "avg_loss": -2445.19,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 2,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 75.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": -1757.7
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 1
+      },
+      "score": -96.0,
+      "params": {
+        "vb_near_atr_mult": 0.4,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.50",
+      "dataset": "train",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 100.0,
+        "wins": 2,
+        "losses": 0,
+        "profit_factor": 5817.82,
+        "expectancy": 2908.91,
+        "total_pnl": 5817.82,
+        "max_drawdown": 0.0,
+        "avg_win": 2908.91,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 2,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 1,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 776.25
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 0
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.5,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.50",
+      "dataset": "val",
+      "metrics": {
+        "trades": 1,
+        "win_rate": 100.0,
+        "wins": 1,
+        "losses": 0,
+        "profit_factor": 2055.37,
+        "expectancy": 2055.37,
+        "total_pnl": 2055.37,
+        "max_drawdown": 0.0,
+        "avg_win": 2055.37,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 1,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 2055.37
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 0
+      },
+      "score": -99.0,
+      "params": {
+        "vb_near_atr_mult": 0.5,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.50",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 50.0,
+        "wins": 1,
+        "losses": 1,
+        "profit_factor": 7.22,
+        "expectancy": 831.6,
+        "total_pnl": 1663.2,
+        "max_drawdown": 267.3,
+        "avg_win": 1930.5,
+        "avg_loss": -267.3,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": null,
+        "put_n": 0,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 2,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 1663.2
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 1
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.5,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.50",
+      "dataset": "full",
+      "metrics": {
+        "trades": 5,
+        "win_rate": 80.0,
+        "wins": 4,
+        "losses": 1,
+        "profit_factor": 2.66,
+        "expectancy": 812.02,
+        "total_pnl": 4060.12,
+        "max_drawdown": 2445.19,
+        "avg_win": 1626.33,
+        "avg_loss": -2445.19,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 3,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 75.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 776.25
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": -1757.7
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 1
+      },
+      "score": -95.0,
+      "params": {
+        "vb_near_atr_mult": 0.5,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.60",
+      "dataset": "train",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 100.0,
+        "wins": 2,
+        "losses": 0,
+        "profit_factor": 5817.82,
+        "expectancy": 2908.91,
+        "total_pnl": 5817.82,
+        "max_drawdown": 0.0,
+        "avg_win": 2908.91,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 2,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 1,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 776.25
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 0
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.6,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.60",
+      "dataset": "val",
+      "metrics": {
+        "trades": 1,
+        "win_rate": 100.0,
+        "wins": 1,
+        "losses": 0,
+        "profit_factor": 2055.37,
+        "expectancy": 2055.37,
+        "total_pnl": 2055.37,
+        "max_drawdown": 0.0,
+        "avg_win": 2055.37,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 1,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 2055.37
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 0
+      },
+      "score": -99.0,
+      "params": {
+        "vb_near_atr_mult": 0.6,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.60",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 50.0,
+        "wins": 1,
+        "losses": 1,
+        "profit_factor": 7.22,
+        "expectancy": 831.6,
+        "total_pnl": 1663.2,
+        "max_drawdown": 267.3,
+        "avg_win": 1930.5,
+        "avg_loss": -267.3,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": null,
+        "put_n": 0,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 2,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 1663.2
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 1
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.6,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_atr_0.60",
+      "dataset": "full",
+      "metrics": {
+        "trades": 5,
+        "win_rate": 80.0,
+        "wins": 4,
+        "losses": 1,
+        "profit_factor": 2.66,
+        "expectancy": 812.02,
+        "total_pnl": 4060.12,
+        "max_drawdown": 2445.19,
+        "avg_win": 1626.33,
+        "avg_loss": -2445.19,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 3,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 75.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 5041.57
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 776.25
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": -1757.7
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 1
+      },
+      "score": -95.0,
+      "params": {
+        "vb_near_atr_mult": 0.6,
+        "vb_near_pct": 0.0,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.20",
+      "dataset": "train",
+      "metrics": {
+        "trades": 7,
+        "win_rate": 57.14,
+        "wins": 4,
+        "losses": 3,
+        "profit_factor": 2.18,
+        "expectancy": 1178.69,
+        "total_pnl": 8250.86,
+        "max_drawdown": 5784.08,
+        "avg_win": 3808.18,
+        "avg_loss": -2327.29,
+        "call_wr": 100.0,
+        "call_n": 1,
+        "put_wr": 50.0,
+        "put_n": 6,
+        "morning_wr": 50.0,
+        "morning_n": 2,
+        "afternoon_wr": 60.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "ranging": {
+            "wr": 50.0,
+            "n": 4,
+            "pnl": -367.54
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 609.52
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 8008.88
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": -93.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.2,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.20",
+      "dataset": "val",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 33.33,
+        "wins": 2,
+        "losses": 4,
+        "profit_factor": 0.41,
+        "expectancy": -1188.11,
+        "total_pnl": -7128.68,
+        "max_drawdown": 9184.05,
+        "avg_win": 2494.8,
+        "avg_loss": -3029.57,
+        "call_wr": 33.33,
+        "call_n": 3,
+        "put_wr": 33.33,
+        "put_n": 3,
+        "morning_wr": 50.0,
+        "morning_n": 2,
+        "afternoon_wr": 25.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "low_volatility": {
+            "wr": 25.0,
+            "n": 4,
+            "pnl": -7355.49
+          },
+          "ranging": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 226.81
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 2
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.2,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.20",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 66.67,
+        "wins": 4,
+        "losses": 2,
+        "profit_factor": 2.92,
+        "expectancy": 624.54,
+        "total_pnl": 3747.26,
+        "max_drawdown": 1948.05,
+        "avg_win": 1423.83,
+        "avg_loss": -974.03,
+        "call_wr": 33.33,
+        "call_n": 3,
+        "put_wr": 100.0,
+        "put_n": 3,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 66.67,
+        "afternoon_n": 6,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 155.92
+          },
+          "low_volatility": {
+            "wr": 60.0,
+            "n": 5,
+            "pnl": 3591.34
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.2,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.20",
+      "dataset": "full",
+      "metrics": {
+        "trades": 15,
+        "win_rate": 60.0,
+        "wins": 9,
+        "losses": 6,
+        "profit_factor": 1.66,
+        "expectancy": 793.4,
+        "total_pnl": 11900.93,
+        "max_drawdown": 11129.73,
+        "avg_win": 3334.73,
+        "avg_loss": -3018.6,
+        "call_wr": 80.0,
+        "call_n": 5,
+        "put_wr": 50.0,
+        "put_n": 10,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 54.55,
+        "afternoon_n": 11,
+        "regimes": {
+          "ranging": {
+            "wr": 60.0,
+            "n": 5,
+            "pnl": 4390.87
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 4663.57
+          },
+          "low_volatility": {
+            "wr": 57.14,
+            "n": 7,
+            "pnl": 2846.49
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 3
+      },
+      "score": 145.1,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.2,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.25",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.25",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.25",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.25",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.30",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 53.85,
+        "wins": 7,
+        "losses": 6,
+        "profit_factor": 1.2,
+        "expectancy": 394.9,
+        "total_pnl": 5133.71,
+        "max_drawdown": 17930.36,
+        "avg_win": 4362.43,
+        "avg_loss": -4233.88,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 50.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 50.0,
+            "n": 8,
+            "pnl": -6903.23
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 11397.38
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 639.56
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 3
+      },
+      "score": 114.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.3,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.30",
+      "dataset": "val",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 50.0,
+        "wins": 3,
+        "losses": 3,
+        "profit_factor": 0.39,
+        "expectancy": -1395.12,
+        "total_pnl": -8370.69,
+        "max_drawdown": 10817.56,
+        "avg_win": 1747.12,
+        "avg_loss": -4537.35,
+        "call_wr": 50.0,
+        "call_n": 2,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 66.67,
+        "morning_n": 3,
+        "afternoon_wr": 33.33,
+        "afternoon_n": 3,
+        "regimes": {
+          "low_volatility": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -5993.0
+          },
+          "ranging": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -2769.19
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 391.5
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 2
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.3,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.30",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 75.0,
+        "wins": 6,
+        "losses": 2,
+        "profit_factor": 7.61,
+        "expectancy": 1623.21,
+        "total_pnl": 12985.65,
+        "max_drawdown": 1522.8,
+        "avg_win": 2491.82,
+        "avg_loss": -982.63,
+        "call_wr": 50.0,
+        "call_n": 4,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 75.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 75.0,
+            "n": 4,
+            "pnl": 7126.65
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 2272.72
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "score": 204.59,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.3,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.30",
+      "dataset": "full",
+      "metrics": {
+        "trades": 19,
+        "win_rate": 63.16,
+        "wins": 12,
+        "losses": 7,
+        "profit_factor": 1.54,
+        "expectancy": 855.26,
+        "total_pnl": 16249.96,
+        "max_drawdown": 18171.33,
+        "avg_win": 3844.38,
+        "avg_loss": -4268.94,
+        "call_wr": 75.0,
+        "call_n": 4,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 50.0,
+            "n": 8,
+            "pnl": -6903.23
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 18275.3
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 4877.89
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 3
+      },
+      "score": 145.96,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.3,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_0.8_tg_0.4",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.8,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.4,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_0.8_tg_0.4",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.8,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.4,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_0.8_tg_0.4",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.8,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.4,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_0.8_tg_0.4",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.8,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.4,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.0_tg_0.5",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.0,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.0_tg_0.5",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.0,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.0_tg_0.5",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.0,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.0_tg_0.5",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.0,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.14_tg_0.225",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.14_tg_0.225",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.14_tg_0.225",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.14_tg_0.225",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.2_tg_0.5",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.2_tg_0.5",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.2_tg_0.5",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.2_tg_0.5",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.4_tg_0.7",
+      "dataset": "train",
+      "metrics": {
+        "trades": 13,
+        "win_rate": 61.54,
+        "wins": 8,
+        "losses": 5,
+        "profit_factor": 1.73,
+        "expectancy": 1016.0,
+        "total_pnl": 13208.06,
+        "max_drawdown": 10706.18,
+        "avg_win": 3916.26,
+        "avg_loss": -3624.41,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 54.55,
+        "put_n": 11,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 9,
+        "regimes": {
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 3026.36
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 9485.1
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 696.6
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 149.33,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.4,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.7,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.4_tg_0.7",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.4,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.7,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.4_tg_0.7",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.4,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.7,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.4_tg_0.7",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.4,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.7,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "morning_only",
+      "dataset": "train",
+      "metrics": {
+        "trades": 4,
+        "win_rate": 75.0,
+        "wins": 3,
+        "losses": 1,
+        "profit_factor": 6.45,
+        "expectancy": 1788.16,
+        "total_pnl": 7152.64,
+        "max_drawdown": 1311.86,
+        "avg_win": 2821.5,
+        "avg_loss": -1311.86,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 50.0,
+        "put_n": 2,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 6571.12
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 581.52
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 1
+      },
+      "score": -96.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "morning_only",
+      "dataset": "val",
+      "metrics": {
+        "trades": 5,
+        "win_rate": 60.0,
+        "wins": 3,
+        "losses": 2,
+        "profit_factor": 1.72,
+        "expectancy": 438.28,
+        "total_pnl": 2191.38,
+        "max_drawdown": 3051.68,
+        "avg_win": 1747.69,
+        "avg_loss": -1525.84,
+        "call_wr": 33.33,
+        "call_n": 3,
+        "put_wr": 100.0,
+        "put_n": 2,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 4812.41
+          },
+          "ranging": {
+            "wr": 0.0,
+            "n": 2,
+            "pnl": -3051.68
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 430.65
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": -95.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "morning_only",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 2,
+        "win_rate": 100.0,
+        "wins": 2,
+        "losses": 0,
+        "profit_factor": 7180.32,
+        "expectancy": 3590.16,
+        "total_pnl": 7180.32,
+        "max_drawdown": 0.0,
+        "avg_win": 3590.16,
+        "avg_loss": 0.0,
+        "call_wr": null,
+        "call_n": 0,
+        "put_wr": 100.0,
+        "put_n": 2,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          },
+          "ranging": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3594.04
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 0
+      },
+      "score": -98.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "morning_only",
+      "dataset": "full",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 83.33,
+        "wins": 5,
+        "losses": 1,
+        "profit_factor": 11.39,
+        "expectancy": 2272.05,
+        "total_pnl": 13632.3,
+        "max_drawdown": 1311.86,
+        "avg_win": 2988.83,
+        "avg_loss": -1311.86,
+        "call_wr": 100.0,
+        "call_n": 4,
+        "put_wr": 50.0,
+        "put_n": 2,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": null,
+        "afternoon_n": 0,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8628.18
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5004.12
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 1
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ranging_lowvol",
+      "dataset": "train",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 80.0,
+        "wins": 8,
+        "losses": 2,
+        "profit_factor": 5.48,
+        "expectancy": 2707.19,
+        "total_pnl": 27071.89,
+        "max_drawdown": 6046.98,
+        "avg_win": 4139.86,
+        "avg_loss": -3023.49,
+        "call_wr": 100.0,
+        "call_n": 1,
+        "put_wr": 77.78,
+        "put_n": 9,
+        "morning_wr": 100.0,
+        "morning_n": 3,
+        "afternoon_wr": 71.43,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 15949.91
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 11121.98
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 2
+      },
+      "score": 218.9,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ranging_lowvol",
+      "dataset": "val",
+      "metrics": {
+        "trades": 9,
+        "win_rate": 44.44,
+        "wins": 4,
+        "losses": 5,
+        "profit_factor": 0.81,
+        "expectancy": -261.08,
+        "total_pnl": -2349.68,
+        "max_drawdown": 6632.56,
+        "avg_win": 2493.53,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 33.33,
+        "put_n": 3,
+        "morning_wr": 50.0,
+        "morning_n": 4,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          }
+        },
+        "max_consec_wins": 1,
+        "max_consec_losses": 2
+      },
+      "score": 93.36,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ranging_lowvol",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 75.0,
+        "wins": 6,
+        "losses": 2,
+        "profit_factor": 6.58,
+        "expectancy": 1421.17,
+        "total_pnl": 11369.35,
+        "max_drawdown": 2037.14,
+        "avg_win": 2234.42,
+        "avg_loss": -1018.57,
+        "call_wr": 50.0,
+        "call_n": 4,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 71.43,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3593.69
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 7775.66
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 202.74,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ranging_lowvol",
+      "dataset": "full",
+      "metrics": {
+        "trades": 14,
+        "win_rate": 78.57,
+        "wins": 11,
+        "losses": 3,
+        "profit_factor": 3.67,
+        "expectancy": 2151.35,
+        "total_pnl": 30118.84,
+        "max_drawdown": 6046.98,
+        "avg_win": 3762.88,
+        "avg_loss": -3757.61,
+        "call_wr": 100.0,
+        "call_n": 3,
+        "put_wr": 72.73,
+        "put_n": 11,
+        "morning_wr": 100.0,
+        "morning_n": 4,
+        "afternoon_wr": 70.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "ranging": {
+            "wr": 77.78,
+            "n": 9,
+            "pnl": 18364.72
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 11754.12
+          }
+        },
+        "max_consec_wins": 8,
+        "max_consec_losses": 2
+      },
+      "score": 217.36,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "put_cur_42_55",
+      "dataset": "train",
+      "metrics": {
+        "trades": 11,
+        "win_rate": 54.55,
+        "wins": 6,
+        "losses": 5,
+        "profit_factor": 1.17,
+        "expectancy": 302.4,
+        "total_pnl": 3326.39,
+        "max_drawdown": 10676.47,
+        "avg_win": 3723.52,
+        "avg_loss": -3802.95,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 44.44,
+        "put_n": 9,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 42.86,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 1632.81
+          },
+          "trending_down": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -3316.6
+          },
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 5010.18
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 119.55,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "put_cur_42_55",
+      "dataset": "val",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 50.0,
+        "wins": 5,
+        "losses": 5,
+        "profit_factor": 0.84,
+        "expectancy": -193.86,
+        "total_pnl": -1938.6,
+        "max_drawdown": 6632.56,
+        "avg_win": 2077.04,
+        "avg_loss": -2464.76,
+        "call_wr": 50.0,
+        "call_n": 6,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 60.0,
+        "morning_n": 5,
+        "afternoon_wr": 40.0,
+        "afternoon_n": 5,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 6,
+            "pnl": -2370.95
+          },
+          "ranging": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": 21.27
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 411.08
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 2
+      },
+      "score": 105.13,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "put_cur_42_55",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 75.0,
+        "wins": 6,
+        "losses": 2,
+        "profit_factor": 6.58,
+        "expectancy": 1421.17,
+        "total_pnl": 11369.35,
+        "max_drawdown": 2037.14,
+        "avg_win": 2234.42,
+        "avg_loss": -1018.57,
+        "call_wr": 50.0,
+        "call_n": 4,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 1,
+        "afternoon_wr": 71.43,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3593.69
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 7775.66
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 202.74,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "put_cur_42_55",
+      "dataset": "full",
+      "metrics": {
+        "trades": 17,
+        "win_rate": 64.71,
+        "wins": 11,
+        "losses": 6,
+        "profit_factor": 1.6,
+        "expectancy": 829.42,
+        "total_pnl": 14100.07,
+        "max_drawdown": 10676.47,
+        "avg_win": 3417.65,
+        "avg_loss": -3915.67,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 50.0,
+        "put_n": 12,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 54.55,
+        "afternoon_n": 11,
+        "regimes": {
+          "ranging": {
+            "wr": 71.43,
+            "n": 7,
+            "pnl": 3600.43
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 4,
+            "pnl": 921.73
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 9577.91
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 155.17,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 42,
+        "vb_put_rsi_max": 55,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "call_prev_45_keep",
+      "dataset": "train",
+      "metrics": {
+        "trades": 10,
+        "win_rate": 60.0,
+        "wins": 6,
+        "losses": 4,
+        "profit_factor": 1.03,
+        "expectancy": 55.99,
+        "total_pnl": 559.92,
+        "max_drawdown": 9458.77,
+        "avg_win": 3428.83,
+        "avg_loss": -5003.27,
+        "call_wr": 66.67,
+        "call_n": 3,
+        "put_wr": 57.14,
+        "put_n": 7,
+        "morning_wr": 75.0,
+        "morning_n": 4,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 6,
+        "regimes": {
+          "ranging": {
+            "wr": 60.0,
+            "n": 5,
+            "pnl": -8292.04
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 8299.47
+          },
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 552.49
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 125.47,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "call_prev_45_keep",
+      "dataset": "val",
+      "metrics": {
+        "trades": 8,
+        "win_rate": 62.5,
+        "wins": 5,
+        "losses": 3,
+        "profit_factor": 2.27,
+        "expectancy": 933.99,
+        "total_pnl": 7471.9,
+        "max_drawdown": 5689.92,
+        "avg_win": 2673.47,
+        "avg_loss": -1965.15,
+        "call_wr": 75.0,
+        "call_n": 4,
+        "put_wr": 50.0,
+        "put_n": 4,
+        "morning_wr": 80.0,
+        "morning_n": 5,
+        "afternoon_wr": 33.33,
+        "afternoon_n": 3,
+        "regimes": {
+          "low_volatility": {
+            "wr": 50.0,
+            "n": 4,
+            "pnl": -746.23
+          },
+          "ranging": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 7767.9
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 450.23
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 2
+      },
+      "score": 160.23,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "call_prev_45_keep",
+      "dataset": "oos",
+      "metrics": {
+        "trades": 6,
+        "win_rate": 100.0,
+        "wins": 6,
+        "losses": 0,
+        "profit_factor": 15354.56,
+        "expectancy": 2559.09,
+        "total_pnl": 15354.56,
+        "max_drawdown": 0.0,
+        "avg_win": 2559.09,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 2,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 4,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 2,
+            "pnl": 3749.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 8018.32
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 3586.28
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 0
+      },
+      "score": -94.0,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "call_prev_45_keep",
+      "dataset": "full",
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.45,
+        "expectancy": 642.24,
+        "total_pnl": 10918.13,
+        "max_drawdown": 9458.77,
+        "avg_win": 2935.32,
+        "avg_loss": -4861.15,
+        "call_wr": 83.33,
+        "call_n": 6,
+        "put_wr": 63.64,
+        "put_n": 11,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 63.64,
+        "afternoon_n": 11,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": -6324.42
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 12636.01
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 4606.54
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": 162.7,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    }
+  ],
+  "ranked_full": [
+    {
+      "name": "entry_hold8_risk_doc",
+      "dataset": "full",
+      "metrics": {
+        "trades": 14,
+        "win_rate": 100.0,
+        "wins": 14,
+        "losses": 0,
+        "profit_factor": 91979.56,
+        "expectancy": 6569.97,
+        "total_pnl": 91979.56,
+        "max_drawdown": 0.0,
+        "avg_win": 6569.97,
+        "avg_loss": 0.0,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 100.0,
+        "put_n": 9,
+        "morning_wr": 100.0,
+        "morning_n": 6,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 8,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 25727.96
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 6,
+            "pnl": 51235.21
+          },
+          "trending_down": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 15016.39
+          }
+        },
+        "max_consec_wins": 14,
+        "max_consec_losses": 0
+      },
+      "score": 280.2,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 8,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold6_risk_code",
+      "dataset": "full",
+      "metrics": {
+        "trades": 16,
+        "win_rate": 81.25,
+        "wins": 13,
+        "losses": 3,
+        "profit_factor": 4.72,
+        "expectancy": 3978.07,
+        "total_pnl": 63649.13,
+        "max_drawdown": 16399.47,
+        "avg_win": 6213.12,
+        "avg_loss": -5707.13,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 72.73,
+        "put_n": 11,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 80.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 12325.5
+          },
+          "low_volatility": {
+            "wr": 85.71,
+            "n": 7,
+            "pnl": 41204.36
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 10119.27
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 2
+      },
+      "score": 229.27,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 6,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ranging_lowvol",
+      "dataset": "full",
+      "metrics": {
+        "trades": 14,
+        "win_rate": 78.57,
+        "wins": 11,
+        "losses": 3,
+        "profit_factor": 3.67,
+        "expectancy": 2151.35,
+        "total_pnl": 30118.84,
+        "max_drawdown": 6046.98,
+        "avg_win": 3762.88,
+        "avg_loss": -3757.61,
+        "call_wr": 100.0,
+        "call_n": 3,
+        "put_wr": 72.73,
+        "put_n": 11,
+        "morning_wr": 100.0,
+        "morning_n": 4,
+        "afternoon_wr": 70.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "ranging": {
+            "wr": 77.78,
+            "n": 9,
+            "pnl": 18364.72
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 11754.12
+          }
+        },
+        "max_consec_wins": 8,
+        "max_consec_losses": 2
+      },
+      "score": 217.36,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "call_prev_45_keep",
+      "dataset": "full",
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.45,
+        "expectancy": 642.24,
+        "total_pnl": 10918.13,
+        "max_drawdown": 9458.77,
+        "avg_win": 2935.32,
+        "avg_loss": -4861.15,
+        "call_wr": 83.33,
+        "call_n": 6,
+        "put_wr": 63.64,
+        "put_n": 11,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 63.64,
+        "afternoon_n": 11,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": -6324.42
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 12636.01
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 4606.54
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": 162.7,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 45,
+        "vb_call_rsi_min": 45,
+        "vb_call_rsi_max": 58,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "ofat_rec_raw",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.6,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.3,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_code",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "entry_hold3_risk_doc",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "near_pct_0.25",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_0.8_tg_0.4",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 0.8,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.4,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.0_tg_0.5",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.0,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.14_tg_0.225",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.14,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.225,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    },
+    {
+      "name": "sl_1.2_tg_0.5",
+      "dataset": "full",
+      "metrics": {
+        "trades": 20,
+        "win_rate": 70.0,
+        "wins": 14,
+        "losses": 6,
+        "profit_factor": 2.19,
+        "expectancy": 1370.92,
+        "total_pnl": 27418.49,
+        "max_drawdown": 10706.18,
+        "avg_win": 3599.51,
+        "avg_loss": -3829.11,
+        "call_wr": 100.0,
+        "call_n": 5,
+        "put_wr": 60.0,
+        "put_n": 15,
+        "morning_wr": 83.33,
+        "morning_n": 6,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "regimes": {
+          "ranging": {
+            "wr": 66.67,
+            "n": 9,
+            "pnl": 5172.86
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 16942.15
+          },
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 5303.48
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 183.05,
+      "params": {
+        "vb_near_atr_mult": 0.0,
+        "vb_near_pct": 0.25,
+        "vb_call_prev_rsi_max": 43,
+        "vb_call_rsi_min": 43,
+        "vb_call_rsi_max": 55,
+        "vb_put_prev_rsi_min": 54,
+        "vb_put_rsi_min": 44,
+        "vb_put_rsi_max": 58,
+        "vb_rsi_turn_min": 0.0,
+        "vb_candle_mode": "off",
+        "vb_multi_bar": 1,
+        "vb_side_mode": "touch",
+        "vb_side_displace_atr": 0.05,
+        "vb_stop_atr_mult": 1.2,
+        "vb_stop_floor_pct": 0.0002,
+        "vb_target_atr_mult": 0.5,
+        "vb_min_target_pts": 10.0,
+        "vb_max_hold_bars": 3,
+        "vb_require_regime": false
+      }
+    }
+  ]
+}

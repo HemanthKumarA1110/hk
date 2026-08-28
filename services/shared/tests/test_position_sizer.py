@@ -64,3 +64,18 @@ def test_max_two_lots():
     )
     assert out["action"] == "TRADE"
     assert out["lots"] <= 2
+
+
+def test_zero_max_trades_means_unlimited():
+    out = compute_dynamic_position_size(
+        instrument_key="nifty50",
+        capital=100_000,
+        open_pnl=0,
+        trade_count=99,
+        consecutive_losses=0,
+        entry=120,
+        stop_loss=113,
+        config={"max_trades_per_day": 0, "risk_per_trade_pct": 2.0, "max_lots_per_trade": 2},
+        risk_pts=7,
+    )
+    assert out["action"] == "TRADE"

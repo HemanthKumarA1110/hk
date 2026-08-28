@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 
@@ -16,6 +17,7 @@ from trading_shared.broker.angel_one.schemas import (
     PlaceOrderRequest,
     SearchScripRequest,
 )
+from trading_shared.execution.qty import cap_qty_to_exchange_max, snap_qty_to_lot
 from trading_shared.broker.angel_one.session_manager import AngelOneSessionManager
 from trading_shared.config import get_settings
 from trading_shared.market.scrip_master import ScripMasterService
@@ -43,7 +45,15 @@ class OrderExecutor:
         self.risk = RiskManager(self.settings.REDIS_URL)
         self.scrip = ScripMasterService(self.redis)
 
-    async def place_order(self, payload: OrderCreateRequest) -> dict:
+    async def place_order(
+        self,
+        payload: OrderCreateRequest,
+        *,
+        desk: str | None = None,
+        lot_size: int | None = None,
+        is_closing_order: bool = False,
+        strategy_code: str | None = None,  # noqa: ARG002 — API parity with paper executor
+    ) -> dict:
         client = await self.session_manager.get_client_for_user(self.user_id)
         symbol, token, exchange = await self._resolve_symbol(
             client, payload.symbol, payload.exchange, payload.symboltoken
@@ -62,14 +72,58 @@ class OrderExecutor:
         stoploss = payload.stoploss or self.risk.engine.dynamic_stoploss(
             entry_price, payload.side, atr=entry_price * 0.005
         )
-        evaluation = self.risk.evaluate_trade(entry_price, stoploss, payload.side)
-        if not evaluation["approved"]:
-            order = self._persist_rejected(payload, symbol, token, exchange, stoploss, evaluation["reason"])
-            raise OrderRejectedError(evaluation["reason"])
+        resolved_lot = int(lot_size or self._resolve_lot_size(token, exchange) or 1)
+        desk_driven = bool(desk and str(desk).strip()) or (
+            str(exchange).upper() == "NFO" and resolved_lot > 1
+        )
+        if desk_driven:
+            approved_qty = snap_qty_to_lot(payload.qty, resolved_lot)
+            if approved_qty <= 0:
+                raise OrderRejectedError("Quantity is not a valid lot multiple")
+            if is_closing_order:
+                evaluation = {
+                    "approved": True,
+                    "reason": "desk_close",
+                    "position_size": {"qty": approved_qty},
+                }
+            else:
+                can_trade, halt_reason = self.risk.engine.can_trade()
+                if not can_trade:
+                    self._persist_rejected(payload, symbol, token, exchange, stoploss, halt_reason)
+                    raise OrderRejectedError(halt_reason or "Trading halted")
+                evaluation = {
+                    "approved": True,
+                    "reason": "desk_sized",
+                    "position_size": {"qty": approved_qty},
+                }
+        else:
+            evaluation = self.risk.evaluate_trade(entry_price, stoploss, payload.side)
+            if not evaluation["approved"]:
+                self._persist_rejected(payload, symbol, token, exchange, stoploss, evaluation["reason"])
+                raise OrderRejectedError(evaluation["reason"])
 
-        approved_qty = min(payload.qty, evaluation["position_size"]["qty"])
-        if approved_qty <= 0:
-            raise OrderRejectedError("Risk engine returned zero quantity")
+            approved_qty = min(payload.qty, evaluation["position_size"]["qty"])
+            if resolved_lot > 1:
+                approved_qty = snap_qty_to_lot(approved_qty, resolved_lot)
+            if approved_qty <= 0:
+                raise OrderRejectedError("Risk engine returned zero quantity")
+
+        if str(exchange).upper() == "NFO":
+            capped = cap_qty_to_exchange_max(approved_qty, resolved_lot)
+            if capped <= 0:
+                raise OrderRejectedError("Quantity is not a valid lot multiple under exchange freeze")
+            if capped < approved_qty:
+                logger.warning(
+                    "Capped NFO qty %s -> %s (exchange freeze) symbol=%s",
+                    approved_qty,
+                    capped,
+                    symbol,
+                )
+                evaluation = {
+                    **evaluation,
+                    "reason": f"{evaluation.get('reason') or 'sized'}; exchange_freeze_cap",
+                }
+            approved_qty = capped
 
         place_req = PlaceOrderRequest(
             variety=payload.variety,
@@ -116,8 +170,20 @@ class OrderExecutor:
         self.db.commit()
         self.db.refresh(order)
 
+        reject_text = await self._poll_order_rejection(client, str(broker_order_id or ""))
+        if reject_text:
+            order.status = "rejected"
+            order.risk_reason = reject_text
+            order.broker_response_json = json.dumps(
+                {"place": response, "book_reject": reject_text},
+                default=str,
+            )
+            self.db.commit()
+            self.db.refresh(order)
+            raise OrderRejectedError(reject_text)
+
         notional = entry_price * approved_qty
-        self.risk.register_trade(0.0, notional)
+        self.risk.register_trade(0.0, -notional if is_closing_order else notional)
 
         return self._serialize_order(order, message=response.get("message", "Order placed"))
 
@@ -247,6 +313,16 @@ class OrderExecutor:
 
         raise AngelOneAuthError(f"Unable to resolve symbol token for {raw_symbol}")
 
+    def _resolve_lot_size(self, token: str, exchange: str) -> int:
+        try:
+            self.scrip.ensure_loaded()
+            inst = self.scrip.get_by_token(token) if token else None
+            if inst and int(inst.lot_size or 0) > 0:
+                return int(inst.lot_size)
+        except Exception:
+            logger.debug("Lot size lookup failed token=%s exchange=%s", token, exchange, exc_info=True)
+        return 1
+
     async def _fetch_ltp(self, client, exchange: str, symbol: str, token: str) -> float:
         from trading_shared.market.index_quotes import extract_ltp_from_response
 
@@ -286,6 +362,34 @@ class OrderExecutor:
         self.db.commit()
         self.db.refresh(order)
         return order
+
+    async def _poll_order_rejection(self, client, broker_order_id: str) -> str | None:
+        """placeOrder can return SUCCESS while the exchange later rejects the order."""
+        if not broker_order_id:
+            return None
+        for delay in (0.35, 0.7, 1.2):
+            await asyncio.sleep(delay)
+            try:
+                book = await client.get_order_book()
+            except Exception:
+                logger.debug("Order-book poll failed for %s", broker_order_id, exc_info=True)
+                continue
+            rows = book.get("data") if isinstance(book, dict) else book
+            if not isinstance(rows, list):
+                continue
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                oid = str(row.get("orderid") or row.get("order_id") or "")
+                if oid != broker_order_id:
+                    continue
+                status = str(row.get("status") or "").lower()
+                text = str(row.get("text") or row.get("rejectionreason") or "").strip()
+                if "reject" in status:
+                    return text or f"Broker order {broker_order_id} rejected"
+                if status in {"complete", "open", "trigger pending", "pending"}:
+                    return None
+        return None
 
     @staticmethod
     def _map_product(product: str) -> str:

@@ -1,4 +1,4 @@
-"""Momentum Burst (SCALP-AD-001) backtest should produce trades on index OHLCV."""
+"""Momentum Burst backtest should produce trades on index OHLCV."""
 
 import pandas as pd
 
@@ -26,16 +26,16 @@ def test_momentum_burst_fires_on_zero_volume_index_proxy():
     assert signals > 0
 
 
-def test_scalp_ad_001_backtest_returns_capital_on_empty_trades():
+def test_scalp_ad_005_backtest_returns_capital_on_empty_trades():
     loader = BacktestDataLoader(_FakeDb())
-    df = loader._generate_demo("NIFTY", "1m", "2026-05-05", "2026-07-04")
+    df = loader._generate_demo("BANKNIFTY", "1m", "2026-05-05", "2026-07-04")
     result = run_strategy_backtest(
         df,
         "1m",
-        25,
+        15,
         100_000,
-        strategy_code="SCALP-AD-001",
-        instrument_key="nifty50",
+        strategy_code="SCALP-AD-005",
+        instrument_key="banknifty",
     )
     assert result["initial_capital"] == 100_000
     assert result["final_capital"] == result["initial_capital"] or result["total_trades"] > 0

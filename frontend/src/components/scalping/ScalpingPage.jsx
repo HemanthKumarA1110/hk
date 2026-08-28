@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchOrderStatus } from '../../api'
 import { useAngelOneWebSocket } from '../../hooks/useAngelOneWebSocket'
 import { useScalpingStrategy } from '../../hooks/useScalpingStrategy'
 import { useAIDecision } from '../../hooks/useAIDecision'
 import { useBacktest } from '../../hooks/useBacktest'
-import { useSMCBacktest } from '../../hooks/useSMCBacktest'
 import { saveScalpingDeskConfig, toggleScalpingAutoTrading, runWeeklyParameterTune } from '../../services/angelOneApi'
+import { closeActiveScalpingTrade, startMarketStream } from '../../api'
 import { INSTRUMENT_META } from '../../types/scalping.types'
 import LiveChart from './LiveChart'
 import TradeConfigPanel from './TradeConfigPanel'
@@ -15,11 +14,9 @@ import ActiveTradeCard from './ActiveTradeCard'
 import DailyPnLBar from './DailyPnLBar'
 import SMCDashboardBar from './SMCDashboardBar'
 import BacktestModule from './BacktestModule'
-import SMCBacktestPanel from './SMCBacktestPanel'
 import AIOptimizationPanel from './AIOptimizationPanel'
 import StrategySelectorPanel from './StrategySelectorPanel'
 import StreamStatusPanel from './StreamStatusPanel'
-import TradingModeToggle from '../TradingModeToggle'
 import { filterStrategiesForDesk } from '../../utils/strategyFilters'
 
 /**
@@ -39,16 +36,11 @@ export default function ScalpingDeskPage({ instrument }) {
   useAngelOneWebSocket(debouncedRefresh)
   const ai = useAIDecision(desk)
   const backtest = useBacktest(instrument)
-  const smcBacktest = useSMCBacktest(instrument)
 
   const [config, setConfig] = useState(null)
   const [toast, setToast] = useState('')
   const [optimization, setOptimization] = useState(null)
-  const [orderStatus, setOrderStatus] = useState(null)
-
-  useEffect(() => {
-    fetchOrderStatus().then(setOrderStatus).catch(() => null)
-  }, [])
+  const [closingOrderId, setClosingOrderId] = useState('')
 
   useEffect(() => {
     if (desk?.config) setConfig(desk.config)
@@ -63,17 +55,6 @@ export default function ScalpingDeskPage({ instrument }) {
     setToast(msg)
     setTimeout(() => setToast(''), 4000)
   }, [])
-
-  const handleTradingModeChange = useCallback(
-    (status) => {
-      setOrderStatus(status)
-      showToast(status?.trading_mode === 'live' ? 'Live trading mode enabled' : 'Paper trading mode active')
-      refresh()
-    },
-    [refresh, showToast]
-  )
-
-  const isPaper = (orderStatus?.trading_mode || desk?.trading_mode || 'paper') === 'paper'
 
   useEffect(() => {
     if (desk?.signal?.status === 'approved') showToast(`Signal: ${desk.signal.signal_type} · AI ${desk.signal.ai?.confidence}%`)
@@ -95,8 +76,15 @@ export default function ScalpingDeskPage({ instrument }) {
 
   const handleAutoToggle = async (enabled) => {
     try {
+      if (enabled) {
+        await startMarketStream().catch(() => null)
+      }
       await toggleScalpingAutoTrading(instrument, enabled)
-      showToast(enabled ? 'AI Auto Trading enabled' : 'AI Auto Trading disabled')
+      showToast(
+        enabled
+          ? 'AI Auto Trading enabled — Live Market Engine turned ON for ticks'
+          : 'AI Auto Trading disabled'
+      )
       refresh()
     } catch {
       showToast('Failed to toggle auto trading')
@@ -108,7 +96,7 @@ export default function ScalpingDeskPage({ instrument }) {
       ...form,
       capital: cfg.capital,
       max_loss_per_day: cfg.max_loss_per_day,
-      capital_utilization_pct: cfg.capital_utilization_pct ?? 0.95,
+      capital_utilization_pct: cfg.capital_utilization_pct ?? 1,
     })
     if (data?.total_trades != null) {
       showToast(`Backtest complete: ${data.total_trades} trades`)
@@ -132,6 +120,23 @@ export default function ScalpingDeskPage({ instrument }) {
     }
   }
 
+  const handleEmergencyClose = async (trade) => {
+    const label = trade?.option_symbol || `${trade?.signal_type || 'Active'} trade`
+    const confirmed = window.confirm(`Close ${label} immediately at market?`)
+    if (!confirmed) return
+    const closeKey = trade?.order_id || trade?.option_symbol || 'active'
+    setClosingOrderId(closeKey)
+    try {
+      const result = await closeActiveScalpingTrade(instrument)
+      showToast(result?.message || 'Active trade closed')
+      refresh()
+    } catch (err) {
+      showToast(err?.response?.data?.detail || 'Emergency close failed')
+    } finally {
+      setClosingOrderId('')
+    }
+  }
+
   const strikes = desk?.strikes || {}
   const atmCe = strikes.atm_ce
   const atmPe = strikes.atm_pe
@@ -151,14 +156,11 @@ export default function ScalpingDeskPage({ instrument }) {
           <p className="text-amber-400 text-xs uppercase tracking-widest">Scalping Desk</p>
           <h2 className="text-3xl font-bold mt-1">{meta.label}</h2>
           <p className="text-slate-400 mt-1">
-            9 strategies · buy CE/PE only · per-strategy paper or live auto-trading
+            3 Nifty / 5 Bank Nifty strategies · buy CE/PE only · live Angel One auto-trading
           </p>
-          {orderStatus && (
-            <p className="text-xs mt-2 text-slate-500">
-              Desk orders use {isPaper ? 'paper (live Angel One quotes, dummy orders in app)' : 'live'} execution
-              {!isPaper ? ' · turn on AI Auto Trading for live entries' : ''}
-            </p>
-          )}
+          <p className="text-xs mt-2 text-slate-500">
+            Desk orders are live MARKET/MIS via Angel One · turn on AI Auto Trading for entries
+          </p>
           <p className="text-xs text-slate-500 mt-2">
             Spot ₹{Number(desk?.spot || 0).toLocaleString('en-IN')} ({desk?.spot_change_pct ?? 0}%)
             · {desk?.strategy_label || 'AI Adaptive Scalp'} v{desk?.strategy_version || 4}
@@ -176,8 +178,6 @@ export default function ScalpingDeskPage({ instrument }) {
       </header>
 
       {error && <p className="text-rose-400 text-sm">{error}</p>}
-
-      <TradingModeToggle onChange={handleTradingModeChange} />
 
       <StreamStatusPanel deskStatus={desk?.stream_status} onStreamStarted={refresh} />
 
@@ -220,7 +220,12 @@ export default function ScalpingDeskPage({ instrument }) {
                 <p className="text-sm text-slate-500">No open positions</p>
               )}
               {(desk?.active_trades || []).map((t, i) => (
-                <ActiveTradeCard key={t.order_id || i} trade={t} />
+                <ActiveTradeCard
+                  key={t.order_id || i}
+                  trade={t}
+                  onEmergencyClose={handleEmergencyClose}
+                  closing={closingOrderId === (t.order_id || t.option_symbol || 'active')}
+                />
               ))}
             </div>
           </section>
@@ -258,7 +263,6 @@ export default function ScalpingDeskPage({ instrument }) {
           <AIAutoToggle
             enabled={Boolean(cfg.auto_trading_enabled)}
             onToggle={handleAutoToggle}
-            isPaper={isPaper}
           />
           <StrategySelectorPanel
             selection={desk?.strategy_selection}
@@ -276,7 +280,6 @@ export default function ScalpingDeskPage({ instrument }) {
             lastWinReinforcement={desk?.last_win_reinforcement}
             config={cfg}
             onChange={persistConfig}
-            globalPaperMode={isPaper}
           />
           <TradeConfigPanel
             instrument={instrument}
@@ -296,15 +299,7 @@ export default function ScalpingDeskPage({ instrument }) {
         onRun={handleBacktest}
         strategies={scalpingStrategies}
         deskCapital={cfg.capital}
-        capitalUtilizationPct={cfg.capital_utilization_pct ?? 0.95}
-      />
-      <SMCBacktestPanel
-        instrument={instrument}
-        smcBacktest={smcBacktest}
-        onApply={() => {
-          showToast('Winning SMC strategy applied — paper mode active')
-          refresh()
-        }}
+        capitalUtilizationPct={cfg.capital_utilization_pct ?? 1}
       />
       <AIOptimizationPanel
         optimization={optimization || backtest.optimization}
@@ -313,8 +308,7 @@ export default function ScalpingDeskPage({ instrument }) {
           showToast('Strategy parameters updated from AI suggestions')
           refresh()
         }}
-      />
-    </div>
+      />    </div>
   )
 }
 

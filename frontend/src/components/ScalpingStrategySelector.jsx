@@ -20,6 +20,7 @@ export default function ScalpingStrategySelector({
   const list = filterStrategiesForDesk('scalping', strategies).filter(
     (s) => !s.instruments || s.instruments.includes(instrument)
   )
+  const isManual = mode === 'manual'
 
   if (!list.length) {
     return (
@@ -32,32 +33,72 @@ export default function ScalpingStrategySelector({
     onSettingsChange?.(next)
   }
 
+  const setAllEnabled = (enabled) => {
+    const next = { ...settings }
+    list.forEach((s) => {
+      next[s.code] = { ...(next[s.code] || { execution_mode: 'live' }), enabled }
+    })
+    onSettingsChange?.(next)
+  }
+
   const enabledList = list.filter((s) => {
     const sCfg = settings[s.code] || {}
     return sCfg.enabled ?? s.enabled ?? true
   })
+  const monitorCount = isManual ? enabledList.length : list.length
 
   const inner = (
     <>
       <p className="text-xs text-slate-500 mb-3">
-        {mode === 'auto'
-          ? 'AI picks the best enabled strategy each bar.'
-          : 'Manual mode uses one fixed strategy below.'}
+        {isManual
+          ? 'Manual mode monitors only the strategies you check (one or more).'
+          : 'Auto mode monitors every strategy on this desk. First valid signal enters; one trade at a time.'}
       </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-slate-400">
+        <span>
+          Monitoring <span className="text-slate-200 font-medium">{monitorCount}</span>
+        </span>
+        {isManual && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAllEnabled(true)}
+              className="rounded border border-slate-700 px-2 py-0.5 text-slate-300"
+            >
+              Select all
+            </button>
+            <button
+              type="button"
+              onClick={() => setAllEnabled(false)}
+              className="rounded border border-slate-700 px-2 py-0.5 text-slate-300"
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
       <div className="space-y-2">
         {list.map((s) => {
-          const sCfg = settings[s.code] || { enabled: s.enabled ?? true, execution_mode: 'paper' }
+          const sCfg = settings[s.code] || { enabled: s.enabled ?? true, execution_mode: 'live' }
+          const checked = Boolean(sCfg.enabled ?? s.enabled ?? true)
+          const monitoring = !isManual || checked
           return (
             <label
               key={s.code}
-              className="flex items-start gap-3 rounded-lg border border-slate-800/80 bg-slate-950/30 p-2.5 cursor-pointer hover:border-amber-500/30"
+              className={`flex items-start gap-3 rounded-lg border border-slate-800/80 bg-slate-950/30 p-2.5 ${
+                isManual ? 'cursor-pointer hover:border-amber-500/30' : ''
+              } ${!monitoring ? 'opacity-50' : ''}`}
             >
-              <input
-                type="checkbox"
-                checked={Boolean(sCfg.enabled ?? s.enabled ?? true)}
-                onChange={(e) => updateStrategy(s.code, { enabled: e.target.checked })}
-                className="mt-0.5 accent-amber-500"
-              />
+              {isManual ? (
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => updateStrategy(s.code, { enabled: e.target.checked })}
+                  className="mt-0.5 accent-amber-500"
+                />
+              ) : (
+                <span className="mt-0.5 text-[10px] uppercase tracking-wide text-emerald-400/80 w-8">On</span>
+              )}
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-amber-300">{s.code}</span>
@@ -70,54 +111,15 @@ export default function ScalpingStrategySelector({
                   <span className="block text-xs text-slate-500 mt-0.5 line-clamp-2">{s.description}</span>
                 )}
               </span>
-              <div className="flex gap-1 shrink-0">
-                {['paper', 'live'].map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    disabled={!(sCfg.enabled ?? s.enabled ?? true)}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      updateStrategy(s.code, { execution_mode: m })
-                    }}
-                    className={`rounded px-1.5 py-0.5 text-[10px] capitalize ${
-                      !(sCfg.enabled ?? s.enabled ?? true)
-                        ? 'opacity-30 border border-slate-800 text-slate-600'
-                        : sCfg.execution_mode === m
-                          ? m === 'paper'
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                            : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'border border-slate-700 text-slate-500'
-                    }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
+              <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Live
+              </span>
             </label>
           )
         })}
       </div>
-
-      {mode === 'manual' && enabledList.length > 0 && (
-        <label className="block text-sm mt-3">
-          <span className="text-slate-400 text-xs">Fixed strategy (manual mode)</span>
-          <select
-            value={fixedCode || enabledList[0]?.code}
-            onChange={(e) => {
-              const code = e.target.value
-              const picked = list.find((s) => s.code === code)
-              onFixedChange?.(code, picked)
-            }}
-            className="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2 text-sm"
-          >
-            {enabledList.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.code} — {s.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      {isManual && enabledList.length === 0 && (
+        <p className="text-[11px] text-amber-300 mt-2">Select at least one strategy to monitor.</p>
       )}
     </>
   )

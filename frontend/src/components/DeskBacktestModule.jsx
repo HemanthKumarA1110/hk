@@ -86,7 +86,8 @@ export default function DeskBacktestModule({
 
     max_open_positions: 5,
 
-    ai_entry: false,
+    // Live desk always runs AI entry; default on for fair live/BT comparison.
+    ai_entry: true,
 
     ai_exit: false,
 

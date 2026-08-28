@@ -1,11 +1,35 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class BrokerCredentialRequest(BaseModel):
-    api_key: str = Field(..., min_length=8)
-    client_code: str = Field(..., min_length=1, max_length=32)
-    password: str = Field(..., min_length=1)
-    totp_secret: str = Field(..., min_length=16, description="Base32 TOTP secret from Angel One QR")
+    """Create or partially update Angel One credentials.
+
+    Blank / omitted fields keep the previously stored secret when credentials
+    already exist. First-time setup still requires all four fields (enforced
+    in the session manager).
+    """
+
+    api_key: str | None = Field(default=None, min_length=8)
+    client_code: str | None = Field(default=None, min_length=1, max_length=32)
+    password: str | None = Field(default=None, min_length=1)
+    totp_secret: str | None = Field(
+        default=None,
+        min_length=16,
+        description="Base32 TOTP secret from Angel One QR",
+    )
+
+    @field_validator("api_key", "client_code", "password", "totp_secret", mode="before")
+    @classmethod
+    def blank_to_none(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
+    @model_validator(mode="after")
+    def require_at_least_one_field(self) -> "BrokerCredentialRequest":
+        if not any([self.api_key, self.client_code, self.password, self.totp_secret]):
+            raise ValueError("Provide at least one credential field to save or update")
+        return self
 
 
 class BrokerConnectionResponse(BaseModel):

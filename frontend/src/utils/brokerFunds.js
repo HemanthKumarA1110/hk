@@ -6,8 +6,8 @@ export function formatAvailableMargin(funds, brokerStatus) {
 
   if (funds?.status === false && funds?.message) {
     const msg = funds.message.toLowerCase()
-    if (msg.includes('rate limit') || msg.includes('reconnect')) {
-      return { text: 'Reconnect broker', tone: 'muted' }
+    if (msg.includes('rate limit') || msg.includes('exceeding access rate') || msg.includes('reconnect')) {
+      return { text: 'Rate limited — wait 1 min', tone: 'muted' }
     }
     return { text: 'Unavailable', tone: 'muted' }
   }

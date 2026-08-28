@@ -40,6 +40,7 @@ REDIS_TICK_PREFIX = "market:tick"
 REDIS_CANDLE_PREFIX = "market:candle"
 REDIS_SCAN_KEY = "market:scan:latest"
 REDIS_STREAM_STATUS_KEY = "market:stream:status"
+REDIS_STREAM_DESIRED_KEY = "market:stream:desired"
 REDIS_OPTION_CHAIN_PREFIX = "market:option_chain"
 REDIS_SECTOR_STRENGTH_KEY = "market:sector:strength"
 

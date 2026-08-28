@@ -21,7 +21,7 @@ import pandas as pd
 from trading_shared.strategies.scalping_desk.strategy_catalog import catalog_for_instrument
 
 SCALP_INSTRUMENTS = (("nifty50", "NIFTY"), ("banknifty", "BANKNIFTY"))
-INTRADAY_CODES = ("INTRA-ORB", "INTRA-VWAP", "INTRA-EMA-RSI")
+INTRADAY_CODES = ("INTRA-ORB", "INTRA-VWAP-ORB")
 SWING_CODES = ("SWING-EMA", "SWING-RSI", "SWING-BO-ATR")
 
 

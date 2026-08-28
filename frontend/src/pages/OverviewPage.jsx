@@ -16,6 +16,7 @@ export default function OverviewPage() {
   const [curve, setCurve] = useState([])
   const [funds, setFunds] = useState(null)
   const [brokerStatus, setBrokerStatus] = useState(null)
+  const [editingCredentials, setEditingCredentials] = useState(false)
 
   useEffect(() => {
     const load = () => {
@@ -82,32 +83,54 @@ export default function OverviewPage() {
 
       <div className="grid gap-4 lg:grid-cols-2 mb-6">
         <BrokerStatus status={brokerStatus} />
-        {!brokerStatus?.connected ? (
+        {!brokerStatus?.credentials_configured || editingCredentials ? (
           <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-            <h3 className="font-semibold mb-1">Connect Angel One</h3>
+            <h3 className="font-semibold mb-1">
+              {brokerStatus?.credentials_configured ? 'Update Angel One' : 'Connect Angel One'}
+            </h3>
             <p className="text-sm text-slate-400 mb-4">
-              Or use paper trading from Live Trading without connecting a broker.
+              {brokerStatus?.credentials_configured
+                ? 'Leave fields blank to keep saved secrets. Only enter values you want to change.'
+                : 'Connect Angel One to enable live orders.'}
             </p>
             <BrokerSetupForm
               compact
               showLoginFields={false}
-              onSuccess={() => refreshBrokerData()}
+              credentialsConfigured={Boolean(brokerStatus?.credentials_configured)}
+              clientCode={brokerStatus?.client_code}
+              onCancel={editingCredentials ? () => setEditingCredentials(false) : undefined}
+              onSuccess={() => {
+                setEditingCredentials(false)
+                refreshBrokerData()
+              }}
             />
           </section>
-        ) : needsReconnect ? (
-          <BrokerReconnectPanel onSuccess={refreshBrokerData} />
+        ) : !brokerStatus?.connected || needsReconnect ? (
+          <BrokerReconnectPanel
+            mode={!brokerStatus?.connected ? 'connect' : 'reconnect'}
+            clientCode={brokerStatus?.client_code}
+            onSuccess={refreshBrokerData}
+            onChangeCredentials={() => setEditingCredentials(true)}
+          />
         ) : (
           <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
             <h3 className="font-semibold mb-3">Signal Activity</h3>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            {['scalping', 'intraday', 'swing'].map((engine) => (
-              <div key={engine} className="rounded-lg bg-slate-950/50 p-3">
-                <p className="text-xs uppercase text-slate-500">{engine}</p>
-                <p className="text-2xl font-bold mt-1">{summary.signal_counts?.[engine] ?? 0}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {['scalping', 'intraday', 'swing'].map((engine) => (
+                <div key={engine} className="rounded-lg bg-slate-950/50 p-3">
+                  <p className="text-xs uppercase text-slate-500">{engine}</p>
+                  <p className="text-2xl font-bold mt-1">{summary.signal_counts?.[engine] ?? 0}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="mt-4 text-sm text-slate-400 hover:text-slate-200 underline"
+              onClick={() => setEditingCredentials(true)}
+            >
+              Change Angel One credentials
+            </button>
+          </section>
         )}
       </div>
 

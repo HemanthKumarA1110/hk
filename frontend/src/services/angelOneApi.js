@@ -32,21 +32,6 @@ export function pollDeskBacktest(instrument, jobId) {
   return api.get(`/strategies/scalping/desk/${instrument}/backtest/${jobId}`, { timeout: 30000 }).then((res) => res.data)
 }
 
-/** @param {string} instrument @param {object} payload */
-export function runSMCBacktest(instrument, payload) {
-  return api.post(`/strategies/scalping/desk/${instrument}/smc/backtest`, payload, { timeout: 60000 }).then((res) => res.data)
-}
-
-/** @param {string} instrument @param {string} jobId */
-export function pollSMCBacktest(instrument, jobId) {
-  return api.get(`/strategies/scalping/desk/${instrument}/smc/backtest/${jobId}`, { timeout: 30000 }).then((res) => res.data)
-}
-
-/** @param {string} instrument @param {object} report */
-export function applySMCStrategy(instrument, report) {
-  return api.post(`/strategies/scalping/desk/${instrument}/smc/apply`, report).then((res) => res.data)
-}
-
 /** @param {string} instrument @param {object} summary */
 export function optimizeScalpingStrategy(instrument, summary) {
   return api.post(`/strategies/scalping/desk/${instrument}/optimize`, { backtest_summary: summary }).then((res) => res.data)
@@ -57,10 +42,17 @@ export function runWeeklyParameterTune(instrument, payload = {}) {
   return api.post(`/strategies/scalping/desk/${instrument}/weekly-tune`, payload).then((res) => res.data)
 }
 
+/**
+ * Start market stream only when it is already desired/ON, or return current status.
+ * Never force-starts — Live Market Engine is opt-in from Overview.
+ */
 export async function ensureMarketStream() {
   const status = await fetchStreamStatus().catch(() => null)
   if (status?.connected) return status
-  return startMarketStream().catch(() => null)
+  if (status?.desired || status?.enabled) {
+    return startMarketStream().catch(() => status)
+  }
+  return status
 }
 
 export function wsMarketUrl() {

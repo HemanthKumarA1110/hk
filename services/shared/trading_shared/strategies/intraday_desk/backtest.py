@@ -7,6 +7,8 @@ import pandas as pd
 from trading_shared.backtest.types import BacktestTrade
 from trading_shared.strategies.intraday_desk.catalog import catalog_entry
 from trading_shared.strategies.intraday_desk.session import (
+    COST_MODEL_LABEL,
+    enrich_for_strategy,
     enrich_intraday_frame,
     is_force_exit_bar,
     position_qty,
@@ -16,7 +18,17 @@ from trading_shared.strategies.intraday_desk.session import (
 from trading_shared.strategies.intraday_desk.strategies import get_strategy
 
 WARMUP = 25
-MAX_TRADES_PER_DAY = 3
+
+
+def _unpack_exit(exit_result) -> tuple[float, str, float] | None:
+    """Normalize try_exit to (price, reason, qty_fraction)."""
+    if not exit_result:
+        return None
+    if len(exit_result) == 3:
+        price, reason, frac = exit_result
+        return float(price), str(reason), float(frac)
+    price, reason = exit_result
+    return float(price), str(reason), 1.0
 
 
 def run_intraday_strategy_backtest(
@@ -28,6 +40,7 @@ def run_intraday_strategy_backtest(
     risk_pct: float = 1.0,
     ai_entry: bool = False,
     ai_exit: bool = False,
+    params: dict | None = None,
 ) -> dict:
     entry_meta = catalog_entry(strategy_code)
     if not entry_meta:
@@ -36,14 +49,50 @@ def run_intraday_strategy_backtest(
     if len(df) < WARMUP + 5:
         raise ValueError(f"Insufficient bars ({len(df)}). Need at least {WARMUP + 5}.")
 
-    prepared = enrich_intraday_frame(df)
-    strategy = get_strategy(strategy_code=strategy_code)
+    from trading_shared.strategies.intraday_desk.intra_orb_tuning import (
+        merge_intra_orb_params,
+        minutes_to_time,
+    )
+    from trading_shared.strategies.intraday_desk.strategies.orb import OpeningRangeBreakout
+    from trading_shared.strategies.intraday_desk.strategies.vwap_orb_trend import VwapOrbTrendFilter
+
+    force_exit = None
+    if strategy_code == "INTRA-ORB":
+        orb_params = merge_intra_orb_params(params)
+        prepared = enrich_intraday_frame(
+            df,
+            or_end=minutes_to_time(int(orb_params["or_end_min"])),
+            ema_periods=[9, 21, int(orb_params["ema_period"])],
+            vol_lookback=int(orb_params["vol_lookback"]),
+            ema_trend_period=int(orb_params["ema_period"]),
+        )
+        strategy = OpeningRangeBreakout(orb_params)
+        force_exit = minutes_to_time(int(orb_params["force_exit_min"]))
+    elif strategy_code == "INTRA-VWAP-ORB":
+        strategy = VwapOrbTrendFilter(params)
+        prepared = enrich_intraday_frame(
+            df,
+            or_end=strategy.or_end,
+            ema_periods=[strategy.ema_fast, strategy.ema_slow],
+            vol_lookback=strategy.vol_lookback,
+            ema_trend_period=strategy.ema_slow,
+            atr_period=strategy.atr_period,
+        )
+        force_exit = strategy.force_exit
+        if params and "risk_pct" in params:
+            risk_pct = float(params["risk_pct"])
+        elif getattr(strategy, "risk_pct", None) is not None:
+            risk_pct = float(strategy.risk_pct)
+    else:
+        prepared = enrich_for_strategy(df, strategy_code)
+        strategy = get_strategy(strategy_code=strategy_code)
+
+    max_trades_per_day = int(getattr(strategy, "max_trades_per_day", 1) or 1)
 
     capital = initial_capital
     equity_curve: list[float] = []
     trades: list[BacktestTrade] = []
     position = None
-    traded_days: set = set()
     daily_trade_count: dict = {}
 
     for i in range(WARMUP, len(prepared)):
@@ -51,20 +100,20 @@ def run_intraday_strategy_backtest(
         ts = row["timestamp"]
         day = trading_date(ts)
 
-        if daily_trade_count.get(day, 0) >= MAX_TRADES_PER_DAY:
-            equity_curve.append(round(capital, 2))
-            continue
-
         if position is not None:
             exit_result = strategy.try_exit(position, prepared, i)
             exit_price = None
             exit_reason = ""
+            qty_frac = 1.0
 
-            if is_force_exit_bar(ts):
+            if is_force_exit_bar(ts, force_exit_time=force_exit):
                 exit_price = float(row["close"])
                 exit_reason = "eod"
-            elif exit_result:
-                exit_price, exit_reason = exit_result
+                qty_frac = 1.0
+            else:
+                unpacked = _unpack_exit(exit_result)
+                if unpacked:
+                    exit_price, exit_reason, qty_frac = unpacked
 
             if ai_exit and exit_price is None:
                 from trading_shared.ai.trade_reasoning import evaluate_dynamic_exit
@@ -82,26 +131,27 @@ def run_intraday_strategy_backtest(
                     vwap=float(row.get("vwap") or row["close"]),
                     bar_time=ts,
                 )
-                pnl_r = (
-                    (float(row["close"]) - float(position["entry_price"]))
-                    / abs(float(position["entry_price"]) - float(position["stoploss"]))
-                    if position["side"] == "BUY"
-                    else (float(position["entry_price"]) - float(row["close"]))
-                    / abs(float(position["entry_price"]) - float(position["stoploss"]))
-                )
                 if dynamic.get("should_exit") and dynamic.get("confidence_score", 0) >= 95:
                     exit_price = float(row["close"])
                     exit_reason = "ai_dynamic_exit"
+                    qty_frac = 1.0
 
             if exit_price is not None:
+                close_qty = int(position["qty"])
+                if 0 < qty_frac < 1:
+                    close_qty = max(1, int(round(position["qty"] * qty_frac)))
+                    if close_qty >= int(position["qty"]):
+                        close_qty = int(position["qty"])
+                        qty_frac = 1.0
+
                 gross = (
-                    (exit_price - position["entry_price"]) * position["qty"]
+                    (exit_price - position["entry_price"]) * close_qty
                     if position["side"] == "BUY"
-                    else (position["entry_price"] - exit_price) * position["qty"]
+                    else (position["entry_price"] - exit_price) * close_qty
                 )
-                costs = transaction_cost(position["entry_price"], exit_price, position["qty"])
+                costs = transaction_cost(position["entry_price"], exit_price, close_qty)
                 pnl = round(gross - costs, 2)
-                notional = position["entry_price"] * position["qty"]
+                notional = position["entry_price"] * close_qty
                 trades.append(
                     BacktestTrade(
                         entry_ts=position["entry_ts"],
@@ -110,19 +160,29 @@ def run_intraday_strategy_backtest(
                         symbol=symbol,
                         entry_price=position["entry_price"],
                         exit_price=round(exit_price, 2),
-                        qty=position["qty"],
+                        qty=close_qty,
                         pnl=pnl,
                         return_pct=round(pnl / notional * 100, 2) if notional else 0.0,
                         stoploss=position["stoploss"],
                         target=position["target"],
+                        exit_reason=exit_reason,
                     )
                 )
                 capital += pnl
-                position = None
+
+                # Partial scale-out: keep remainder and mark scaled_out.
+                if qty_frac < 1 and close_qty < int(position["qty"]):
+                    position["qty"] = int(position["qty"]) - close_qty
+                    position["scaled_out"] = True
+                else:
+                    on_closed = getattr(strategy, "on_trade_closed", None)
+                    if callable(on_closed):
+                        on_closed(day=day, exit_reason=exit_reason)
+                    position = None
         else:
-            traded_today = day in traded_days
-            signal = strategy.try_entry(prepared, i, traded_today)
-            if signal and not is_force_exit_bar(ts):
+            at_daily_cap = max_trades_per_day > 0 and daily_trade_count.get(day, 0) >= max_trades_per_day
+            signal = strategy.try_entry(prepared, i, at_daily_cap)
+            if signal and not is_force_exit_bar(ts, force_exit_time=force_exit):
                 if ai_entry:
                     from trading_shared.ai.trade_reasoning import evaluate_entry_confirmation
 
@@ -151,11 +211,15 @@ def run_intraday_strategy_backtest(
                         "entry_price": round(signal.entry, 2),
                         "qty": qty,
                         "stoploss": signal.stoploss,
+                        "initial_stoploss": signal.stoploss,
                         "target": signal.target,
                         "trailing_pct": signal.trailing_pct,
                         "strategy_code": strategy_code,
+                        "highest_price": round(signal.entry, 2),
+                        "lowest_price": round(signal.entry, 2),
+                        "scaled_out": False,
+                        "breakeven_moved": False,
                     }
-                    traded_days.add(day)
                     daily_trade_count[day] = daily_trade_count.get(day, 0) + 1
 
         equity_curve.append(round(capital, 2))
@@ -203,7 +267,7 @@ def _build_result(
         "avg_trade_pnl": round(total_pnl / len(trades), 2) if trades else 0.0,
         "strategy_code": strategy_code,
         "strategy_label": strategy_label,
-        "cost_model": "0.03% brokerage + 0.01% slippage per leg",
+        "cost_model": COST_MODEL_LABEL,
         "ai_entry": ai_entry,
         "ai_exit": ai_exit,
     }
@@ -239,6 +303,9 @@ def run_intraday_universe_backtest(
     universe: list[str] | None = None,
     ai_entry: bool = False,
     ai_exit: bool = False,
+    params: dict | None = None,
+    symbol_frames: list[tuple[str, pd.DataFrame]] | None = None,
+    picks: list[dict] | None = None,
 ) -> dict:
     """Screen Nifty 50 history, pick top names, and backtest each with split capital."""
     from trading_shared.strategies.intraday_desk.stock_picker import default_universe, rank_universe
@@ -247,37 +314,39 @@ def run_intraday_universe_backtest(
     if not entry_meta:
         raise ValueError(f"Unknown intraday strategy code: {strategy_code}")
 
-    symbols = universe or default_universe()
-    symbol_frames: list[tuple[str, pd.DataFrame]] = []
-    data_source = "demo"
+    data_source = "cache"
+    if symbol_frames is None:
+        symbols = universe or default_universe()
+        symbol_frames = []
+        data_source = "demo"
 
-    for symbol in symbols:
-        try:
-            token, resolved = loader.resolve_token(symbol, None)
-            df, source = loader.load(
-                user_id=user_id,
-                symbol=resolved,
-                token=token,
-                exchange=exchange,
-                interval=interval,
-                from_date=from_date,
-                to_date=to_date,
-                use_demo_data=use_demo_data,
-            )
-            if len(df) >= WARMUP + 5:
-                symbol_frames.append((resolved, df))
-                data_source = source
-        except Exception:
-            continue
+        for symbol in symbols:
+            try:
+                token, resolved = loader.resolve_token(symbol, None)
+                df, source = loader.load(
+                    user_id=user_id,
+                    symbol=resolved,
+                    token=token,
+                    exchange=exchange,
+                    interval=interval,
+                    from_date=from_date,
+                    to_date=to_date,
+                    use_demo_data=use_demo_data,
+                )
+                if len(df) >= WARMUP + 5:
+                    symbol_frames.append((resolved, df))
+                    data_source = source
+            except Exception:
+                continue
 
     if not symbol_frames:
         raise ValueError("No symbols with sufficient historical data for screening.")
 
-    ranked = rank_universe(symbol_frames, strategy_code)
-    if not ranked:
-        raise ValueError("Could not rank any symbols for the selected strategy.")
-
-    picks = ranked[: max(1, min(top_n, len(ranked)))]
+    if picks is None:
+        ranked = rank_universe(symbol_frames, strategy_code)
+        if not ranked:
+            raise ValueError("Could not rank any symbols for the selected strategy.")
+        picks = ranked[: max(1, min(top_n, len(ranked)))]
     pick_symbols = {row["symbol"] for row in picks}
     frame_map = {sym: df for sym, df in symbol_frames if sym in pick_symbols}
 
@@ -290,19 +359,23 @@ def run_intraday_universe_backtest(
         df = frame_map.get(symbol)
         if df is None:
             continue
-        result = run_intraday_strategy_backtest(
-            df=df,
-            strategy_code=strategy_code,
-            symbol=symbol,
-            initial_capital=capital_each,
-            risk_pct=risk_pct,
-            ai_entry=ai_entry,
-            ai_exit=ai_exit,
-        )
+        try:
+            result = run_intraday_strategy_backtest(
+                df=df,
+                strategy_code=strategy_code,
+                symbol=symbol,
+                initial_capital=capital_each,
+                risk_pct=risk_pct,
+                ai_entry=ai_entry,
+                ai_exit=ai_exit,
+                params=params,
+            )
+        except ValueError:
+            continue
         stock_results.append(
             {
                 "symbol": symbol,
-                "score": pick["score"],
+                "score": pick.get("score"),
                 "screen_score": pick.get("screen_score"),
                 "preview_win_rate": pick.get("preview_win_rate"),
                 "total_trades": result["total_trades"],

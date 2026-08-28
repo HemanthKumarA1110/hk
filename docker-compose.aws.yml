@@ -1,0 +1,99 @@
+# AWS host overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.aws.yml up -d --build
+#
+# PUBLIC_HOST must be the Elastic IP or DNS name (no scheme).
+# DATABASE_URL / POSTGRES_PASSWORD must be set in .env (remote-up.sh generates them).
+
+x-aws-env: &aws-env
+  ENV: production
+  ALLOW_PUBLIC_REGISTRATION: "false"
+  EXPOSE_SERVICE_REGISTRY: "false"
+  ENABLE_OPENAPI_DOCS: "false"
+  CORS_ORIGINS: ${CORS_ORIGINS}
+  ANGEL_CLIENT_PUBLIC_IP: ${PUBLIC_HOST}
+  DATABASE_URL: ${DATABASE_URL}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  JWT_SECRET: ${JWT_SECRET}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: trader
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: trading
+
+  auth-service:
+    environment:
+      <<: *aws-env
+
+  market-data-service:
+    environment:
+      <<: *aws-env
+
+  strategy-engine:
+    environment:
+      <<: *aws-env
+
+  ai-decision-engine:
+    environment:
+      <<: *aws-env
+
+  risk-manager:
+    environment:
+      <<: *aws-env
+
+  order-execution-engine:
+    environment:
+      <<: *aws-env
+
+  backtesting-engine:
+    environment:
+      <<: *aws-env
+
+  portfolio-manager:
+    environment:
+      <<: *aws-env
+
+  alert-engine:
+    environment:
+      <<: *aws-env
+
+  analytics-engine:
+    environment:
+      <<: *aws-env
+
+  trade-journal-engine:
+    environment:
+      <<: *aws-env
+
+  admin-dashboard:
+    environment:
+      <<: *aws-env
+
+  api-gateway:
+    environment:
+      <<: *aws-env
+
+  celery-worker:
+    environment:
+      <<: *aws-env
+
+  celery-beat:
+    environment:
+      <<: *aws-env
+
+  scalping-stream-worker:
+    environment:
+      <<: *aws-env
+      SCALPING_STREAM_INTERVAL_SEC: "1.0"
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+
+  frontend:
+    environment:
+      <<: *aws-env
+    ports:
+      - "80:80"

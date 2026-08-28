@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { fetchLatestScan, fetchOptionChain, fetchStreamStatus, startMarketStream } from '../api'
+import { fetchLatestScan, fetchOptionChain, fetchStreamStatus, startMarketStream, stopMarketStream } from '../api'
 
 function wsBase() {
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
@@ -19,7 +19,7 @@ export default function MarketLivePanel({ compact = false }) {
   const [scan, setScan] = useState(null)
   const [optionChain, setOptionChain] = useState(null)
   const [ticks, setTicks] = useState([])
-  const [starting, setStarting] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [streamError, setStreamError] = useState('')
   const wsRef = useRef(null)
 
@@ -27,12 +27,8 @@ export default function MarketLivePanel({ compact = false }) {
     fetchStreamStatus().then(setStreamStatus).catch(() => null)
   }, [])
 
-  const ensureStream = useCallback(async () => {
-    const status = await fetchStreamStatus().catch(() => null)
-    if (status) setStreamStatus(status)
-    if (status?.connected) return status
-
-    setStarting(true)
+  const turnOn = useCallback(async () => {
+    setBusy(true)
     setStreamError('')
     try {
       const started = await startMarketStream()
@@ -42,7 +38,23 @@ export default function MarketLivePanel({ compact = false }) {
       setStreamError(parseApiError(err, 'Unable to start live stream'))
       return null
     } finally {
-      setStarting(false)
+      setBusy(false)
+    }
+  }, [])
+
+  const turnOff = useCallback(async () => {
+    setBusy(true)
+    setStreamError('')
+    try {
+      const stopped = await stopMarketStream()
+      setStreamStatus(stopped)
+      setTicks([])
+      return stopped
+    } catch (err) {
+      setStreamError(parseApiError(err, 'Unable to stop live stream'))
+      return null
+    } finally {
+      setBusy(false)
     }
   }, [])
 
@@ -50,7 +62,6 @@ export default function MarketLivePanel({ compact = false }) {
     refreshStatus()
     fetchLatestScan().then(setScan).catch(() => null)
     fetchOptionChain('NIFTY').then(setOptionChain).catch(() => null)
-    ensureStream()
 
     const statusTimer = setInterval(refreshStatus, 10000)
     const ws = new WebSocket(wsBase())
@@ -75,9 +86,10 @@ export default function MarketLivePanel({ compact = false }) {
       clearInterval(statusTimer)
       ws.close()
     }
-  }, [ensureStream, refreshStatus])
+  }, [refreshStatus])
 
   const connected = Boolean(streamStatus?.connected)
+  const desired = Boolean(streamStatus?.desired ?? streamStatus?.enabled ?? connected)
 
   return (
     <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
@@ -85,20 +97,35 @@ export default function MarketLivePanel({ compact = false }) {
         <div>
           <p className="text-emerald-400 text-xs uppercase tracking-widest">Market data</p>
           <h2 className="text-xl font-semibold">Live Market Engine</h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Optional Angel One tick stream for live quotes and scanners. Off by default.
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          {!connected && (
-            <button
-              type="button"
-              onClick={ensureStream}
-              disabled={starting}
-              className="rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
-            >
-              {starting ? 'Starting…' : 'Start Stream'}
-            </button>
-          )}
-          <span className={`text-xs px-2 py-1 rounded ${connected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
-            {connected ? 'Streaming' : 'Offline'}
+          <button
+            type="button"
+            onClick={desired || connected ? turnOff : turnOn}
+            disabled={busy}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
+              desired || connected
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30'
+                : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400'
+            }`}
+          >
+            {busy
+              ? desired || connected
+                ? 'Stopping…'
+                : 'Starting…'
+              : desired || connected
+                ? 'Turn OFF'
+                : 'Turn ON'}
+          </button>
+          <span
+            className={`text-xs px-2 py-1 rounded ${
+              connected ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'
+            }`}
+          >
+            {connected ? 'Streaming' : desired ? 'Starting…' : 'Offline'}
           </span>
         </div>
       </div>
@@ -111,7 +138,8 @@ export default function MarketLivePanel({ compact = false }) {
 
       {!connected && (
         <p className="text-xs text-slate-500 mb-4">
-          Connect Angel One, then start the stream for live ticks. Scanner hits may still show from the last REST scan.
+          Turn ON only when you need live ticks. Scalping auto-trading and live index
+          quotes work best with the stream running. REST quotes still work with the stream OFF.
         </p>
       )}
       {streamError && <p className="text-xs text-rose-400 mb-4">{streamError}</p>}
@@ -123,7 +151,11 @@ export default function MarketLivePanel({ compact = false }) {
         <div>
           <h3 className="font-medium mb-2">Live Ticks</h3>
           <div className="space-y-2 max-h-64 overflow-auto">
-            {ticks.length === 0 && <p className="text-slate-500 text-sm">Waiting for tick stream…</p>}
+            {ticks.length === 0 && (
+              <p className="text-slate-500 text-sm">
+                {connected ? 'Waiting for tick stream…' : 'Stream is OFF — turn on to see live ticks.'}
+              </p>
+            )}
             {ticks.map((tick) => (
               <div key={tick.token} className="flex justify-between border-b border-slate-800 pb-1">
                 <span>{tick.symbol || tick.token}</span>

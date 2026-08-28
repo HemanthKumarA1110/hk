@@ -8,7 +8,7 @@ from typing import Any
 
 import pandas as pd
 
-from trading_shared.market.scrip_master import parse_option_strike_symbol
+from trading_shared.market.scrip_master import normalize_scrip_strike, parse_option_strike_symbol
 from trading_shared.strategies.scalping_desk.constants import (
     OPTION_DELTA_EST,
     PREMIUM_SL_PCT,
@@ -84,6 +84,27 @@ def premium_risk_from_index(
     return round(sl, 2), round(tgt, 2)
 
 
+def long_premium_brackets(entry: float, sl_points: float, target_points: float) -> tuple[float, float]:
+    """Stop and target for a long CE/PE (premium up = profit)."""
+    entry_px = float(entry)
+    stop = round(max(0.05, entry_px - abs(float(sl_points))), 2)
+    target = round(entry_px + abs(float(target_points)), 2)
+    return stop, target
+
+
+def normalize_long_premium_levels(entry: float, target: float, stoploss: float) -> tuple[float, float]:
+    """Force long-option geometry even if a PUT signal stored inverted prices."""
+    entry_px = float(entry or 0)
+    if entry_px <= 0:
+        return float(stoploss or 0), float(target or 0)
+    tgt_dist = abs(float(target) - entry_px) if target else entry_px * PREMIUM_TGT_PCT
+    sl_dist = abs(entry_px - float(stoploss)) if stoploss else entry_px * PREMIUM_SL_PCT
+    return (
+        round(max(0.05, entry_px - sl_dist), 2),
+        round(entry_px + tgt_dist, 2),
+    )
+
+
 def enrich_candles(df: pd.DataFrame) -> pd.DataFrame:
     """Compute scalping indicators on OHLCV frame."""
     out = df.copy()
@@ -114,7 +135,36 @@ def enrich_candles(df: pd.DataFrame) -> pd.DataFrame:
         out["vol_spike"] = out["volume_ratio"] > 1.5
     out["supertrend_dir"] = supertrend(out, period=10, multiplier=3.0)
     out["atr"] = (out["high"] - out["low"]).rolling(10, min_periods=1).mean()
+    out["adx14"] = _adx(out["high"], out["low"], out["close"], period=14)
     return out
+
+
+def _adx(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
+    """Wilder ADX(period) for trend-strength gating."""
+    high = pd.to_numeric(high, errors="coerce").fillna(0.0)
+    low = pd.to_numeric(low, errors="coerce").fillna(0.0)
+    close = pd.to_numeric(close, errors="coerce").fillna(0.0)
+    prev_close = close.shift(1)
+    tr = pd.concat(
+        [
+            (high - low).abs(),
+            (high - prev_close).abs(),
+            (low - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    up_move = high.diff()
+    down_move = -low.diff()
+    plus_dm = up_move.where((up_move > down_move) & (up_move > 0), 0.0)
+    minus_dm = down_move.where((down_move > up_move) & (down_move > 0), 0.0)
+    alpha = 1 / period
+    atr_w = tr.ewm(alpha=alpha, adjust=False).mean().replace(0, pd.NA)
+    plus_di = 100 * plus_dm.ewm(alpha=alpha, adjust=False).mean() / atr_w
+    minus_di = 100 * minus_dm.ewm(alpha=alpha, adjust=False).mean() / atr_w
+    di_sum = (plus_di + minus_di).replace(0, pd.NA)
+    dx = 100 * (plus_di - minus_di).abs() / di_sum
+    dx = pd.to_numeric(dx, errors="coerce").fillna(0.0)
+    return dx.ewm(alpha=alpha, adjust=False).mean().fillna(0.0)
 
 
 def _ema_bullish(df: pd.DataFrame) -> bool:
@@ -195,7 +245,8 @@ def pick_strike(chain: dict[str, Any], spot: float, signal_type: str) -> dict[st
         strike = row.get("strike")
         if strike is None:
             strike = _parse_strike(symbol)
-        candidates.append({**row, "strike": float(strike or spot), "symbol": symbol})
+        strike = normalize_scrip_strike(float(strike or spot), spot)
+        candidates.append({**row, "strike": strike, "symbol": symbol})
 
     if not candidates:
         step = 50 if spot > 10000 else 50
@@ -223,13 +274,20 @@ def classify_strikes(chain: dict[str, Any], spot: float) -> dict[str, Any]:
 
     ce = [r for r in rows if str(r.get("symbol", "")).endswith("CE")]
     pe = [r for r in rows if str(r.get("symbol", "")).endswith("PE")]
-    ce.sort(key=lambda r: abs(float(r.get("strike") or _parse_strike(str(r.get("symbol")))) - spot))
-    pe.sort(key=lambda r: abs(float(r.get("strike") or _parse_strike(str(r.get("symbol")))) - spot))
+    def _row_strike(row: dict) -> float:
+        raw = row.get("strike") or _parse_strike(str(row.get("symbol"))) or spot
+        return normalize_scrip_strike(float(raw), spot)
+
+    ce.sort(key=lambda r: abs(_row_strike(r) - spot))
+    pe.sort(key=lambda r: abs(_row_strike(r) - spot))
 
     def pack(row: dict | None, label: str) -> dict | None:
         if not row:
             return None
-        strike = float(row.get("strike") or _parse_strike(str(row.get("symbol"))) or spot)
+        strike = normalize_scrip_strike(
+            float(row.get("strike") or _parse_strike(str(row.get("symbol"))) or spot),
+            spot,
+        )
         prev = float(row.get("close") or row.get("ltp") or 0)
         ltp = float(row.get("ltp") or prev)
         chg = ((ltp - prev) / prev * 100) if prev else 0
@@ -308,21 +366,14 @@ def should_exit(
     extended: bool = False,
     original_target: float | None = None,
 ) -> tuple[bool, str]:
-    """Exit on option premium target/stop (v2 quick-scalp — no early indicator cuts)."""
-    if signal_type == "CALL":
-        if current_ltp >= target:
-            return True, "target_hit"
-        if current_ltp <= stoploss:
-            return True, "stoploss_hit"
-    else:
-        if current_ltp <= target:
-            return True, "target_hit"
-        if current_ltp >= stoploss:
-            return True, "stoploss_hit"
+    """Exit a long CE/PE when premium hits target (up) or stop (down)."""
+    sl, tgt = normalize_long_premium_levels(entry, target, stoploss)
+    if current_ltp >= tgt > 0:
+        return True, "target_hit"
+    if sl > 0 and current_ltp <= sl:
+        return True, "stoploss_hit"
     if extended:
-        orig = original_target or target
-        if signal_type == "CALL" and current_ltp >= orig * 2.5:
-            return True, "extended_cap"
-        if signal_type == "PUT" and current_ltp <= orig / 2.5:
+        orig = original_target or tgt
+        if current_ltp >= orig * 2.5:
             return True, "extended_cap"
     return False, ""

@@ -55,6 +55,29 @@ export const register = (payload) =>
 
 export const fetchMe = () => api.get('/auth/me').then((res) => res.data)
 
+export const changePassword = (payload) =>
+  api.post('/auth/change-password', payload).then((res) => res.data)
+
+export const listUsers = () => api.get('/users/').then((res) => res.data)
+
+export const createUser = (payload) =>
+  api.post('/users/', payload).then((res) => res.data)
+
+export const updateUser = (userId, payload) =>
+  api.patch(`/users/${userId}`, payload).then((res) => res.data)
+
+export const resetUserPassword = (userId, newPassword) =>
+  api.post(`/users/${userId}/reset-password`, { new_password: newPassword }).then((res) => res.data)
+
+export const fetchUserBrokerStatus = (userId) =>
+  api.get(`/users/${userId}/broker/status`).then((res) => res.data)
+
+export const saveUserBrokerCredentials = (userId, payload) =>
+  api.post(`/users/${userId}/broker/credentials`, payload).then((res) => res.data)
+
+export const connectUserBroker = (userId) =>
+  api.post(`/users/${userId}/broker/connect`).then((res) => res.data)
+
 export const saveBrokerCredentials = (payload) =>
   api.post('/broker/credentials', payload).then((res) => res.data)
 
@@ -92,6 +115,8 @@ export const fetchOptionChain = (underlying) =>
 
 export const startMarketStream = () => api.post('/market/stream/start').then((res) => res.data)
 
+export const stopMarketStream = () => api.post('/market/stream/stop').then((res) => res.data)
+
 export const fetchScalpingSignals = () => api.get('/strategies/scalping').then((res) => res.data)
 
 export const fetchScalpingDesk = (instrument) =>
@@ -104,6 +129,8 @@ export const saveScalpingDeskConfig = (instrument, config) =>
   api.put(`/strategies/scalping/desk/${instrument}/config`, config).then((res) => res.data)
 export const toggleScalpingAutoTrading = (instrument, enabled) =>
   api.post(`/strategies/scalping/desk/${instrument}/auto-trading`, { enabled }).then((res) => res.data)
+export const closeActiveScalpingTrade = (instrument) =>
+  api.post(`/strategies/scalping/desk/${instrument}/close-active`).then((res) => res.data)
 export const runScalpingDeskBacktest = (instrument, payload) =>
   api.post(`/strategies/scalping/desk/${instrument}/backtest`, payload, { timeout: 300000 }).then((res) => res.data)
 export const optimizeScalpingDesk = (instrument, summary) =>
@@ -178,17 +205,10 @@ export const clearBacktestResults = (params) =>
   api.delete('/backtest/results', { params }).then((res) => res.data)
 
 export const fetchOrderStatus = () => api.get('/orders/status').then((res) => res.data)
-export const setTradingMode = (mode) => api.put('/orders/mode', { mode }).then((res) => res.data)
 export const fetchAutoTrading = () => api.get('/orders/auto').then((res) => res.data)
 export const updateAutoTrading = (payload) => api.put('/orders/auto', payload).then((res) => res.data)
 export const runAutoTradingNow = (engine) =>
   api.post('/orders/auto/run', null, { params: engine ? { engine } : {} }).then((res) => res.data)
-export const fetchPaperPositions = () => api.get('/orders/paper/positions').then((res) => res.data)
-export const fetchPaperOrderHistory = (limit = 100) =>
-  api.get('/orders/paper/history', { params: { limit } }).then((res) => res.data)
-export const resetPaperTrading = () => api.post('/orders/paper/reset').then((res) => res.data)
-export const fetchScalpingPaperTrades = (limit = 100) =>
-  api.get('/strategies/scalping/desk/paper-trades', { params: { limit } }).then((res) => res.data)
 export const placeOrder = (payload) => api.post('/orders', payload).then((res) => res.data)
 export const fetchOrders = () => api.get('/orders').then((res) => res.data)
 export const fetchOrderBook = () => api.get('/orders/book').then((res) => res.data)

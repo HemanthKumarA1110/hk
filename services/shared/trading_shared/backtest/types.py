@@ -16,6 +16,7 @@ class BacktestTrade:
     return_pct: float
     stoploss: float
     target: float
+    exit_reason: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)

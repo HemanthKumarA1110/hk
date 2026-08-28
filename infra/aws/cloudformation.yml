@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Trading bot host - EC2 + Elastic IP + SSM for Docker Compose (Angel One egress IP)
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: m7i-flex.large
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - m7i-flex.large
+      - c7i-flex.large
+      - m6i.xlarge
+      - m6i.2xlarge
+    Description: m7i-flex.large (8GB) works on Free Tier accounts; prefer t3.xlarge (16GB) once paid EC2 is enabled
+
+  VolumeSizeGiB:
+    Type: Number
+    Default: 80
+    MinValue: 40
+    MaxValue: 500
+
+  AllowedSSHCidr:
+    Type: String
+    Default: 127.0.0.1/32
+    Description: Optional SSH CIDR. Prefer SSM Session Manager; leave loopback to effectively disable SSH.
+
+  DeployBucketName:
+    Type: String
+    Description: Existing S3 bucket name used to stage deploy packages
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+Resources:
+  TradingSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Trading bot - HTTP/HTTPS public, SSH optional
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP frontend
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS (if you terminate TLS on host later)
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedSSHCidr
+          Description: SSH (optional)
+      Tags:
+        - Key: Name
+          Value: trading-bot-sg
+        - Key: Project
+          Value: trading-bot
+
+  TradingInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub trading-bot-ec2-role-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: TradingDeployBucketRead
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DeployBucketName}
+                  - !Sub arn:aws:s3:::${DeployBucketName}/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/trading-bot/*
+
+  TradingInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref TradingInstanceRole
+
+  TradingInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref TradingInstanceProfile
+      SecurityGroupIds:
+        - !Ref TradingSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref VolumeSizeGiB
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      MetadataOptions:
+        HttpTokens: required
+        HttpPutResponseHopLimit: 2
+        HttpEndpoint: enabled
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          dnf update -y
+          dnf install -y docker git unzip jq amazon-ssm-agent
+          systemctl enable --now docker amazon-ssm-agent
+          usermod -aG docker ec2-user
+          mkdir -p /usr/local/lib/docker/cli-plugins
+          curl -fsSL "https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64" \
+            -o /usr/local/lib/docker/cli-plugins/docker-compose
+          chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          ln -sfn /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+          mkdir -p /opt/trading-bot /opt/trading-bot/deploy
+          chown -R ec2-user:ec2-user /opt/trading-bot
+          cat >/etc/profile.d/trading-bot.sh <<'EOF'
+          export TRADING_BOT_ROOT=/opt/trading-bot
+          EOF
+          echo "trading-bot host ready $(date -u)" >/opt/trading-bot/HOST_READY
+      Tags:
+        - Key: Name
+          Value: trading-bot
+        - Key: Project
+          Value: trading-bot
+
+  TradingElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: trading-bot-eip
+        - Key: Project
+          Value: trading-bot
+
+  TradingEIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt TradingElasticIP.AllocationId
+      InstanceId: !Ref TradingInstance
+
+Outputs:
+  InstanceId:
+    Value: !Ref TradingInstance
+  PublicIp:
+    Description: Register this IP in Angel One SmartAPI allowlist
+    Value: !Ref TradingElasticIP
+  SecurityGroupId:
+    Value: !Ref TradingSecurityGroup
+  InstanceRoleArn:
+    Value: !GetAtt TradingInstanceRole.Arn
+  Region:
+    Value: !Ref AWS::Region
+  AppUrl:
+    Value: !Sub http://${TradingElasticIP}/
