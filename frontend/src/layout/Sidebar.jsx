@@ -11,7 +11,6 @@ const NAV = [
   { to: '/swing', label: 'Swing', icon: '↗' },
   { to: '/portfolio', label: 'Portfolio', icon: '◫' },
   { to: '/live', label: 'Live Trading', icon: '▶' },
-  { to: '/paper-orders', label: 'Paper Orders', icon: '📋' },
   { to: '/strategy', label: 'Strategy', icon: '◎' },
   { to: '/backtest', label: 'Backtesting', icon: '⧉' },
   { to: '/backtest/results', label: 'Backtest Results', icon: '📊' },
@@ -19,10 +18,15 @@ const NAV = [
   { to: '/alerts', label: 'Alerts', icon: '◈' },
   { to: '/ai', label: 'AI Monitor', icon: '✦' },
   { to: '/notepad', label: 'Notepad', icon: '📝' },
+  { to: '/account', label: 'Account', icon: '⚙' },
 ]
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const navItems =
+    user?.role === 'admin'
+      ? [...NAV, { to: '/admin/users', label: 'Users Admin', icon: '👤' }]
+      : NAV
 
   return (
     <aside className="w-64 shrink-0 border-r border-slate-800 bg-slate-950 flex flex-col">
@@ -32,7 +36,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {NAV.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

@@ -179,8 +179,9 @@ export default function StrategyCatalogPanel() {
       <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-400">
         <p className="text-emerald-400 text-xs uppercase tracking-widest mb-2">Reference codes</p>
         <p>
-          Each strategy has a stable code (<span className="font-mono text-slate-300">SCALP-BT-001</span>,{' '}
+          Each strategy has a stable code (<span className="font-mono text-slate-300">SCALP-BT-003</span>,{' '}
           <span className="font-mono text-slate-300">INTRA-ORB</span>,{' '}
+          <span className="font-mono text-slate-300">INTRA-VWAP-ORB</span>,{' '}
           <span className="font-mono text-slate-300">SWING-EMA</span>). Use these when requesting changes,
           running backtests, or enabling modules on the Live Trading page.
         </p>

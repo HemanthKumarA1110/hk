@@ -23,6 +23,7 @@ from trading_shared.strategies.scalping_desk.constants import (
 )
 from trading_shared.strategies.scalping_desk.engine import (
     compute_scalp_risk,
+    long_premium_brackets,
     max_hold_bars,
     premium_risk_from_index,
 )
@@ -44,7 +45,8 @@ from trading_shared.strategies.scalping_desk.expiry_day_handler import (
 )
 from trading_shared.strategies.scalping_desk.strategies import STRATEGY_REGISTRY
 
-ORB_STRATEGY_IDS = frozenset({"orb_breakout", "smc_orb_fvg"})
+# Battle ORB only — SMC ORB+FVG has its own OR filters (smc_orb_*); do not double-gate.
+ORB_STRATEGY_IDS = frozenset({"orb_breakout"})
 
 logger = logging.getLogger(__name__)
 
@@ -147,12 +149,7 @@ def apply_ai_targets(signal: dict[str, Any], targets: dict[str, Any]) -> dict[st
     entry = float(signal.get("entry") or 0)
     prem_tgt = float(targets["premium_target"])
     prem_sl = float(targets["premium_stop"])
-    if signal.get("signal_type") == "CALL":
-        signal["target"] = round(entry + prem_tgt, 2)
-        signal["stoploss"] = round(entry - prem_sl, 2)
-    else:
-        signal["target"] = round(entry - prem_tgt, 2)
-        signal["stoploss"] = round(entry + prem_sl, 2)
+    signal["stoploss"], signal["target"] = long_premium_brackets(entry, prem_sl, prem_tgt)
     return signal
 
 
@@ -208,7 +205,8 @@ def evaluate_ai_decision(
         "max_trades_per_day": context.get("max_trades_per_day"),
         "max_daily_loss_pct": context.get("max_daily_loss_pct"),
         "risk_per_trade_pct": context.get("risk_per_trade_pct"),
-        "max_lots_per_trade": context.get("max_lots_per_trade", 2),
+        "max_lots_per_trade": context.get("max_lots_per_trade", 0),
+        "capital_utilization_pct": context.get("capital_utilization_pct", 1.0),
     }
     position_size = size_from_signal_context(
         instrument_key,
@@ -272,9 +270,14 @@ def evaluate_ai_decision(
             "battle_vwap_bounce",
             "battle_orb",
         ) or str(context.get("strategy_family") or "").lower() == "battle"
-        if not battle_strategy and not verdict_allows_entry(entry_validation):
+        # SMC has its own OR/bias filters; validator battle-window scoring should not hard-block WAIT.
+        smc_strategy = str(strategy_id or "").startswith("smc_") or str(
+            context.get("strategy_family") or ""
+        ).lower() == "smc"
+        soft_validation = battle_strategy or smc_strategy
+        if not soft_validation and not verdict_allows_entry(entry_validation):
             action = "SKIP"
-        elif battle_strategy and entry_validation and entry_validation.get("verdict") == "SKIP":
+        elif soft_validation and entry_validation and entry_validation.get("verdict") == "SKIP":
             action = "SKIP"
         if strategy_id in ORB_STRATEGY_IDS and not orb_confirmation_allows_entry(
             orb_confirmation, signal.get("signal_type")
@@ -529,11 +532,21 @@ def _rule_based_decision(
     if mtf_result and mtf_blocks_signal(mtf_result, signal_type):
         action = "SKIP"
         reasons.append("MTF counter-trend bias blocks entry")
-    if entry_validation and not verdict_allows_entry(entry_validation):
+    if entry_validation and entry_validation.get("verdict") == "SKIP":
         action = "SKIP"
         reasons.append(
             f"entry validator {entry_validation.get('verdict')} ({entry_validation.get('score')}/5)"
         )
+    elif entry_validation and not verdict_allows_entry(entry_validation):
+        # WAIT is soft for SMC/battle-style families; hard TAKE required only for adaptive catalog.
+        family = str((selection or {}).get("strategy_family") or "").lower()
+        sid = str(strategy_id or "")
+        soft = family in ("battle", "smc") or sid.startswith("smc_")
+        if not soft:
+            action = "SKIP"
+            reasons.append(
+                f"entry validator {entry_validation.get('verdict')} ({entry_validation.get('score')}/5)"
+            )
     if strategy_id in ORB_STRATEGY_IDS and not orb_confirmation_allows_entry(
         orb_confirmation, signal_type
     ):

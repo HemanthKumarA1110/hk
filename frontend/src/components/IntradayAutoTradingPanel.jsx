@@ -27,7 +27,7 @@ function buildStrategySettings(strategies) {
 }
 
 /** Intraday desk auto-trading — AI or manual strategy, capital & daily limits. */
-export default function IntradayAutoTradingPanel({ strategies = [], isPaper = true, embedded = false }) {
+export default function IntradayAutoTradingPanel({ strategies = [], embedded = false }) {
   const [desk, setDesk] = useState(null)
   const [draft, setDraft] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -136,7 +136,7 @@ export default function IntradayAutoTradingPanel({ strategies = [], isPaper = tr
             <h3 className="font-semibold text-lg mt-1">Intraday Bot</h3>
             <p className="text-xs text-slate-500 mt-1">
               AI picks top Nifty 50 stocks · enters & exits · flat by 3:15 PM IST ·{' '}
-              {isPaper ? 'paper' : 'live'} orders · background ~60s
+              live orders · background ~60s
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -321,7 +321,7 @@ export default function IntradayAutoTradingPanel({ strategies = [], isPaper = tr
           <div className="max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6">
             <h3 className="text-lg font-semibold text-cyan-300">Enable intraday auto trading?</h3>
             <p className="text-sm text-slate-400 mt-3">
-              The bot will scan Nifty 50, pick top stocks, and place {isPaper ? 'paper' : 'live'}{' '}
+              The bot will scan Nifty 50, pick top stocks, and place live{' '}
               intraday orders. AI mode uses the decision engine for entry/exit. Losses can exceed
               your daily limit in fast markets — review capital and max loss settings first.
             </p>

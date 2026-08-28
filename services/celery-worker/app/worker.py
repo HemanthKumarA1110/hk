@@ -44,9 +44,5 @@ celery_app.conf.update(
             "task": "swing_desk.run",
             "schedule": 60.0,
         },
-        "paper-trading-sync": {
-            "task": "paper_trading.sync",
-            "schedule": 5.0,
-        },
     },
 )

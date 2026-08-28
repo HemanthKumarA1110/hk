@@ -11,6 +11,7 @@ from typing import Any
 
 from trading_shared.strategies.scalping_desk.constants import INSTRUMENTS
 from trading_shared.strategies.scalping_desk.capital_utilization import (
+    ensure_session_capital,
     is_index_scalp_desk,
     size_index_scalp_from_context,
 )
@@ -35,7 +36,7 @@ Rules to apply:
 1. If trades taken today >= 3, return {{"action":"HALT","reason":"daily trade limit reached"}}
 2. If open P&L <= -({MAX_DAILY_LOSS_PCT}% × capital), return {{"action":"HALT","reason":"daily loss limit hit"}}
 3. After 2 consecutive losses, halve the normal position size
-4. Never exceed 2 lots on a single trade
+4. Never exceed available capital on a single trade (full deployable utilization for index desks)
 
 Return JSON: {{"action":"TRADE|HALT","lots":0,"capital_at_risk":0,"reason":""}}"""
 
@@ -103,7 +104,8 @@ def compute_dynamic_position_size(
     meta = INSTRUMENTS.get(instrument_key, INSTRUMENTS["nifty50"])
     lot_size = int(meta["lot_size"])
     max_daily_loss_pct, risk_per_trade_pct = _resolve_risk_pct(config, capital)
-    max_trades = int(config.get("max_trades_per_day") or max_trades_per_day)
+    raw_max_trades = config.get("max_trades_per_day")
+    max_trades = max_trades_per_day if raw_max_trades is None else int(raw_max_trades)
     max_lots = int(config.get("max_lots_per_trade") or max_lots)
 
     instrument_label = meta.get("label") or instrument_key.upper()
@@ -122,7 +124,7 @@ def compute_dynamic_position_size(
         risk_pts=pts,
     )
 
-    if trade_count >= max_trades:
+    if max_trades > 0 and trade_count >= max_trades:
         return {
             "action": "HALT",
             "lots": 0,

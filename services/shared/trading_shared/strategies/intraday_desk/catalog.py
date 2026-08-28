@@ -1,31 +1,24 @@
-"""Intraday desk strategy catalog — three modular, toggleable strategies."""
+"""Intraday desk strategy catalog — modular, toggleable strategies."""
 
 from __future__ import annotations
 
 from typing import Any
 
-_CATALOG_VERSION = 2
+_CATALOG_VERSION = 4
 
 STRATEGY_CATALOG: list[dict[str, Any]] = [
     {
         "code": "INTRA-ORB",
         "id": "orb",
         "label": "Opening Range Breakout",
-        "description": "Long-only first-bar ORB (9:45–11:30) · 1.5× volume · midpoint stop · 2R target · backtest-ranked universe.",
+        "description": "Long-only ORB · OR→09:55 · entry 09:55–10:30 · EMA34 trend filter · 0.15% buffer · body≥60% · 0.20% stop · 3R.",
         "family": "intraday",
     },
     {
-        "code": "INTRA-VWAP",
-        "id": "vwap_trend",
-        "label": "VWAP Trend",
-        "description": "VWAP cross with 9-EMA alignment · 9:50–14:30 entry window · 1% trail · VWAP re-cross exit · performance-ranked picks.",
-        "family": "intraday",
-    },
-    {
-        "code": "INTRA-EMA-RSI",
-        "id": "ema_rsi",
-        "label": "EMA Crossover + RSI Filter",
-        "description": "9/21 EMA cross 10:00–14:30 · RSI momentum · 2.5R target · only stocks with positive 60d backtest preview.",
+        "code": "INTRA-VWAP-ORB",
+        "id": "vwap_orb",
+        "label": "VWAP ORB Trend Filter",
+        "description": "VWAP + OR (09:15–09:30) · EMA5/13 · vol≥1.35×SMA8 · ATR1.5 stop · BE@1.5ATR · scale@1R then EMA trail · entry 09:30–14:00 · 1 trade/day · chop after 1 stop.",
         "family": "intraday",
     },
 ]

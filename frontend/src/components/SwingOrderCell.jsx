@@ -22,7 +22,6 @@ function formatAmount(value) {
 export default function SwingOrderCell({
   signal,
   canTrade,
-  isPaper,
   onPlaced,
   product = 'DELIVERY',
   productLabel = 'Delivery · Market',
@@ -110,7 +109,7 @@ export default function SwingOrderCell({
       )}
       {!canTrade && (
         <p className="text-[10px] text-rose-400 mt-1">
-          {isPaper ? 'Risk limits block trading' : 'Connect broker or switch to paper mode'}
+          Connect Angel One before placing live orders
         </p>
       )}
     </div>

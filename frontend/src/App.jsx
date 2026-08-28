@@ -17,9 +17,10 @@ import BacktestPage from './pages/BacktestPage'
 import BacktestResultsPage from './pages/BacktestResultsPage'
 import NotepadPage from './pages/NotepadPage'
 import JournalPage from './pages/JournalPage'
-import PaperOrdersPage from './pages/PaperOrdersPage'
 import AlertsPage from './pages/AlertsPage'
 import AIPage from './pages/AIPage'
+import AccountPage from './pages/AccountPage'
+import UsersAdminPage from './pages/UsersAdminPage'
 
 function AppShell() {
   const { isAuthenticated, loading } = useAuth()
@@ -49,7 +50,6 @@ function AppShell() {
           <Route path="swing" element={<SwingPage />} />
           <Route path="portfolio" element={<PortfolioPage />} />
           <Route path="live" element={<LiveTradingPage />} />
-          <Route path="paper-orders" element={<PaperOrdersPage />} />
           <Route path="strategy" element={<StrategyPage />} />
           <Route path="backtest" element={<BacktestPage />} />
           <Route path="backtest/results" element={<BacktestResultsPage />} />
@@ -57,6 +57,8 @@ function AppShell() {
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="ai" element={<AIPage />} />
           <Route path="notepad" element={<NotepadPage />} />
+          <Route path="account" element={<AccountPage />} />
+          <Route path="admin/users" element={<UsersAdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

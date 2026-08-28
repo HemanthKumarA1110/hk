@@ -1,0 +1,2510 @@
+{
+  "strategy": "SCALP-AD-005",
+  "data_source": "angel_one",
+  "date_range": {
+    "from": "2026-06-10",
+    "to": "2026-08-09"
+  },
+  "bars": 15684,
+  "walk_forward": {
+    "train": 9410,
+    "val": 3137,
+    "oos": 3137
+  },
+  "baseline": {
+    "params": {
+      "mb_ema_fast": 9,
+      "mb_ema_slow": 21,
+      "mb_ema_sep_pct": 0.04,
+      "mb_rsi_call_min": 46,
+      "mb_rsi_call_max": 62,
+      "mb_rsi_put_min": 40,
+      "mb_rsi_put_max": 52,
+      "mb_vwap_distance_pct": 0.35,
+      "mb_require_vwap": true,
+      "mb_index_volume_spike_ratio": 1.12,
+      "mb_volume_spike_ratio": 1.35,
+      "mb_require_supertrend": true,
+      "mb_st_period": 10,
+      "mb_st_mult": 3.0,
+      "mb_stop_atr_mult": 1.2,
+      "mb_stop_floor_pct": 0.0002,
+      "mb_target_atr_mult": 0.5,
+      "mb_min_target_pts": 10.0,
+      "mb_max_hold_bars": 8,
+      "mb_require_rsi_slope": false,
+      "mb_momentum_mode": "a",
+      "mb_momentum_atr": 0.0,
+      "mb_ema_mode": "or",
+      "mb_require_two_bar_momentum": true
+    },
+    "full": {
+      "trades": 0,
+      "win_rate": 0.0,
+      "wins": 0,
+      "losses": 0,
+      "profit_factor": 0.0,
+      "expectancy": 0.0,
+      "total_pnl": 0.0,
+      "max_drawdown": 0.0,
+      "avg_win": 0.0,
+      "avg_loss": 0.0,
+      "call_wr": null,
+      "call_n": 0,
+      "put_wr": null,
+      "put_n": 0,
+      "morning_wr": null,
+      "morning_n": 0,
+      "afternoon_wr": null,
+      "afternoon_n": 0,
+      "regimes": {},
+      "max_consec_wins": 0,
+      "max_consec_losses": 0
+    },
+    "train": {
+      "trades": 0,
+      "win_rate": 0.0,
+      "wins": 0,
+      "losses": 0,
+      "profit_factor": 0.0,
+      "expectancy": 0.0,
+      "total_pnl": 0.0,
+      "max_drawdown": 0.0,
+      "avg_win": 0.0,
+      "avg_loss": 0.0,
+      "call_wr": null,
+      "call_n": 0,
+      "put_wr": null,
+      "put_n": 0,
+      "morning_wr": null,
+      "morning_n": 0,
+      "afternoon_wr": null,
+      "afternoon_n": 0,
+      "regimes": {},
+      "max_consec_wins": 0,
+      "max_consec_losses": 0
+    }
+  },
+  "entry_pack": {
+    "label": "entry_diag",
+    "group": "entry_pack",
+    "dataset": "train",
+    "params": {
+      "mb_ema_fast": 9,
+      "mb_ema_slow": 21,
+      "mb_ema_sep_pct": 0.0,
+      "mb_rsi_call_min": 46,
+      "mb_rsi_call_max": 62,
+      "mb_rsi_put_min": 40,
+      "mb_rsi_put_max": 52,
+      "mb_vwap_distance_pct": 1.0,
+      "mb_require_vwap": true,
+      "mb_index_volume_spike_ratio": 1.12,
+      "mb_volume_spike_ratio": 1.35,
+      "mb_require_supertrend": false,
+      "mb_st_period": 10,
+      "mb_st_mult": 3.0,
+      "mb_stop_atr_mult": 1.2,
+      "mb_stop_floor_pct": 0.0002,
+      "mb_target_atr_mult": 0.5,
+      "mb_min_target_pts": 10.0,
+      "mb_max_hold_bars": 8,
+      "mb_require_rsi_slope": false,
+      "mb_momentum_mode": "off",
+      "mb_momentum_atr": 0.0,
+      "mb_ema_mode": "or",
+      "mb_require_two_bar_momentum": false
+    },
+    "metrics": {
+      "trades": 17,
+      "win_rate": 70.59,
+      "wins": 12,
+      "losses": 5,
+      "profit_factor": 1.78,
+      "expectancy": 1598.5,
+      "total_pnl": 27174.48,
+      "max_drawdown": 10438.87,
+      "avg_win": 5166.25,
+      "avg_loss": -6964.11,
+      "call_wr": 72.73,
+      "call_n": 11,
+      "put_wr": 66.67,
+      "put_n": 6,
+      "morning_wr": 42.86,
+      "morning_n": 7,
+      "afternoon_wr": 90.0,
+      "afternoon_n": 10,
+      "regimes": {
+        "trending_down": {
+          "wr": 50.0,
+          "n": 2,
+          "pnl": -1473.19
+        },
+        "ranging": {
+          "wr": 83.33,
+          "n": 6,
+          "pnl": 16006.27
+        },
+        "trending_up": {
+          "wr": 33.33,
+          "n": 3,
+          "pnl": -10364.63
+        },
+        "low_volatility": {
+          "wr": 83.33,
+          "n": 6,
+          "pnl": 23006.03
+        }
+      },
+      "max_consec_wins": 4,
+      "max_consec_losses": 1
+    },
+    "score": 175.69,
+    "session": "both"
+  },
+  "ofat_best": {
+    "vwap_dist": null,
+    "st_req": null,
+    "momentum": {
+      "label": "mom_off",
+      "score": -95.0,
+      "metrics": {
+        "trades": 5,
+        "win_rate": 40.0,
+        "wins": 2,
+        "losses": 3,
+        "profit_factor": 0.71,
+        "expectancy": -1190.63,
+        "total_pnl": -5953.17,
+        "max_drawdown": 20758.95,
+        "avg_win": 7402.9,
+        "avg_loss": -6919.65,
+        "call_wr": 0.0,
+        "call_n": 2,
+        "put_wr": 66.67,
+        "put_n": 3,
+        "morning_wr": 33.33,
+        "morning_n": 3,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 2,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 1310.51
+          },
+          "ranging": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1736.78
+          },
+          "trending_up": {
+            "wr": 0.0,
+            "n": 1,
+            "pnl": -5526.9
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 3
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.04,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "idx_vol": {
+      "label": "vol_1.08",
+      "score": -95.0,
+      "metrics": {
+        "trades": 5,
+        "win_rate": 40.0,
+        "wins": 2,
+        "losses": 3,
+        "profit_factor": 0.71,
+        "expectancy": -1190.63,
+        "total_pnl": -5953.17,
+        "max_drawdown": 20758.95,
+        "avg_win": 7402.9,
+        "avg_loss": -6919.65,
+        "call_wr": 0.0,
+        "call_n": 2,
+        "put_wr": 66.67,
+        "put_n": 3,
+        "morning_wr": 33.33,
+        "morning_n": 3,
+        "afternoon_wr": 50.0,
+        "afternoon_n": 2,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 1310.51
+          },
+          "ranging": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1736.78
+          },
+          "trending_up": {
+            "wr": 0.0,
+            "n": 1,
+            "pnl": -5526.9
+          }
+        },
+        "max_consec_wins": 2,
+        "max_consec_losses": 3
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.04,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.08,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "ema_sep": {
+      "label": "sep_0.0",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "entry_pack": {
+      "label": "entry_diag",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "target_atr": {
+      "label": "tgt_0.4",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.4,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "target_floor": {
+      "label": "tgt_floor_5",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 5.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "stop_atr": {
+      "label": "sl_0.6",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 0.6,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "stop_floor": {
+      "label": "sl_floor_0.0001",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0001,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "rr": {
+      "label": "rr_0.6_0.4",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 0.6,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.4,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "hold": {
+      "label": "hold_7",
+      "score": 211.44,
+      "metrics": {
+        "trades": 21,
+        "win_rate": 71.43,
+        "wins": 15,
+        "losses": 6,
+        "profit_factor": 2.82,
+        "expectancy": 2652.33,
+        "total_pnl": 55699.0,
+        "max_drawdown": 9092.25,
+        "avg_win": 5750.62,
+        "avg_loss": -5093.38,
+        "call_wr": 69.23,
+        "call_n": 13,
+        "put_wr": 75.0,
+        "put_n": 8,
+        "morning_wr": 55.56,
+        "morning_n": 9,
+        "afternoon_wr": 83.33,
+        "afternoon_n": 12,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 4526.89
+          },
+          "ranging": {
+            "wr": 80.0,
+            "n": 10,
+            "pnl": 35325.12
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -7294.72
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23141.71
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 7,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "call_rsi": {
+      "label": "call_50_64",
+      "score": 199.53,
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 2.44,
+        "expectancy": 2310.04,
+        "total_pnl": 36960.64,
+        "max_drawdown": 11134.8,
+        "avg_win": 5218.4,
+        "avg_loss": -6415.03,
+        "call_wr": 80.0,
+        "call_n": 10,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 87.5,
+        "morning_n": 8,
+        "afternoon_wr": 62.5,
+        "afternoon_n": 8,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -2169.11
+          },
+          "ranging": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 5778.68
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 18467.66
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 14883.41
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 50,
+        "mb_rsi_call_max": 64,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "put_rsi": {
+      "label": "put_42_52",
+      "score": 182.39,
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 1.76,
+        "expectancy": 1585.7,
+        "total_pnl": 25371.22,
+        "max_drawdown": 10090.91,
+        "avg_win": 4912.96,
+        "avg_loss": -8396.07,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 80.0,
+        "put_n": 5,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 9,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1125.22
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 15896.58
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10544.52
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 21144.38
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 42,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "ema": {
+      "label": "ema_10_24",
+      "score": 177.14,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.82,
+        "expectancy": 1685.2,
+        "total_pnl": 28648.35,
+        "max_drawdown": 10438.88,
+        "avg_win": 5311.74,
+        "avg_loss": -7018.52,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 17752.17
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10604.93
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 22974.3
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 10,
+        "mb_ema_slow": 24,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "vwap_req": {
+      "label": "vwap_req_False",
+      "score": 197.91,
+      "metrics": {
+        "trades": 25,
+        "win_rate": 72.0,
+        "wins": 18,
+        "losses": 7,
+        "profit_factor": 2.05,
+        "expectancy": 2562.72,
+        "total_pnl": 64067.94,
+        "max_drawdown": 14215.17,
+        "avg_win": 6945.96,
+        "avg_loss": -8708.47,
+        "call_wr": 64.29,
+        "call_n": 14,
+        "put_wr": 81.82,
+        "put_n": 11,
+        "morning_wr": 64.29,
+        "morning_n": 14,
+        "afternoon_wr": 81.82,
+        "afternoon_n": 11,
+        "regimes": {
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 8141.51
+          },
+          "ranging": {
+            "wr": 81.82,
+            "n": 11,
+            "pnl": 49549.38
+          },
+          "trending_up": {
+            "wr": 40.0,
+            "n": 5,
+            "pnl": -3413.14
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 9790.19
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": false,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "rsi_slope": {
+      "label": "slope_False",
+      "score": 175.69,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 70.59,
+        "wins": 12,
+        "losses": 5,
+        "profit_factor": 1.78,
+        "expectancy": 1598.5,
+        "total_pnl": 27174.48,
+        "max_drawdown": 10438.87,
+        "avg_win": 5166.25,
+        "avg_loss": -6964.11,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 90.0,
+        "afternoon_n": 10,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16006.27
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10364.63
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23006.03
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "st_params": {
+      "label": "st_10_3.0",
+      "score": 155.53,
+      "metrics": {
+        "trades": 13,
+        "win_rate": 69.23,
+        "wins": 9,
+        "losses": 4,
+        "profit_factor": 1.34,
+        "expectancy": 825.45,
+        "total_pnl": 10730.81,
+        "max_drawdown": 9877.95,
+        "avg_win": 4670.59,
+        "avg_loss": -7826.12,
+        "call_wr": 66.67,
+        "call_n": 9,
+        "put_wr": 75.0,
+        "put_n": 4,
+        "morning_wr": 25.0,
+        "morning_n": 4,
+        "afternoon_wr": 88.89,
+        "afternoon_n": 9,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -81.34
+          },
+          "ranging": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 895.72
+          },
+          "trending_up": {
+            "wr": 0.0,
+            "n": 2,
+            "pnl": -14680.58
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 6,
+            "pnl": 24597.01
+          }
+        },
+        "max_consec_wins": 3,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": true,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "ema_mode": {
+      "label": "ema_mode_cross",
+      "score": 232.03,
+      "metrics": {
+        "trades": 9,
+        "win_rate": 88.89,
+        "wins": 8,
+        "losses": 1,
+        "profit_factor": 4.02,
+        "expectancy": 2837.55,
+        "total_pnl": 25537.95,
+        "max_drawdown": 8462.81,
+        "avg_win": 4250.09,
+        "avg_loss": -8462.81,
+        "call_wr": 80.0,
+        "call_n": 5,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 85.71,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 20859.86
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 1720.92
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 2957.17
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 1
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "cross",
+        "mb_require_two_bar_momentum": false
+      }
+    },
+    "session": {
+      "label": "sess_afternoon",
+      "score": 189.56,
+      "metrics": {
+        "trades": 17,
+        "win_rate": 76.47,
+        "wins": 13,
+        "losses": 4,
+        "profit_factor": 2.18,
+        "expectancy": 1445.06,
+        "total_pnl": 24565.96,
+        "max_drawdown": 13066.66,
+        "avg_win": 3489.6,
+        "avg_loss": -5199.7,
+        "call_wr": 83.33,
+        "call_n": 12,
+        "put_wr": 60.0,
+        "put_n": 5,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 76.47,
+        "afternoon_n": 17,
+        "regimes": {
+          "ranging": {
+            "wr": 77.78,
+            "n": 9,
+            "pnl": 5943.04
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 18622.92
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 2
+      },
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      }
+    }
+  },
+  "top10_train": [
+    {
+      "label": "ema_mode_cross",
+      "group": "ema_mode",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "cross",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 9,
+        "win_rate": 88.89,
+        "wins": 8,
+        "losses": 1,
+        "profit_factor": 4.02,
+        "expectancy": 2837.55,
+        "total_pnl": 25537.95,
+        "max_drawdown": 8462.81,
+        "avg_win": 4250.09,
+        "avg_loss": -8462.81,
+        "call_wr": 80.0,
+        "call_n": 5,
+        "put_wr": 100.0,
+        "put_n": 4,
+        "morning_wr": 100.0,
+        "morning_n": 2,
+        "afternoon_wr": 85.71,
+        "afternoon_n": 7,
+        "regimes": {
+          "ranging": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 20859.86
+          },
+          "low_volatility": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 1720.92
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 1,
+            "pnl": 2957.17
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 1
+      },
+      "score": 232.03,
+      "session": "both"
+    },
+    {
+      "label": "hold_7",
+      "group": "hold",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 7,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 21,
+        "win_rate": 71.43,
+        "wins": 15,
+        "losses": 6,
+        "profit_factor": 2.82,
+        "expectancy": 2652.33,
+        "total_pnl": 55699.0,
+        "max_drawdown": 9092.25,
+        "avg_win": 5750.62,
+        "avg_loss": -5093.38,
+        "call_wr": 69.23,
+        "call_n": 13,
+        "put_wr": 75.0,
+        "put_n": 8,
+        "morning_wr": 55.56,
+        "morning_n": 9,
+        "afternoon_wr": 83.33,
+        "afternoon_n": 12,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 4526.89
+          },
+          "ranging": {
+            "wr": 80.0,
+            "n": 10,
+            "pnl": 35325.12
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -7294.72
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23141.71
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "score": 211.44,
+      "session": "both"
+    },
+    {
+      "label": "hold_5",
+      "group": "hold",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 5,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 2.66,
+        "expectancy": 2124.77,
+        "total_pnl": 33996.38,
+        "max_drawdown": 7209.0,
+        "avg_win": 4541.01,
+        "avg_loss": -5123.93,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 80.0,
+        "put_n": 5,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 9,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 2809.69
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 16427.81
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -4076.32
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 18835.2
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "score": 205.89,
+      "session": "both"
+    },
+    {
+      "label": "call_50_64",
+      "group": "call_rsi",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 50,
+        "mb_rsi_call_max": 64,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 2.44,
+        "expectancy": 2310.04,
+        "total_pnl": 36960.64,
+        "max_drawdown": 11134.8,
+        "avg_win": 5218.4,
+        "avg_loss": -6415.03,
+        "call_wr": 80.0,
+        "call_n": 10,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 87.5,
+        "morning_n": 8,
+        "afternoon_wr": 62.5,
+        "afternoon_n": 8,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -2169.11
+          },
+          "ranging": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 5778.68
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 18467.66
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 14883.41
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 1
+      },
+      "score": 199.53,
+      "session": "both"
+    },
+    {
+      "label": "vwap_req_False",
+      "group": "vwap_req",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": false,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 25,
+        "win_rate": 72.0,
+        "wins": 18,
+        "losses": 7,
+        "profit_factor": 2.05,
+        "expectancy": 2562.72,
+        "total_pnl": 64067.94,
+        "max_drawdown": 14215.17,
+        "avg_win": 6945.96,
+        "avg_loss": -8708.47,
+        "call_wr": 64.29,
+        "call_n": 14,
+        "put_wr": 81.82,
+        "put_n": 11,
+        "morning_wr": 64.29,
+        "morning_n": 14,
+        "afternoon_wr": 81.82,
+        "afternoon_n": 11,
+        "regimes": {
+          "trending_down": {
+            "wr": 66.67,
+            "n": 3,
+            "pnl": 8141.51
+          },
+          "ranging": {
+            "wr": 81.82,
+            "n": 11,
+            "pnl": 49549.38
+          },
+          "trending_up": {
+            "wr": 40.0,
+            "n": 5,
+            "pnl": -3413.14
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 9790.19
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "score": 197.91,
+      "session": "both"
+    },
+    {
+      "label": "hold_6",
+      "group": "hold",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 6,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 2.25,
+        "expectancy": 2046.49,
+        "total_pnl": 32743.92,
+        "max_drawdown": 7522.88,
+        "avg_win": 4910.88,
+        "avg_loss": -6546.66,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 80.0,
+        "put_n": 5,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 9,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 1442.81
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 17837.22
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -6577.2
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 20041.09
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "score": 197.56,
+      "session": "both"
+    },
+    {
+      "label": "call_52_66",
+      "group": "call_rsi",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 52,
+        "mb_rsi_call_max": 66,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 2.19,
+        "expectancy": 2077.69,
+        "total_pnl": 33243.07,
+        "max_drawdown": 11697.07,
+        "avg_win": 5091.33,
+        "avg_loss": -6963.22,
+        "call_wr": 80.0,
+        "call_n": 10,
+        "put_wr": 66.67,
+        "put_n": 6,
+        "morning_wr": 77.78,
+        "morning_n": 9,
+        "afternoon_wr": 71.43,
+        "afternoon_n": 7,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1821.15
+          },
+          "ranging": {
+            "wr": 66.67,
+            "n": 6,
+            "pnl": 2207.59
+          },
+          "low_volatility": {
+            "wr": 80.0,
+            "n": 5,
+            "pnl": 18103.84
+          },
+          "trending_up": {
+            "wr": 100.0,
+            "n": 3,
+            "pnl": 14752.79
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 1
+      },
+      "score": 192.56,
+      "session": "both"
+    },
+    {
+      "label": "sess_afternoon",
+      "group": "session",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 8,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 17,
+        "win_rate": 76.47,
+        "wins": 13,
+        "losses": 4,
+        "profit_factor": 2.18,
+        "expectancy": 1445.06,
+        "total_pnl": 24565.96,
+        "max_drawdown": 13066.66,
+        "avg_win": 3489.6,
+        "avg_loss": -5199.7,
+        "call_wr": 83.33,
+        "call_n": 12,
+        "put_wr": 60.0,
+        "put_n": 5,
+        "morning_wr": null,
+        "morning_n": 0,
+        "afternoon_wr": 76.47,
+        "afternoon_n": 17,
+        "regimes": {
+          "ranging": {
+            "wr": 77.78,
+            "n": 9,
+            "pnl": 5943.04
+          },
+          "low_volatility": {
+            "wr": 75.0,
+            "n": 8,
+            "pnl": 18622.92
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 2
+      },
+      "score": 189.56,
+      "session": "afternoon"
+    },
+    {
+      "label": "hold_4",
+      "group": "hold",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 4,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 19,
+        "win_rate": 63.16,
+        "wins": 12,
+        "losses": 7,
+        "profit_factor": 2.63,
+        "expectancy": 2348.08,
+        "total_pnl": 44613.44,
+        "max_drawdown": 9395.33,
+        "avg_win": 5999.96,
+        "avg_loss": -3912.3,
+        "call_wr": 69.23,
+        "call_n": 13,
+        "put_wr": 50.0,
+        "put_n": 6,
+        "morning_wr": 37.5,
+        "morning_n": 8,
+        "afternoon_wr": 81.82,
+        "afternoon_n": 11,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": 3775.61
+          },
+          "ranging": {
+            "wr": 62.5,
+            "n": 8,
+            "pnl": 20876.05
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -3784.72
+          },
+          "low_volatility": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 23746.5
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 2
+      },
+      "score": 187.5,
+      "session": "both"
+    },
+    {
+      "label": "hold_15",
+      "group": "hold",
+      "dataset": "train",
+      "params": {
+        "mb_ema_fast": 9,
+        "mb_ema_slow": 21,
+        "mb_ema_sep_pct": 0.0,
+        "mb_rsi_call_min": 46,
+        "mb_rsi_call_max": 62,
+        "mb_rsi_put_min": 40,
+        "mb_rsi_put_max": 52,
+        "mb_vwap_distance_pct": 1.0,
+        "mb_require_vwap": true,
+        "mb_index_volume_spike_ratio": 1.12,
+        "mb_volume_spike_ratio": 1.35,
+        "mb_require_supertrend": false,
+        "mb_st_period": 10,
+        "mb_st_mult": 3.0,
+        "mb_stop_atr_mult": 1.2,
+        "mb_stop_floor_pct": 0.0002,
+        "mb_target_atr_mult": 0.5,
+        "mb_min_target_pts": 10.0,
+        "mb_max_hold_bars": 15,
+        "mb_require_rsi_slope": false,
+        "mb_momentum_mode": "off",
+        "mb_momentum_atr": 0.0,
+        "mb_ema_mode": "or",
+        "mb_require_two_bar_momentum": false
+      },
+      "metrics": {
+        "trades": 16,
+        "win_rate": 75.0,
+        "wins": 12,
+        "losses": 4,
+        "profit_factor": 1.85,
+        "expectancy": 1735.61,
+        "total_pnl": 27769.83,
+        "max_drawdown": 10438.87,
+        "avg_win": 5051.0,
+        "avg_loss": -8210.53,
+        "call_wr": 72.73,
+        "call_n": 11,
+        "put_wr": 80.0,
+        "put_n": 5,
+        "morning_wr": 42.86,
+        "morning_n": 7,
+        "afternoon_wr": 100.0,
+        "afternoon_n": 9,
+        "regimes": {
+          "trending_down": {
+            "wr": 50.0,
+            "n": 2,
+            "pnl": -1473.19
+          },
+          "ranging": {
+            "wr": 83.33,
+            "n": 6,
+            "pnl": 17508.48
+          },
+          "trending_up": {
+            "wr": 33.33,
+            "n": 3,
+            "pnl": -10604.93
+          },
+          "low_volatility": {
+            "wr": 100.0,
+            "n": 5,
+            "pnl": 22339.47
+          }
+        },
+        "max_consec_wins": 4,
+        "max_consec_losses": 1
+      },
+      "score": 184.89,
+      "session": "both"
+    }
+  ],
+  "recommended": {
+    "label": "combo_0_val",
+    "group": "combo_val",
+    "dataset": "val",
+    "params": {
+      "mb_ema_fast": 9,
+      "mb_ema_slow": 21,
+      "mb_ema_sep_pct": 0.0,
+      "mb_rsi_call_min": 46,
+      "mb_rsi_call_max": 62,
+      "mb_rsi_put_min": 40,
+      "mb_rsi_put_max": 52,
+      "mb_vwap_distance_pct": 1.0,
+      "mb_require_vwap": true,
+      "mb_index_volume_spike_ratio": 1.12,
+      "mb_volume_spike_ratio": 1.35,
+      "mb_require_supertrend": false,
+      "mb_st_period": 10,
+      "mb_st_mult": 3.0,
+      "mb_stop_atr_mult": 1.2,
+      "mb_stop_floor_pct": 0.0002,
+      "mb_target_atr_mult": 0.5,
+      "mb_min_target_pts": 10.0,
+      "mb_max_hold_bars": 8,
+      "mb_require_rsi_slope": false,
+      "mb_momentum_mode": "off",
+      "mb_momentum_atr": 0.0,
+      "mb_ema_mode": "or",
+      "mb_require_two_bar_momentum": false
+    },
+    "metrics": {
+      "trades": 11,
+      "win_rate": 72.73,
+      "wins": 8,
+      "losses": 3,
+      "profit_factor": 1.16,
+      "expectancy": 308.72,
+      "total_pnl": 3395.93,
+      "max_drawdown": 11396.36,
+      "avg_win": 3104.87,
+      "avg_loss": -7147.69,
+      "call_wr": 66.67,
+      "call_n": 6,
+      "put_wr": 80.0,
+      "put_n": 5,
+      "morning_wr": 83.33,
+      "morning_n": 6,
+      "afternoon_wr": 60.0,
+      "afternoon_n": 5,
+      "regimes": {
+        "low_volatility": {
+          "wr": 66.67,
+          "n": 3,
+          "pnl": -2597.4
+        },
+        "trending_up": {
+          "wr": 100.0,
+          "n": 3,
+          "pnl": 9156.04
+        },
+        "ranging": {
+          "wr": 60.0,
+          "n": 5,
+          "pnl": -3162.71
+        }
+      },
+      "max_consec_wins": 4,
+      "max_consec_losses": 1
+    },
+    "score": 151.42,
+    "session": "both",
+    "train_score": 175.69,
+    "train_metrics": {
+      "trades": 17,
+      "win_rate": 70.59,
+      "wins": 12,
+      "losses": 5,
+      "profit_factor": 1.78,
+      "expectancy": 1598.5,
+      "total_pnl": 27174.48,
+      "max_drawdown": 10438.87,
+      "avg_win": 5166.25,
+      "avg_loss": -6964.11,
+      "call_wr": 72.73,
+      "call_n": 11,
+      "put_wr": 66.67,
+      "put_n": 6,
+      "morning_wr": 42.86,
+      "morning_n": 7,
+      "afternoon_wr": 90.0,
+      "afternoon_n": 10,
+      "regimes": {
+        "trending_down": {
+          "wr": 50.0,
+          "n": 2,
+          "pnl": -1473.19
+        },
+        "ranging": {
+          "wr": 83.33,
+          "n": 6,
+          "pnl": 16006.27
+        },
+        "trending_up": {
+          "wr": 33.33,
+          "n": 3,
+          "pnl": -10364.63
+        },
+        "low_volatility": {
+          "wr": 83.33,
+          "n": 6,
+          "pnl": 23006.03
+        }
+      },
+      "max_consec_wins": 4,
+      "max_consec_losses": 1
+    }
+  },
+  "recommended_oos": {
+    "label": "recommended_oos",
+    "group": "oos",
+    "dataset": "oos",
+    "params": {
+      "mb_ema_fast": 9,
+      "mb_ema_slow": 21,
+      "mb_ema_sep_pct": 0.0,
+      "mb_rsi_call_min": 46,
+      "mb_rsi_call_max": 62,
+      "mb_rsi_put_min": 40,
+      "mb_rsi_put_max": 52,
+      "mb_vwap_distance_pct": 1.0,
+      "mb_require_vwap": true,
+      "mb_index_volume_spike_ratio": 1.12,
+      "mb_volume_spike_ratio": 1.35,
+      "mb_require_supertrend": false,
+      "mb_st_period": 10,
+      "mb_st_mult": 3.0,
+      "mb_stop_atr_mult": 1.2,
+      "mb_stop_floor_pct": 0.0002,
+      "mb_target_atr_mult": 0.5,
+      "mb_min_target_pts": 10.0,
+      "mb_max_hold_bars": 8,
+      "mb_require_rsi_slope": false,
+      "mb_momentum_mode": "off",
+      "mb_momentum_atr": 0.0,
+      "mb_ema_mode": "or",
+      "mb_require_two_bar_momentum": false
+    },
+    "metrics": {
+      "trades": 16,
+      "win_rate": 62.5,
+      "wins": 10,
+      "losses": 6,
+      "profit_factor": 1.48,
+      "expectancy": 797.34,
+      "total_pnl": 12757.51,
+      "max_drawdown": 19024.54,
+      "avg_win": 3912.5,
+      "avg_loss": -4394.59,
+      "call_wr": 66.67,
+      "call_n": 9,
+      "put_wr": 57.14,
+      "put_n": 7,
+      "morning_wr": 50.0,
+      "morning_n": 6,
+      "afternoon_wr": 70.0,
+      "afternoon_n": 10,
+      "regimes": {
+        "low_volatility": {
+          "wr": 66.67,
+          "n": 9,
+          "pnl": 2298.05
+        },
+        "trending_down": {
+          "wr": 100.0,
+          "n": 1,
+          "pnl": 5589.0
+        },
+        "ranging": {
+          "wr": 60.0,
+          "n": 5,
+          "pnl": 8946.78
+        },
+        "trending_up": {
+          "wr": 0.0,
+          "n": 1,
+          "pnl": -4076.32
+        }
+      },
+      "max_consec_wins": 4,
+      "max_consec_losses": 2
+    },
+    "score": 139.45,
+    "session": "both"
+  },
+  "recommended_full": {
+    "label": "recommended_full",
+    "group": "full",
+    "dataset": "full",
+    "params": {
+      "mb_ema_fast": 9,
+      "mb_ema_slow": 21,
+      "mb_ema_sep_pct": 0.0,
+      "mb_rsi_call_min": 46,
+      "mb_rsi_call_max": 62,
+      "mb_rsi_put_min": 40,
+      "mb_rsi_put_max": 52,
+      "mb_vwap_distance_pct": 1.0,
+      "mb_require_vwap": true,
+      "mb_index_volume_spike_ratio": 1.12,
+      "mb_volume_spike_ratio": 1.35,
+      "mb_require_supertrend": false,
+      "mb_st_period": 10,
+      "mb_st_mult": 3.0,
+      "mb_stop_atr_mult": 1.2,
+      "mb_stop_floor_pct": 0.0002,
+      "mb_target_atr_mult": 0.5,
+      "mb_min_target_pts": 10.0,
+      "mb_max_hold_bars": 8,
+      "mb_require_rsi_slope": false,
+      "mb_momentum_mode": "off",
+      "mb_momentum_atr": 0.0,
+      "mb_ema_mode": "or",
+      "mb_require_two_bar_momentum": false
+    },
+    "metrics": {
+      "trades": 42,
+      "win_rate": 59.52,
+      "wins": 25,
+      "losses": 17,
+      "profit_factor": 1.24,
+      "expectancy": 590.75,
+      "total_pnl": 24811.64,
+      "max_drawdown": 27811.01,
+      "avg_win": 5045.49,
+      "avg_loss": -5960.33,
+      "call_wr": 65.38,
+      "call_n": 26,
+      "put_wr": 50.0,
+      "put_n": 16,
+      "morning_wr": 52.38,
+      "morning_n": 21,
+      "afternoon_wr": 66.67,
+      "afternoon_n": 21,
+      "regimes": {
+        "trending_down": {
+          "wr": 66.67,
+          "n": 3,
+          "pnl": 5330.81
+        },
+        "ranging": {
+          "wr": 58.82,
+          "n": 17,
+          "pnl": 19335.71
+        },
+        "trending_up": {
+          "wr": 62.5,
+          "n": 8,
+          "pnl": 2442.48
+        },
+        "low_volatility": {
+          "wr": 57.14,
+          "n": 14,
+          "pnl": -2297.36
+        }
+      },
+      "max_consec_wins": 4,
+      "max_consec_losses": 3
+    },
+    "score": 139.56,
+    "session": "both"
+  },
+  "notes": [
+    "Baseline current defaults: 0 trades on 60d Angel One Bank Nifty 1m \u2014 VWAP dist 0.35% + ST + momentum block entries.",
+    "Entry filters optimized first to create a tradeable set; then ATR stop/target/hold optimized.",
+    "Supertrend enrich defaults: period=10, multiplier=3.0.",
+    "Risk ATR overrides apply only during Bank Nifty momentum_burst patch (other strategies unchanged)."
+  ]
+}

@@ -8,8 +8,7 @@ from trading_shared.config import get_settings
 from trading_shared.db.session import get_db, init_db
 from trading_shared.execution.auto_trading import AutoTradingRunner, AutoTradingStore
 from trading_shared.execution.executor import OrderExecutor, OrderRejectedError
-from trading_shared.execution.paper import PaperTradeExecutor
-from trading_shared.execution.trading_mode import MODE_LIVE, MODE_PAPER, TradingModeStore
+from trading_shared.execution.trading_mode import MODE_LIVE, TradingModeStore
 from trading_shared.middleware.auth import get_current_user, require_roles
 from trading_shared.models import User, UserRole
 from trading_shared.risk.manager import RiskManager
@@ -24,7 +23,7 @@ from trading_shared.schemas.order import (
 from trading_shared.service_factory import create_service_app, register_ready_health
 
 logger = logging.getLogger(__name__)
-app = create_service_app("order-execution-engine", "Risk-gated live and paper order execution")
+app = create_service_app("order-execution-engine", "Risk-gated live Angel One order execution")
 register_ready_health(app, "order-execution-engine", redis_required=True)
 router = APIRouter(prefix="/api/v1/orders", tags=["orders"])
 
@@ -53,8 +52,7 @@ async def status(
         "phase": 8,
         "trading_mode": mode,
         "broker_connected": broker_ok,
-        "can_trade": can_trade_risk and (mode == MODE_PAPER or broker_ok),
-        "can_trade_paper": can_trade_risk,
+        "can_trade": can_trade_risk and broker_ok,
         "can_trade_live": can_trade_risk and broker_ok,
         "risk_status": risk.get("status"),
     }
@@ -66,18 +64,15 @@ async def set_trading_mode(
     db=Depends(get_db),
     user: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER)),
 ) -> dict:
-    mode = payload.mode.lower().strip()
-    if mode not in (MODE_PAPER, MODE_LIVE):
-        raise HTTPException(status_code=400, detail="mode must be 'paper' or 'live'")
-
-    if mode == MODE_LIVE and not await _async_broker_connected(db, user.id):
+    del payload
+    if not await _async_broker_connected(db, user.id):
         raise HTTPException(
             status_code=400,
-            detail="Connect Angel One before switching to live trading",
+            detail="Connect Angel One before placing live orders",
         )
 
-    TradingModeStore(get_settings().REDIS_URL).set(user.id, mode)
-    return {"trading_mode": mode, "message": f"Switched to {mode} trading"}
+    TradingModeStore(get_settings().REDIS_URL).set(user.id, MODE_LIVE)
+    return {"trading_mode": MODE_LIVE, "message": "Live trading only — paper mode is retired"}
 
 
 @router.get("/auto")
@@ -99,11 +94,10 @@ async def update_auto_trading(
     updates = payload.model_dump(exclude_none=True)
 
     if updates.get("enabled") is True:
-        mode = TradingModeStore(get_settings().REDIS_URL).get(user.id)
-        if mode == MODE_LIVE and not await _async_broker_connected(db, user.id):
+        if not await _async_broker_connected(db, user.id):
             raise HTTPException(
                 status_code=400,
-                detail="Connect Angel One or switch to paper trading before enabling auto-trading in live mode",
+                detail="Connect Angel One before enabling auto-trading",
             )
         if not updates.get("engine"):
             raise HTTPException(status_code=400, detail="engine is required when enabling or disabling auto-trading")
@@ -144,14 +138,6 @@ async def place_order(
     db=Depends(get_db),
     user: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER)),
 ) -> dict:
-    mode = TradingModeStore(get_settings().REDIS_URL).get(user.id)
-    if mode == MODE_PAPER:
-        paper = PaperTradeExecutor(db, user.id)
-        try:
-            return await paper.place_order(payload)
-        except OrderRejectedError as exc:
-            raise HTTPException(status_code=403, detail=str(exc)) from exc
-
     executor = OrderExecutor(db, user.id)
     try:
         return await executor.place_order(payload)
@@ -160,7 +146,7 @@ async def place_order(
     except AngelOneAuthError as exc:
         raise HTTPException(
             status_code=401,
-            detail=f"{exc}. Switch to paper trading or connect Angel One.",
+            detail=f"{exc}. Connect Angel One before placing orders.",
         ) from exc
     except AngelOneAPIError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -176,56 +162,11 @@ async def list_orders(
     return {"orders": orders}
 
 
-@router.get("/paper/positions")
-def paper_positions(
-    db=Depends(get_db),
-    user: User = Depends(get_current_user),
-) -> dict:
-    paper = PaperTradeExecutor(db, user.id)
-    return {"positions": paper.list_positions(), "mode": "paper"}
-
-
-@router.get("/paper/history")
-def paper_order_history(
-    limit: int = 100,
-    db=Depends(get_db),
-    user: User = Depends(get_current_user),
-) -> dict:
-    paper = PaperTradeExecutor(db, user.id)
-    orders = paper.list_all_orders(limit=limit)
-    open_count = sum(1 for o in orders if o.get("status") == "open")
-    closed_count = sum(1 for o in orders if o.get("status") == "closed")
-    rejected = sum(1 for o in orders if o.get("status") == "rejected_by_risk")
-    return {
-        "orders": orders,
-        "count": len(orders),
-        "mode": "paper",
-        "summary": {"open": open_count, "closed": closed_count, "rejected": rejected},
-    }
-
-
-@router.post("/paper/reset")
-def reset_paper_trading(
-    db=Depends(get_db),
-    user: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER)),
-) -> dict:
-    from trading_shared.execution.paper_reset import reset_paper_trading_session
-
-    return reset_paper_trading_session(db, user.id)
-
-
 @router.get("/book")
 async def order_book(
     db=Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    mode = TradingModeStore(get_settings().REDIS_URL).get(user.id)
-    if mode == MODE_PAPER:
-        executor = OrderExecutor(db, user.id)
-        orders = await executor.list_orders()
-        paper_orders = [o for o in orders if o.get("execution_mode") == "paper"]
-        return {"status": True, "source": "paper", "data": paper_orders}
-
     executor = OrderExecutor(db, user.id)
     try:
         return await executor.sync_order_book()
@@ -238,21 +179,11 @@ async def trade_book(
     db=Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    mode = TradingModeStore(get_settings().REDIS_URL).get(user.id)
-    if mode == MODE_PAPER:
-        paper = PaperTradeExecutor(db, user.id)
-        trades = await paper.list_trades()
-        return {"trades": trades, "mode": "paper"}
-
     executor = OrderExecutor(db, user.id)
     try:
         trades = await executor.trade_book()
         return {"trades": trades, "mode": "live"}
     except AngelOneAuthError as exc:
-        paper = PaperTradeExecutor(db, user.id)
-        trades = await paper.list_trades()
-        if trades:
-            return {"trades": trades, "mode": "paper", "note": "Broker not connected; showing paper trades"}
         raise HTTPException(status_code=401, detail=str(exc)) from exc
 
 
@@ -263,9 +194,6 @@ async def modify_order(
     db=Depends(get_db),
     user: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER)),
 ) -> dict:
-    if TradingModeStore(get_settings().REDIS_URL).get(user.id) == MODE_PAPER:
-        raise HTTPException(status_code=400, detail="Modify is not supported in paper trading mode")
-
     payload.order_id = order_id
     executor = OrderExecutor(db, user.id)
     try:
@@ -283,9 +211,6 @@ async def cancel_order(
     db=Depends(get_db),
     user: User = Depends(require_roles(UserRole.ADMIN, UserRole.TRADER)),
 ) -> dict:
-    if TradingModeStore(get_settings().REDIS_URL).get(user.id) == MODE_PAPER:
-        raise HTTPException(status_code=400, detail="Cancel is not supported for filled paper orders")
-
     executor = OrderExecutor(db, user.id)
     try:
         return await executor.cancel_order(OrderCancelRequest(order_id=order_id, variety=variety))

@@ -79,6 +79,13 @@ def test_orb_allows_entry():
     assert orb_confirmation_allows_entry(ok, "PUT") is False
 
 
+def test_smc_not_in_orb_strategy_double_gate():
+    from trading_shared.strategies.scalping_desk.ai_decision import ORB_STRATEGY_IDS
+
+    assert "orb_breakout" in ORB_STRATEGY_IDS
+    assert "smc_orb_fvg" not in ORB_STRATEGY_IDS
+
+
 def test_confirm_orb_from_df():
     import pandas as pd
 

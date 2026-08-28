@@ -18,8 +18,7 @@ from trading_shared.ai.regime import RegimeDetector
 from trading_shared.config import get_settings
 from trading_shared.execution.auto_trading import AutoTradingStore, compute_auto_trade_qty
 from trading_shared.execution.executor import OrderExecutor, OrderRejectedError
-from trading_shared.execution.paper import PaperTradeExecutor
-from trading_shared.execution.trading_mode import MODE_PAPER, TradingModeStore
+from trading_shared.execution.trading_mode import TradingModeStore
 from trading_shared.market.redis_bus import MarketRedisBus
 from trading_shared.market.scrip_master import ScripMasterService
 from trading_shared.risk.manager import RiskManager
@@ -147,7 +146,7 @@ class SwingDeskService:
         return {
             "auto_trading_enabled": enabled,
             "trading_mode": mode,
-            "paper_mode": mode == MODE_PAPER,
+            "paper_mode": False,
             "config": cfg,
         }
 
@@ -270,14 +269,7 @@ class SwingDeskService:
             )
 
             try:
-                if trading_mode == MODE_PAPER:
-                    order = await PaperTradeExecutor(self.db, self.user_id).place_order(
-                        payload,
-                        desk="swing",
-                        strategy_code=code,
-                    )
-                else:
-                    order = await OrderExecutor(self.db, self.user_id).place_order(payload)
+                order = await OrderExecutor(self.db, self.user_id).place_order(payload)
 
                 position = self._build_position_record(
                     symbol=symbol,
@@ -507,14 +499,7 @@ class SwingDeskService:
                     price=exit_price,
                     product="DELIVERY",
                 )
-                if trading_mode == MODE_PAPER:
-                    await PaperTradeExecutor(self.db, self.user_id).close_open_order(
-                        symbol=symbol,
-                        exit_price=exit_price,
-                        reason=exit_reason,
-                    )
-                else:
-                    await OrderExecutor(self.db, self.user_id).place_order(payload)
+                await OrderExecutor(self.db, self.user_id).place_order(payload, is_closing_order=True)
 
                 pnl = (exit_price - float(pos.get("entry_price") or pos["entry"])) * int(pos["qty"])
                 state["daily_pnl"] = round(float(state.get("daily_pnl") or 0) + pnl, 2)

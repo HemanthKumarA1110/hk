@@ -1,0 +1,1043 @@
+{
+  "strategy": "SCALP-BT-004",
+  "source": "angel_one",
+  "date_range": {
+    "from": "2026-06-10",
+    "to": "2026-08-09"
+  },
+  "bars": 15684,
+  "spot_ref": 24111.074999999997,
+  "baseline_full": {
+    "params": {
+      "orb_minutes": 15,
+      "orb_entry_cutoff_min": 630,
+      "orb_buffer_pct": 8e-05,
+      "orb_vol_min": 1.35,
+      "orb_use_vol_spike": false,
+      "orb_rsi_call_min": 50,
+      "orb_rsi_call_max": 65,
+      "orb_rsi_put_min": 34,
+      "orb_rsi_put_max": 48,
+      "orb_require_inside_or": true,
+      "orb_prior_mode": "close_inside",
+      "orb_require_two_bar_momentum": true,
+      "orb_momentum_mode": "two_bar",
+      "orb_momentum_atr_mult": 0.0,
+      "orb_ema_fast": 9,
+      "orb_ema_slow": 21,
+      "orb_min_separation_pct": 0.0,
+      "orb_vol_lookback": 0,
+      "orb_require_rsi_slope": false,
+      "orb_min_body_pct": 0.0,
+      "orb_require_vwap": false,
+      "orb_or_range_min": 40.0,
+      "orb_or_range_max": 80.0,
+      "orb_stop_pts": 6.0,
+      "orb_target_pts": 12.0,
+      "orb_max_hold_bars": 10,
+      "orb_skip_wide_or": true
+    },
+    "metrics": {
+      "trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy": -3923.44,
+      "total_pnl": -3923.44,
+      "max_drawdown": 3923.44,
+      "avg_win": 0.0,
+      "avg_loss": -3923.44,
+      "winning_trades": 0,
+      "losing_trades": 1,
+      "max_consec_wins": 0,
+      "max_consec_losses": 1,
+      "call_n": 1,
+      "put_n": 0,
+      "call_wr": 0.0,
+      "put_wr": null,
+      "morning_n": 1,
+      "afternoon_n": 0,
+      "morning_wr": 0.0,
+      "afternoon_wr": null,
+      "session_detail": {
+        "morning": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -3923.44,
+          "pf": 0.0,
+          "exp": -3923.44,
+          "dd": 3923.44,
+          "wins": 0,
+          "losses": 1
+        },
+        "afternoon": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "CALL": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -3923.44,
+          "pf": 0.0,
+          "exp": -3923.44,
+          "dd": 3923.44,
+          "wins": 0,
+          "losses": 1
+        },
+        "PUT": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "time_buckets": {
+        "09:20-09:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:30-09:45": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -3923.44,
+          "pf": 0.0,
+          "exp": -3923.44,
+          "dd": 3923.44,
+          "wins": 0,
+          "losses": 1
+        },
+        "09:45-10:00": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "10:00-10:15": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "10:15-10:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "13:30-14:00": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "14:00-14:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "14:30-14:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "regimes": {
+        "ranging": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -3923.44,
+          "pf": 0.0,
+          "exp": -3923.44,
+          "dd": 3923.44,
+          "wins": 0,
+          "losses": 1
+        }
+      }
+    }
+  },
+  "scaffold": {
+    "orb_minutes": 15,
+    "orb_entry_cutoff_min": 885,
+    "orb_buffer_pct": 8.294943298878214e-05,
+    "orb_vol_min": 1.15,
+    "orb_use_vol_spike": false,
+    "orb_rsi_call_min": 52,
+    "orb_rsi_call_max": 66,
+    "orb_rsi_put_min": 32,
+    "orb_rsi_put_max": 46,
+    "orb_require_inside_or": false,
+    "orb_prior_mode": "off",
+    "orb_require_two_bar_momentum": false,
+    "orb_momentum_mode": "two_bar",
+    "orb_momentum_atr_mult": 0.0,
+    "orb_ema_fast": 8,
+    "orb_ema_slow": 20,
+    "orb_min_separation_pct": 0.0,
+    "orb_vol_lookback": 0,
+    "orb_require_rsi_slope": false,
+    "orb_min_body_pct": 0.0,
+    "orb_require_vwap": false,
+    "orb_or_range_min": 40.0,
+    "orb_or_range_max": 80.0,
+    "orb_stop_pts": 6.0,
+    "orb_target_pts": 12.0,
+    "orb_max_hold_bars": 10,
+    "orb_skip_wide_or": true
+  },
+  "ofat_picks": {
+    "or": "or_45_80",
+    "buf": "buf_4",
+    "prior": "prior_off",
+    "vol": "vol_1.35",
+    "mom": "mom_atr_True_0.25",
+    "rr": "rr_6_10",
+    "hold": "hold_10",
+    "body": "body_0.0",
+    "sep": "sep_0.0"
+  },
+  "recommended": {
+    "label": "B_locked",
+    "params": {
+      "orb_minutes": 15,
+      "orb_entry_cutoff_min": 885,
+      "orb_buffer_pct": 0.00016589886597756428,
+      "orb_vol_min": 1.35,
+      "orb_use_vol_spike": false,
+      "orb_rsi_call_min": 52,
+      "orb_rsi_call_max": 66,
+      "orb_rsi_put_min": 32,
+      "orb_rsi_put_max": 46,
+      "orb_require_inside_or": false,
+      "orb_prior_mode": "off",
+      "orb_require_two_bar_momentum": true,
+      "orb_momentum_mode": "atr",
+      "orb_momentum_atr_mult": 0.25,
+      "orb_ema_fast": 8,
+      "orb_ema_slow": 20,
+      "orb_min_separation_pct": 0.0,
+      "orb_vol_lookback": 0,
+      "orb_require_rsi_slope": false,
+      "orb_min_body_pct": 0.0,
+      "orb_require_vwap": false,
+      "orb_or_range_min": 45.0,
+      "orb_or_range_max": 80.0,
+      "orb_stop_pts": 6.0,
+      "orb_target_pts": 10.0,
+      "orb_max_hold_bars": 10,
+      "orb_skip_wide_or": true
+    },
+    "train": {
+      "trades": 6,
+      "win_rate": 100.0,
+      "profit_factor": 33643.69,
+      "expectancy": 5607.28,
+      "total_pnl": 33643.69,
+      "max_drawdown": 0.0,
+      "avg_win": 5607.28,
+      "avg_loss": 0.0,
+      "winning_trades": 6,
+      "losing_trades": 0,
+      "max_consec_wins": 6,
+      "max_consec_losses": 0,
+      "call_n": 2,
+      "put_n": 4,
+      "call_wr": 100.0,
+      "put_wr": 100.0,
+      "morning_n": 4,
+      "afternoon_n": 2,
+      "morning_wr": 100.0,
+      "afternoon_wr": 100.0,
+      "session_detail": {
+        "morning": {
+          "n": 4,
+          "wr": 100.0,
+          "pnl": 22269.94,
+          "pf": 22269.94,
+          "exp": 5567.49,
+          "dd": 0.0,
+          "wins": 4,
+          "losses": 0
+        },
+        "afternoon": {
+          "n": 2,
+          "wr": 100.0,
+          "pnl": 11373.75,
+          "pf": 11373.75,
+          "exp": 5686.88,
+          "dd": 0.0,
+          "wins": 2,
+          "losses": 0
+        },
+        "CALL": {
+          "n": 2,
+          "wr": 100.0,
+          "pnl": 10659.38,
+          "pf": 10659.38,
+          "exp": 5329.69,
+          "dd": 0.0,
+          "wins": 2,
+          "losses": 0
+        },
+        "PUT": {
+          "n": 4,
+          "wr": 100.0,
+          "pnl": 22984.31,
+          "pf": 22984.31,
+          "exp": 5746.08,
+          "dd": 0.0,
+          "wins": 4,
+          "losses": 0
+        }
+      },
+      "time_buckets": {
+        "09:20-09:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:30-09:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:45-10:00": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 5001.75,
+          "pf": 5001.75,
+          "exp": 5001.75,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "10:00-10:15": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 5584.5,
+          "pf": 5584.5,
+          "exp": 5584.5,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "10:15-10:30": {
+          "n": 2,
+          "wr": 100.0,
+          "pnl": 11683.69,
+          "pf": 11683.69,
+          "exp": 5841.85,
+          "dd": 0.0,
+          "wins": 2,
+          "losses": 0
+        },
+        "13:30-14:00": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "14:00-14:30": {
+          "n": 2,
+          "wr": 100.0,
+          "pnl": 11373.75,
+          "pf": 11373.75,
+          "exp": 5686.88,
+          "dd": 0.0,
+          "wins": 2,
+          "losses": 0
+        },
+        "14:30-14:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "regimes": {
+        "low_volatility": {
+          "n": 3,
+          "wr": 100.0,
+          "pnl": 16059.38,
+          "pf": 16059.38,
+          "exp": 5353.13,
+          "dd": 0.0,
+          "wins": 3,
+          "losses": 0
+        },
+        "trending_up": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 5584.5,
+          "pf": 5584.5,
+          "exp": 5584.5,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "trending_down": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 5001.75,
+          "pf": 5001.75,
+          "exp": 5001.75,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "ranging": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 6998.06,
+          "pf": 6998.06,
+          "exp": 6998.06,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        }
+      }
+    },
+    "val": {
+      "trades": 4,
+      "win_rate": 25.0,
+      "profit_factor": 1.01,
+      "expectancy": 20.39,
+      "total_pnl": 81.56,
+      "max_drawdown": 4087.69,
+      "avg_win": 6311.25,
+      "avg_loss": -2076.56,
+      "winning_trades": 1,
+      "losing_trades": 3,
+      "max_consec_wins": 1,
+      "max_consec_losses": 2,
+      "call_n": 2,
+      "put_n": 2,
+      "call_wr": 0.0,
+      "put_wr": 50.0,
+      "morning_n": 2,
+      "afternoon_n": 2,
+      "morning_wr": 50.0,
+      "afternoon_wr": 0.0,
+      "session_detail": {
+        "morning": {
+          "n": 2,
+          "wr": 50.0,
+          "pnl": 4169.25,
+          "pf": 2.95,
+          "exp": 2084.62,
+          "dd": 2142.0,
+          "wins": 1,
+          "losses": 1
+        },
+        "afternoon": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -4087.69,
+          "pf": 0.0,
+          "exp": -2043.85,
+          "dd": 4087.69,
+          "wins": 0,
+          "losses": 2
+        },
+        "CALL": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -4087.69,
+          "pf": 0.0,
+          "exp": -2043.85,
+          "dd": 4087.69,
+          "wins": 0,
+          "losses": 2
+        },
+        "PUT": {
+          "n": 2,
+          "wr": 50.0,
+          "pnl": 4169.25,
+          "pf": 2.95,
+          "exp": 2084.62,
+          "dd": 2142.0,
+          "wins": 1,
+          "losses": 1
+        }
+      },
+      "time_buckets": {
+        "09:20-09:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:30-09:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:45-10:00": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 6311.25,
+          "pf": 6311.25,
+          "exp": 6311.25,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "10:00-10:15": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "10:15-10:30": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -2142.0,
+          "pf": 0.0,
+          "exp": -2142.0,
+          "dd": 2142.0,
+          "wins": 0,
+          "losses": 1
+        },
+        "13:30-14:00": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -2737.69,
+          "pf": 0.0,
+          "exp": -2737.69,
+          "dd": 2737.69,
+          "wins": 0,
+          "losses": 1
+        },
+        "14:00-14:30": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1350.0,
+          "pf": 0.0,
+          "exp": -1350.0,
+          "dd": 1350.0,
+          "wins": 0,
+          "losses": 1
+        },
+        "14:30-14:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "regimes": {
+        "ranging": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -4087.69,
+          "pf": 0.0,
+          "exp": -2043.85,
+          "dd": 4087.69,
+          "wins": 0,
+          "losses": 2
+        },
+        "trending_down": {
+          "n": 2,
+          "wr": 50.0,
+          "pnl": 4169.25,
+          "pf": 2.95,
+          "exp": 2084.62,
+          "dd": 2142.0,
+          "wins": 1,
+          "losses": 1
+        }
+      }
+    },
+    "oos": {
+      "trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy": 0.0,
+      "total_pnl": 0.0,
+      "max_drawdown": 0.0,
+      "avg_win": 0.0,
+      "avg_loss": 0.0,
+      "winning_trades": 0,
+      "losing_trades": 0,
+      "max_consec_wins": 0,
+      "max_consec_losses": 0,
+      "call_n": 0,
+      "put_n": 0,
+      "call_wr": null,
+      "put_wr": null,
+      "morning_n": 0,
+      "afternoon_n": 0,
+      "morning_wr": null,
+      "afternoon_wr": null,
+      "session_detail": {
+        "morning": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "afternoon": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "CALL": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "PUT": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "time_buckets": {
+        "09:20-09:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:30-09:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:45-10:00": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "10:00-10:15": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "10:15-10:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "13:30-14:00": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "14:00-14:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "14:30-14:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "regimes": {}
+    },
+    "full": {
+      "trades": 10,
+      "win_rate": 70.0,
+      "profit_factor": 5.05,
+      "expectancy": 3390.3,
+      "total_pnl": 33903.01,
+      "max_drawdown": 5420.81,
+      "avg_win": 6038.44,
+      "avg_loss": -2788.69,
+      "winning_trades": 7,
+      "losing_trades": 3,
+      "max_consec_wins": 6,
+      "max_consec_losses": 2,
+      "call_n": 4,
+      "put_n": 6,
+      "call_wr": 50.0,
+      "put_wr": 83.33,
+      "morning_n": 6,
+      "afternoon_n": 4,
+      "morning_wr": 83.33,
+      "afternoon_wr": 50.0,
+      "session_detail": {
+        "morning": {
+          "n": 6,
+          "wr": 83.33,
+          "pnl": 27950.07,
+          "pf": 10.49,
+          "exp": 4658.35,
+          "dd": 2945.25,
+          "wins": 5,
+          "losses": 1
+        },
+        "afternoon": {
+          "n": 4,
+          "wr": 50.0,
+          "pnl": 5952.94,
+          "pf": 2.1,
+          "exp": 1488.24,
+          "dd": 5420.81,
+          "wins": 2,
+          "losses": 2
+        },
+        "CALL": {
+          "n": 4,
+          "wr": 50.0,
+          "pnl": 5238.57,
+          "pf": 1.97,
+          "exp": 1309.64,
+          "dd": 5420.81,
+          "wins": 2,
+          "losses": 2
+        },
+        "PUT": {
+          "n": 6,
+          "wr": 83.33,
+          "pnl": 28664.44,
+          "pf": 10.73,
+          "exp": 4777.41,
+          "dd": 2945.25,
+          "wins": 5,
+          "losses": 1
+        }
+      },
+      "time_buckets": {
+        "09:20-09:30": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:30-09:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        },
+        "09:45-10:00": {
+          "n": 2,
+          "wr": 100.0,
+          "pnl": 13627.13,
+          "pf": 13627.13,
+          "exp": 6813.56,
+          "dd": 0.0,
+          "wins": 2,
+          "losses": 0
+        },
+        "10:00-10:15": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 5584.5,
+          "pf": 5584.5,
+          "exp": 5584.5,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "10:15-10:30": {
+          "n": 3,
+          "wr": 66.67,
+          "pnl": 8738.44,
+          "pf": 3.97,
+          "exp": 2912.81,
+          "dd": 2945.25,
+          "wins": 2,
+          "losses": 1
+        },
+        "13:30-14:00": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -3620.81,
+          "pf": 0.0,
+          "exp": -3620.81,
+          "dd": 3620.81,
+          "wins": 0,
+          "losses": 1
+        },
+        "14:00-14:30": {
+          "n": 3,
+          "wr": 66.67,
+          "pnl": 9573.75,
+          "pf": 6.32,
+          "exp": 3191.25,
+          "dd": 1800.0,
+          "wins": 2,
+          "losses": 1
+        },
+        "14:30-14:45": {
+          "n": 0,
+          "wr": null,
+          "pnl": 0.0,
+          "pf": null,
+          "exp": null,
+          "dd": 0.0
+        }
+      },
+      "regimes": {
+        "low_volatility": {
+          "n": 3,
+          "wr": 100.0,
+          "pnl": 16059.38,
+          "pf": 16059.38,
+          "exp": 5353.13,
+          "dd": 0.0,
+          "wins": 3,
+          "losses": 0
+        },
+        "trending_up": {
+          "n": 1,
+          "wr": 100.0,
+          "pnl": 5584.5,
+          "pf": 5584.5,
+          "exp": 5584.5,
+          "dd": 0.0,
+          "wins": 1,
+          "losses": 0
+        },
+        "trending_down": {
+          "n": 3,
+          "wr": 66.67,
+          "pnl": 10681.88,
+          "pf": 4.63,
+          "exp": 3560.63,
+          "dd": 2945.25,
+          "wins": 2,
+          "losses": 1
+        },
+        "ranging": {
+          "n": 3,
+          "wr": 33.33,
+          "pnl": 1577.25,
+          "pf": 1.29,
+          "exp": 525.75,
+          "dd": 5420.81,
+          "wins": 1,
+          "losses": 2
+        }
+      }
+    }
+  },
+  "top10": [
+    {
+      "rank": 1,
+      "label": "B_locked",
+      "group": "combo",
+      "score": 317.41,
+      "win_rate": 100.0,
+      "profit_factor": 33643.69,
+      "expectancy": 5607.28,
+      "total_pnl": 33643.69,
+      "max_drawdown": 0.0,
+      "trades": 6
+    },
+    {
+      "rank": 2,
+      "label": "L_or_vol_rr",
+      "group": "combo",
+      "score": 280.27,
+      "win_rate": 85.71,
+      "profit_factor": 7.39,
+      "expectancy": 4043.09,
+      "total_pnl": 28301.63,
+      "max_drawdown": 4429.69,
+      "trades": 7
+    },
+    {
+      "rank": 3,
+      "label": "or_45_80",
+      "group": "or",
+      "score": 273.45,
+      "win_rate": 81.82,
+      "profit_factor": 5.32,
+      "expectancy": 3213.31,
+      "total_pnl": 35346.39,
+      "max_drawdown": 8177.62,
+      "trades": 11
+    },
+    {
+      "rank": 4,
+      "label": "or_45_90",
+      "group": "or",
+      "score": 273.45,
+      "win_rate": 81.82,
+      "profit_factor": 5.32,
+      "expectancy": 3213.31,
+      "total_pnl": 35346.39,
+      "max_drawdown": 8177.62,
+      "trades": 11
+    },
+    {
+      "rank": 5,
+      "label": "E_or45_tp14",
+      "group": "combo",
+      "score": 272.36,
+      "win_rate": 81.82,
+      "profit_factor": 4.79,
+      "expectancy": 2815.26,
+      "total_pnl": 30967.88,
+      "max_drawdown": 8177.62,
+      "trades": 11
+    },
+    {
+      "rank": 6,
+      "label": "vol_1.35",
+      "group": "vol",
+      "score": 269.53,
+      "win_rate": 80.0,
+      "profit_factor": 5.92,
+      "expectancy": 3427.76,
+      "total_pnl": 34277.64,
+      "max_drawdown": 6960.94,
+      "trades": 10
+    },
+    {
+      "rank": 7,
+      "label": "F_atr025",
+      "group": "combo",
+      "score": 268.14,
+      "win_rate": 78.57,
+      "profit_factor": 4.87,
+      "expectancy": 2981.53,
+      "total_pnl": 41741.45,
+      "max_drawdown": 10784.81,
+      "trades": 14
+    },
+    {
+      "rank": 8,
+      "label": "mom_atr_True_0.25",
+      "group": "mom",
+      "score": 268.14,
+      "win_rate": 78.57,
+      "profit_factor": 4.87,
+      "expectancy": 2981.53,
+      "total_pnl": 41741.45,
+      "max_drawdown": 10784.81,
+      "trades": 14
+    },
+    {
+      "rank": 9,
+      "label": "buf_4",
+      "group": "buf",
+      "score": 268.0,
+      "win_rate": 78.57,
+      "profit_factor": 4.83,
+      "expectancy": 2974.9,
+      "total_pnl": 41648.64,
+      "max_drawdown": 10877.62,
+      "trades": 14
+    },
+    {
+      "rank": 10,
+      "label": "buf_5",
+      "group": "buf",
+      "score": 261.28,
+      "win_rate": 76.92,
+      "profit_factor": 4.19,
+      "expectancy": 2670.84,
+      "total_pnl": 34720.88,
+      "max_drawdown": 10877.62,
+      "trades": 13
+    }
+  ],
+  "loss_autopsy": {
+    "n": 3,
+    "by_exit": {
+      "stoploss_hit": 1,
+      "time_exit": 2
+    },
+    "by_side": {
+      "n": 3,
+      "wr": 0.0,
+      "pnl": -8366.06,
+      "pf": 0.0,
+      "exp": -2788.69,
+      "dd": 8366.06,
+      "wins": 0,
+      "losses": 3
+    }
+  },
+  "notes": [
+    "True baseline remains extremely sparse (stacked prior+vol+morning cutoff).",
+    "Scaffold enables afternoon + prior OFF + mom OFF + OR 40-80 from OFAT.",
+    "Combos avoid stacking every OFAT winner (that collapse was observed).",
+    "Walk-forward 60/20/20; OOS not used for parameter search."
+  ]
+}

@@ -6,6 +6,7 @@ from trading_shared.db.session import get_db
 from trading_shared.middleware.auth import get_current_user
 from trading_shared.models import User
 from trading_shared.schemas.auth import (
+    ChangePasswordRequest,
     RefreshTokenRequest,
     TokenResponse,
     UserLoginRequest,
@@ -37,3 +38,13 @@ def refresh(payload: RefreshTokenRequest, db: Session = Depends(get_db)) -> dict
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.post("/change-password")
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    service = AuthService(db)
+    return service.change_password(current_user, payload)

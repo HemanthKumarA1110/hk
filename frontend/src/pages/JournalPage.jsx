@@ -147,7 +147,7 @@ export default function JournalPage() {
           <h2 className="text-3xl font-bold mt-1">Performance Log</h2>
           <p className="text-slate-400 mt-1 max-w-2xl">
             {isTodayView
-              ? "Today's trades across scalping desk, live paper orders, and recorded journal entries."
+              ? "Today's trades across scalping desk, live orders, and recorded journal entries."
               : 'Filtered trade history with export to Excel-compatible CSV.'}
           </p>
         </div>

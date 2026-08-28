@@ -6,7 +6,6 @@ from prometheus_client import Counter, Histogram, CONTENT_TYPE_LATEST, generate_
 from sqlalchemy.exc import OperationalError
 from sqlmodel import select
 from app.api import routes, risk_endpoints
-from app.api.paper_trading import router as paper_router
 from app.api.journal import router as journal_router
 from app.api.broker import router as broker_router
 from app.api.dashboard import router as dashboard_router
@@ -37,7 +36,6 @@ app.add_middleware(
 
 app.include_router(routes.router, prefix="/api")
 app.include_router(risk_endpoints.router, prefix="/api")
-app.include_router(paper_router, prefix="/api")
 app.include_router(journal_router, prefix="/api")
 app.include_router(broker_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")

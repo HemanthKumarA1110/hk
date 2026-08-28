@@ -1,6 +1,6 @@
 x-common-env: &common-env
   ENV: ${ENV:-development}
-  DATABASE_URL: postgresql://trader:traderpass@postgres:5432/trading
+  DATABASE_URL: ${DATABASE_URL:-postgresql://trader:traderpass@postgres:5432/trading}
   REDIS_URL: redis://redis:6379/0
   JWT_SECRET: ${JWT_SECRET:-super_secret_change_in_production}
   ENCRYPTION_KEY: ${ENCRYPTION_KEY:-phase1_dev_encryption_key_32chars}
@@ -41,7 +41,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: trader
-      POSTGRES_PASSWORD: traderpass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-traderpass}
       POSTGRES_DB: trading
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -350,6 +350,7 @@ services:
         condition: service_healthy
 
   scalping-stream-worker:
+    # Scalping auto-trading only (~1s desk eval). Live quotes / scanners / intraday use market-data-service stream.
     build:
       context: .
       dockerfile: services/celery-worker/Dockerfile

@@ -27,7 +27,7 @@ function buildStrategySettings(strategies) {
 }
 
 /** Swing desk auto-trading — AI or manual strategy, capital & daily limits. */
-export default function SwingAutoTradingPanel({ strategies = [], isPaper = true, embedded = false }) {
+export default function SwingAutoTradingPanel({ strategies = [], embedded = false }) {
   const [desk, setDesk] = useState(null)
   const [draft, setDraft] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -136,7 +136,7 @@ export default function SwingAutoTradingPanel({ strategies = [], isPaper = true,
             <h3 className="font-semibold text-lg mt-1">Swing Bot</h3>
             <p className="text-xs text-slate-500 mt-1">
               AI picks top Nifty 50 stocks · multi-day delivery holds · strategy/AI exits ·{' '}
-              {isPaper ? 'paper' : 'live'} orders · background ~60s
+              live orders · background ~60s
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -335,7 +335,7 @@ export default function SwingAutoTradingPanel({ strategies = [], isPaper = true,
             <h3 className="text-lg font-semibold text-violet-300">Enable swing auto trading?</h3>
             <p className="text-sm text-slate-400 mt-3">
               The bot will scan Nifty 50 on daily data, pick top stocks, and place{' '}
-              {isPaper ? 'paper' : 'live'} delivery orders. Positions may be held for several days.
+              live delivery orders. Positions may be held for several days.
               AI mode uses the decision engine for entry/exit — review capital and max loss settings first.
             </p>
             <div className="flex gap-3 mt-6">

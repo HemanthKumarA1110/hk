@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 
 from trading_shared.market.scrip_master import NIFTY50_SYMBOLS
-from trading_shared.strategies.intraday_desk.session import enrich_intraday_frame, trading_date
+from trading_shared.strategies.intraday_desk.session import enrich_for_strategy, enrich_intraday_frame, trading_date
 from trading_shared.strategies.intraday_desk.strategies import get_strategy
 
 WARMUP = 25
@@ -21,7 +21,7 @@ def score_intraday_candidate(df: pd.DataFrame, strategy_code: str) -> float:
     if df is None or len(df) < WARMUP + 5:
         return 0.0
 
-    enriched = enrich_intraday_frame(df)
+    enriched = enrich_for_strategy(df, strategy_code)
     if enriched.empty:
         return 0.0
 
@@ -49,16 +49,17 @@ def _signal_density(df: pd.DataFrame, strategy_code: str) -> float:
 
     hits = 0
     samples = 0
-    traded_days: set = set()
+    daily_counts: dict = {}
+    max_day = int(getattr(strategy, "max_trades_per_day", 1) or 1)
     step = max(len(df) // 40, 1)
 
     for i in range(WARMUP, len(df), step):
         row = df.iloc[i]
         day = trading_date(row["timestamp"])
-        traded_today = day in traded_days
-        if strategy.try_entry(df, i, traded_today):
+        at_cap = daily_counts.get(day, 0) >= max_day
+        if strategy.try_entry(df, i, at_cap):
             hits += 1
-            traded_days.add(day)
+            daily_counts[day] = daily_counts.get(day, 0) + 1
         samples += 1
 
     if samples == 0:

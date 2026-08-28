@@ -224,8 +224,31 @@ def _trend_allowed_directions(trend_direction: str | None) -> str:
     return "both"
 
 
+def apply_expiry_restriction_toggle(
+    handler: dict[str, Any],
+    *,
+    enabled: bool,
+    default_max_trades: int = DEFAULT_MAX_TRADES,
+) -> dict[str, Any]:
+    """When disabled, keep expiry labels for the UI but do not block or shrink the session."""
+    out = dict(handler or {})
+    out["restrictions_enabled"] = bool(enabled)
+    if enabled:
+        return out
+    if out.get("is_expiry") or out.get("is_special_session"):
+        out["recommended_window"] = "full"
+        out["max_trades"] = int(default_max_trades)
+        out["sl_multiplier"] = 1.0
+        out["trend_only"] = False
+        out["allowed_directions"] = "both"
+        out["warning"] = "Expiry restrictions off — trading as a normal session"
+    return out
+
+
 def expiry_blocks_new_entries(handler: dict[str, Any] | None) -> bool:
     if not handler:
+        return False
+    if handler.get("restrictions_enabled") is False:
         return False
     if not handler.get("is_expiry") and not handler.get("is_special_session"):
         return False
@@ -243,6 +266,8 @@ def expiry_allows_signal(
     *,
     trend_direction: str | None = None,
 ) -> bool:
+    if handler and handler.get("restrictions_enabled") is False:
+        return True
     if expiry_blocks_new_entries(handler):
         return False
     if not handler or (not handler.get("is_expiry") and not handler.get("is_special_session")):

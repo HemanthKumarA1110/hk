@@ -28,6 +28,6 @@
  */
 
 export const INSTRUMENT_META = {
-  nifty50: { label: 'Nifty 50 Scalping', underlying: 'NIFTY', lotSize: 25, tvSymbol: 'NSE:NIFTY' },
-  banknifty: { label: 'Bank Nifty Scalping', underlying: 'BANKNIFTY', lotSize: 15, tvSymbol: 'NSE:BANKNIFTY' },
+  nifty50: { label: 'Nifty 50 Scalping', underlying: 'NIFTY', lotSize: 65, tvSymbol: 'NSE:NIFTY' },
+  banknifty: { label: 'Bank Nifty Scalping', underlying: 'BANKNIFTY', lotSize: 30, tvSymbol: 'NSE:BANKNIFTY' },
 }

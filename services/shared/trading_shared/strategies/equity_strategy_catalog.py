@@ -13,7 +13,7 @@ from trading_shared.strategies.swing_desk.catalog import (
     strategy_id_for_code as swing_strategy_id,
 )
 
-_CATALOG_VERSION = 3
+_CATALOG_VERSION = 4
 
 _CODE_INDEX: dict[str, dict[str, Any]] = {
     row["code"]: row for row in INTRADAY_STRATEGIES + SWING_STRATEGIES

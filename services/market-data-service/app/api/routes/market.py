@@ -295,7 +295,7 @@ async def start_stream(_: User = Depends(get_current_user)) -> dict:
 
 
 @router.post("/stream/stop")
-async def stop_stream(_: User = Depends(require_roles(UserRole.ADMIN))) -> dict:
+async def stop_stream(_: User = Depends(get_current_user)) -> dict:
     return await StreamManager.get().stop()
 
 

@@ -1,6 +1,7 @@
 import logging
 
 import redis
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from trading_shared.broker.angel_one.exceptions import AngelOneAuthError, AngelOneAPIError
@@ -20,14 +21,23 @@ class BrokerAuthService:
         self.session_manager = AngelOneSessionManager(db, self.redis)
 
     def save_credentials(self, user: User, payload: BrokerCredentialRequest) -> dict:
-        self.session_manager.save_broker_credential(
-            user=user,
-            api_key=payload.api_key,
-            client_code=payload.client_code,
-            password=payload.password,
-            totp_secret=payload.totp_secret,
-        )
-        return {"status": "saved", "broker": "angel_one"}
+        try:
+            self.session_manager.save_broker_credential(
+                user=user,
+                api_key=payload.api_key,
+                client_code=payload.client_code,
+                password=payload.password,
+                totp_secret=payload.totp_secret,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        status = self.session_manager.get_connection_status(user.id)
+        return {
+            "status": "saved",
+            "broker": "angel_one",
+            "credentials_configured": status.get("credentials_configured", True),
+            "client_code": status.get("client_code"),
+        }
 
     async def connect(self, user: User) -> dict:
         try:
@@ -70,7 +80,7 @@ class BrokerAuthService:
                 return parsed
 
             message = (parsed.get("message") or "").lower()
-            if "token" in message or "session" in message:
+            if "token" in message or "session" in message or "login" in message:
                 client.reset_smart_connect()
                 self.session_manager.mark_session_stale(user.id, parsed.get("message") or "invalid_token")
                 return {
@@ -79,14 +89,52 @@ class BrokerAuthService:
                     "data": {},
                 }
             return parsed
-        except (AngelOneAPIError, AngelOneAuthError) as exc:
-            logger.warning("RMS failed for user_id=%s: %s", user.id, exc)
+        except AngelOneAuthError as exc:
+            logger.warning("RMS auth failed for user_id=%s: %s", user.id, exc)
             self.session_manager.mark_session_stale(user.id, str(exc))
             return {
                 "status": False,
                 "message": "Session expired. Reconnect broker.",
                 "data": {},
             }
+        except AngelOneAPIError as exc:
+            logger.warning("RMS failed for user_id=%s: %s", user.id, exc)
+            message = str(exc)
+            if "rate limit" in message.lower():
+                return {
+                    "status": False,
+                    "message": message,
+                    "data": {},
+                }
+            lower = message.lower()
+            if any(token in lower for token in ("token", "session", "login", "unauthorized", "auth")):
+                self.session_manager.mark_session_stale(user.id, message)
+                return {
+                    "status": False,
+                    "message": "Session expired. Reconnect broker.",
+                    "data": {},
+                }
+            return {
+                "status": False,
+                "message": message,
+                "data": {},
+            }
+        except Exception as exc:
+            logger.warning("RMS unexpected failure for user_id=%s: %s", user.id, exc)
+            from trading_shared.broker.angel_one.client import normalize_angel_error
+
+            message = normalize_angel_error(str(exc))
+            if "rate limit" in message.lower():
+                return {"status": False, "message": message, "data": {}}
+            lower = message.lower()
+            if any(token in lower for token in ("token", "session", "login", "unauthorized", "auth")):
+                self.session_manager.mark_session_stale(user.id, message)
+                return {
+                    "status": False,
+                    "message": "Session expired. Reconnect broker.",
+                    "data": {},
+                }
+            return {"status": False, "message": message, "data": {}}
 
     async def holdings(self, user: User) -> dict:
         client = await self.session_manager.get_client_for_user(user.id)
@@ -151,9 +199,32 @@ class BrokerAuthService:
             }
         except AngelOneAPIError as exc:
             logger.warning("Angel One account snapshot API error user_id=%s: %s", user.id, exc)
+            message = str(exc)
+            if "rate limit" in message.lower():
+                return {
+                    "connected": True,
+                    "message": message,
+                    "orders": [],
+                    "positions": [],
+                    "holdings": [],
+                    "trades": [],
+                }
             return {
                 "connected": False,
-                "message": str(exc),
+                "message": message,
+                "orders": [],
+                "positions": [],
+                "holdings": [],
+                "trades": [],
+            }
+        except Exception as exc:
+            from trading_shared.broker.angel_one.client import normalize_angel_error
+
+            message = normalize_angel_error(str(exc))
+            logger.warning("Angel One account snapshot failed user_id=%s: %s", user.id, message)
+            return {
+                "connected": False,
+                "message": message,
                 "orders": [],
                 "positions": [],
                 "holdings": [],

@@ -23,11 +23,15 @@ from trading_shared.market.scrip_master import (
 from trading_shared.market.websocket_stream import AngelOneWebSocketStream
 from trading_shared.models import MarketCandle, OptionChainSnapshot
 
+from trading_shared.market.constants import REDIS_STREAM_DESIRED_KEY
 from trading_shared.market.redis_bus import MarketRedisBus
 from trading_shared.market.scanner import MarketScanner
 from app.engine.candle_builder import CandleBuilder
 
 logger = logging.getLogger(__name__)
+
+STREAM_DESIRED_ON = "on"
+STREAM_DESIRED_OFF = "off"
 
 
 class StreamStartError(Exception):
@@ -59,6 +63,7 @@ class StreamManager:
         return cls._instance
 
     async def start(self) -> dict[str, Any]:
+        self.set_desired(True)
         if self._running and self.stream and self.stream.connected:
             return self._status_with_message("Live stream already connected")
 
@@ -134,14 +139,22 @@ class StreamManager:
         return status
 
     async def stop(self) -> dict[str, Any]:
+        self.set_desired(False)
         self._running = False
         if self.scanner_task:
             self.scanner_task.cancel()
         if self.stream:
             self.stream.stop()
-        status = self.status()
+            self.stream = None
+        status = self._status_with_message("Live market stream stopped")
         self.redis_bus.store_stream_status(status)
         return status
+
+    def is_desired(self) -> bool:
+        return self.redis_raw.get(REDIS_STREAM_DESIRED_KEY) == STREAM_DESIRED_ON
+
+    def set_desired(self, enabled: bool) -> None:
+        self.redis_raw.set(REDIS_STREAM_DESIRED_KEY, STREAM_DESIRED_ON if enabled else STREAM_DESIRED_OFF)
 
     def status(self) -> dict[str, Any]:
         return self._status_with_message(None)
@@ -151,8 +164,11 @@ class StreamManager:
         if self.stream and self.stream._subscriptions:
             for group in self.stream._subscriptions:
                 subscriptions += len(group.get("tokens", []))
+        desired = self.is_desired()
         payload = {
             "connected": bool(self.stream and self.stream.connected),
+            "desired": desired,
+            "enabled": desired,
             "subscriptions": subscriptions,
             "ticks_received": self.ticks_received,
             "last_tick_at": self.last_tick_at.isoformat() if self.last_tick_at else None,

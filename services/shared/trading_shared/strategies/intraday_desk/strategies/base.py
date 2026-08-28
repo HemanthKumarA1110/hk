@@ -28,8 +28,10 @@ class IntradayStrategy(ABC):
         """Return entry signal on bar idx, or None."""
 
     @abstractmethod
-    def try_exit(self, position: dict, df: pd.DataFrame, idx: int) -> tuple[float, str] | None:
-        """Return (exit_price, reason) if position should close."""
+    def try_exit(
+        self, position: dict, df: pd.DataFrame, idx: int
+    ) -> tuple[float, str] | tuple[float, str, float] | None:
+        """Return (exit_price, reason) or (exit_price, reason, qty_fraction) for partial exits."""
 
     def update_trailing(self, position: dict, row: pd.Series) -> None:
         trail_pct = position.get("trailing_pct")

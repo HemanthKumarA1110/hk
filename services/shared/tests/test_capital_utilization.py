@@ -41,7 +41,7 @@ def test_utilization_lots_full_capital():
         state={"trades_today": 0, "session_start_capital": 100_000},
     )
     assert out["action"] == "TRADE"
-    assert out["lots"] == 33  # 100000 / (120 * 25)
+    assert out["lots"] == 12  # 100000 / (120 * 65)
 
 
 def test_utilization_halt_on_open_trade():
@@ -56,13 +56,50 @@ def test_utilization_halt_on_open_trade():
     assert "open trade" in out["reason"]
 
 
+def test_utilization_zero_max_trades_means_unlimited():
+    out = compute_utilization_lots(
+        "nifty50",
+        100_000,
+        120,
+        config={"max_trades_per_day": 0},
+        state={"trades_today": 99, "session_start_capital": 100_000},
+    )
+    assert out["action"] == "TRADE"
+
+
 def test_broker_cash_seeds_session():
     state = {"trading_day": "2026-06-29"}
-    config = {"capital": 50_000, "auto_capital_from_broker": True, "capital_utilization_pct": 0.95}
+    config = {"capital": 50_000, "auto_capital_from_broker": True, "capital_utilization_pct": 1.0}
     state, info = ensure_session_capital(state, config, broker_cash=120_000)
     assert info["session_start_capital"] == 120_000
     assert info["session_capital_source"] == "broker"
-    assert info["deployable_capital"] == 114_000
+    assert info["deployable_capital"] == 120_000
+
+
+def test_broker_cash_replaces_fallback_when_flat():
+    state = {
+        "trading_day": "2026-06-29",
+        "session_start_capital": 100_000,
+        "session_capital_source": "manual",
+    }
+    config = {"capital": 100_000, "auto_capital_from_broker": True, "capital_utilization_pct": 1.0}
+    _, info = ensure_session_capital(state, config, broker_cash=32_500.5)
+    assert info["session_start_capital"] == 32_500.5
+    assert info["session_capital_source"] == "broker"
+    assert info["deployable_capital"] == 32_500.5
+
+
+def test_open_trade_does_not_follow_blocked_margin():
+    state = {
+        "trading_day": "2026-06-29",
+        "session_start_capital": 80_000,
+        "session_capital_source": "broker",
+        "active_trades": [{"status": "open"}],
+    }
+    config = {"capital": 100_000, "auto_capital_from_broker": True, "capital_utilization_pct": 1.0}
+    _, info = ensure_session_capital(state, config, broker_cash=8_000)
+    assert info["session_start_capital"] == 80_000
+    assert info["session_capital_source"] == "broker"
 
 
 def test_backtest_pnl_scales_with_lots():

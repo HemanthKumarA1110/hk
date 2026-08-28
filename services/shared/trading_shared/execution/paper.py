@@ -114,14 +114,32 @@ class PaperTradeExecutor:
         stoploss = payload.stoploss or self.risk.engine.dynamic_stoploss(
             entry_price, payload.side, atr=entry_price * 0.005
         )
-        evaluation = self.risk.evaluate_trade(entry_price, stoploss, payload.side)
-        if not evaluation["approved"]:
-            self._persist_rejected(payload, symbol, token, exchange, stoploss, evaluation["reason"])
-            raise OrderRejectedError(evaluation["reason"])
-
-        approved_qty = min(payload.qty, evaluation["position_size"]["qty"])
-        if approved_qty <= 0:
-            raise OrderRejectedError("Risk engine returned zero quantity")
+        desk_driven = bool(desk and str(desk).strip())
+        if desk_driven:
+            can_trade, halt_reason = self.risk.engine.can_trade()
+            if not can_trade:
+                raise OrderRejectedError(halt_reason or "Trading halted")
+            if payload.qty <= 0:
+                raise OrderRejectedError("Invalid quantity from desk")
+            approved_qty = int(payload.qty)
+            evaluation = {
+                "approved": True,
+                "reason": "desk_sized",
+                "position_size": {"qty": approved_qty},
+            }
+        else:
+            evaluation = self.risk.evaluate_trade(entry_price, stoploss, payload.side)
+            if not evaluation["approved"]:
+                reason = evaluation["reason"]
+                if reason == "ok" and int(evaluation["position_size"].get("qty") or 0) <= 0:
+                    reason = (
+                        evaluation["position_size"].get("message")
+                        or "Risk capital allocation full — close open paper positions or reset session"
+                    )
+                raise OrderRejectedError(reason)
+            approved_qty = min(payload.qty, evaluation["position_size"]["qty"])
+            if approved_qty <= 0:
+                raise OrderRejectedError("Risk engine returned zero quantity")
 
         broker_order_id = f"PAPER-{uuid.uuid4().hex[:12].upper()}"
         now_iso = datetime.now(timezone.utc).isoformat()
@@ -223,10 +241,51 @@ class PaperTradeExecutor:
         order.broker_response_json = _dump_payload(payload["response"], meta)
         self.db.commit()
         self.db.refresh(order)
-        self.risk.register_trade(pnl, 0.0)
+        release_notional = float(order.price) * int(order.qty)
+        self.risk.register_trade(pnl, -release_notional)
         return self._serialize_order(order, message="Paper position closed at live price (simulated)")
 
+    async def close_eod_open_orders(self) -> int:
+        """Force-close open paper orders after the 3:15 PM IST market cutoff."""
+        from trading_shared.strategies.scalping_desk.constants import FORCE_EXIT_HOUR_IST
+        from zoneinfo import ZoneInfo
+
+        now_ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+        force_exit = now_ist.hour > FORCE_EXIT_HOUR_IST[0] or (
+            now_ist.hour == FORCE_EXIT_HOUR_IST[0] and now_ist.minute >= FORCE_EXIT_HOUR_IST[1]
+        )
+        if not force_exit:
+            return 0
+
+        rows = (
+            self.db.query(BrokerOrder)
+            .filter(
+                BrokerOrder.user_id == self.user_id,
+                BrokerOrder.execution_mode == "paper",
+                BrokerOrder.status == "open",
+            )
+            .order_by(BrokerOrder.created_at.asc())
+            .all()
+        )
+        closed = 0
+        for row in rows:
+            try:
+                result = await self.close_open_order(
+                    broker_order_id=row.broker_order_id,
+                    reason="market_close_eod",
+                )
+                if result:
+                    closed += 1
+            except Exception:
+                logger.exception("EOD paper close failed for %s", row.broker_order_id)
+        return closed
+
     async def refresh_open_orders(self) -> list[dict]:
+        interval = int(getattr(self.settings, "PAPER_QUOTE_REFRESH_SEC", 30))
+        throttle_key = f"paper:quote_refresh:{self.user_id}"
+        if self.redis.get(throttle_key):
+            return self._serialize_open_rows()
+
         rows = (
             self.db.query(BrokerOrder)
             .filter(
@@ -239,14 +298,19 @@ class PaperTradeExecutor:
         )
         updated: list[dict] = []
         for row in rows:
-            try:
-                live_ltp, quote_source = await self._resolve_live_price(
-                    row.exchange, row.symbol, row.symboltoken, 0
-                )
-            except OrderRejectedError:
-                continue
             payload = _parse_payload(row.broker_response_json)
             meta = payload["meta"]
+            try:
+                live_ltp, quote_source = await self._resolve_live_price(
+                    row.exchange, row.symbol, row.symboltoken, 0, cached_ltp=meta.get("live_ltp")
+                )
+            except OrderRejectedError:
+                cached = meta.get("live_ltp") or row.price
+                if cached:
+                    live_ltp = float(cached)
+                    quote_source = "cached"
+                else:
+                    continue
             meta["live_ltp"] = live_ltp
             meta["quote_source"] = quote_source
             meta["unrealized_pnl"] = round(self._calc_pnl(row.side, row.price, live_ltp, row.qty), 2)
@@ -255,7 +319,21 @@ class PaperTradeExecutor:
             updated.append(self._serialize_paper_row(row))
         if updated:
             self.db.commit()
-        return updated
+        self.redis.setex(throttle_key, interval, "1")
+        return updated or self._serialize_open_rows()
+
+    def _serialize_open_rows(self) -> list[dict]:
+        rows = (
+            self.db.query(BrokerOrder)
+            .filter(
+                BrokerOrder.user_id == self.user_id,
+                BrokerOrder.execution_mode == "paper",
+                BrokerOrder.status == "open",
+            )
+            .order_by(BrokerOrder.created_at.asc())
+            .all()
+        )
+        return [self._serialize_paper_row(row) for row in rows]
 
     async def list_trades(self, limit: int = 50) -> list[dict]:
         rows = (
@@ -277,6 +355,7 @@ class PaperTradeExecutor:
             .filter(
                 BrokerOrder.user_id == self.user_id,
                 BrokerOrder.execution_mode == "paper",
+                BrokerOrder.status.in_(("open", "closed")),
             )
             .order_by(BrokerOrder.created_at.desc())
             .limit(limit)
@@ -336,6 +415,8 @@ class PaperTradeExecutor:
         symbol: str,
         token: str,
         limit_price: float,
+        *,
+        cached_ltp: float | None = None,
     ) -> tuple[float, str]:
         if limit_price and limit_price > 0:
             return float(limit_price), "limit"
@@ -360,6 +441,9 @@ class PaperTradeExecutor:
                 return float(ltp), "angel_ltp"
         except (AngelOneAuthError, AngelOneAPIError, TypeError, ValueError):
             logger.debug("Angel LTP fetch failed for %s", symbol, exc_info=True)
+
+        if cached_ltp and float(cached_ltp) > 0:
+            return float(cached_ltp), "cached"
 
         raise OrderRejectedError(
             "Live market price unavailable. Connect Angel One and start the market stream for paper trading."
@@ -495,13 +579,16 @@ async def refresh_all_paper_orders(db: Session) -> dict[str, int]:
         .all()
     ]
     refreshed = 0
+    eod_closed = 0
     for user_id in user_ids:
         try:
-            updated = await PaperTradeExecutor(db, user_id).refresh_open_orders()
+            executor = PaperTradeExecutor(db, user_id)
+            updated = await executor.refresh_open_orders()
             refreshed += len(updated)
+            eod_closed += await executor.close_eod_open_orders()
         except Exception:
             logger.exception("Paper quote refresh failed for user_id=%s", user_id)
-    return {"users": len(user_ids), "orders_refreshed": refreshed}
+    return {"users": len(user_ids), "orders_refreshed": refreshed, "eod_closed": eod_closed}
 
 
 def refresh_all_paper_orders_sync(db: Session) -> dict[str, int]:

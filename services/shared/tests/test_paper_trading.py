@@ -3,6 +3,8 @@ import pytest
 from trading_shared.broker.angel_one.exceptions import AngelOneAuthError
 from trading_shared.execution.executor import OrderRejectedError
 from trading_shared.execution.paper import PaperTradeExecutor, _calc_pnl, _desk_to_source, _source_label
+from trading_shared.schemas.order import OrderCreateRequest
+from trading_shared.strategies.scalping_desk.service import _entry_bars_held
 
 
 class _FakeTickBus:
@@ -64,3 +66,90 @@ async def test_resolve_live_price_rejects_without_live_data():
 
     with pytest.raises(OrderRejectedError):
         await PaperTradeExecutor._resolve_live_price(executor, "NSE", "SBIN-EQ", "999", 0)
+
+
+def test_entry_bars_held_uses_entry_time():
+    from datetime import datetime, timedelta, timezone
+
+    ten_min_ago = (datetime.now(timezone.utc) - timedelta(minutes=10)).isoformat()
+    held = _entry_bars_held({"entry_time": ten_min_ago})
+    assert held >= 9
+
+
+@pytest.mark.asyncio
+async def test_place_order_does_not_persist_risk_rejection(monkeypatch):
+    from unittest.mock import MagicMock
+
+    executor = PaperTradeExecutor.__new__(PaperTradeExecutor)
+    executor.user_id = 1
+    executor.db = MagicMock()
+    executor.risk = MagicMock()
+    executor.risk.evaluate_trade.return_value = {"approved": False, "reason": "Daily loss cap"}
+    executor.risk.engine.dynamic_stoploss.return_value = 90.0
+
+    async def _resolve_symbol(*_args, **_kwargs):
+        return "NIFTY24JUL24000CE", "12345", "NFO"
+
+    async def _resolve_live_price(*_args, **_kwargs):
+        return 142.5, "angel_stream"
+
+    monkeypatch.setattr(executor, "_resolve_symbol", _resolve_symbol)
+    monkeypatch.setattr(executor, "_resolve_live_price", _resolve_live_price)
+
+    payload = OrderCreateRequest(
+        symbol="NIFTY24JUL24000CE",
+        symboltoken="12345",
+        exchange="NFO",
+        side="BUY",
+        qty=50,
+        order_type="MARKET",
+        price=0,
+        product="INTRADAY",
+    )
+
+    with pytest.raises(OrderRejectedError, match="Daily loss cap"):
+        await executor.place_order(payload)
+
+    executor.db.add.assert_not_called()
+    executor.db.commit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_desk_paper_order_uses_desk_qty_despite_full_exposure(monkeypatch):
+    from unittest.mock import MagicMock
+
+    executor = PaperTradeExecutor.__new__(PaperTradeExecutor)
+    executor.user_id = 1
+    executor.db = MagicMock()
+    executor.db.add = MagicMock()
+    executor.db.commit = MagicMock()
+    executor.db.refresh = MagicMock(side_effect=lambda row: row)
+    executor.risk = MagicMock()
+    executor.risk.engine.can_trade.return_value = (True, "ok")
+    executor.risk.engine.dynamic_stoploss.return_value = 72.0
+    executor.risk.register_trade = MagicMock(return_value={})
+
+    async def _resolve_symbol(*_args, **_kwargs):
+        return "NIFTY14JUL2624200CE", "12345", "NFO"
+
+    async def _resolve_live_price(*_args, **_kwargs):
+        return 82.2, "limit"
+
+    monkeypatch.setattr(executor, "_resolve_symbol", _resolve_symbol)
+    monkeypatch.setattr(executor, "_resolve_live_price", _resolve_live_price)
+
+    payload = OrderCreateRequest(
+        symbol="NIFTY14JUL2624200CE",
+        symboltoken="12345",
+        exchange="NFO",
+        side="BUY",
+        qty=75,
+        order_type="MARKET",
+        price=82.2,
+        product="INTRADAY",
+    )
+
+    result = await executor.place_order(payload, desk="scalping:nifty50", strategy_code="SCALP-BT-003")
+
+    assert result["qty"] == 75
+    executor.risk.evaluate_trade.assert_not_called()

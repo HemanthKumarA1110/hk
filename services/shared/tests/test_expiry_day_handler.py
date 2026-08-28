@@ -75,3 +75,43 @@ def test_expiry_allows_trend_call():
 def test_hours_to_expiry():
     hrs = hours_to_expiry(_dt(2026, 6, 4, 12, 0))
     assert 3.0 <= hrs <= 4.0
+
+
+def test_expiry_am_does_not_emit_max_trades_ceiling_alert():
+    from trading_shared.strategies.scalping_desk.guards import guard_status
+
+    expiry = handle_expiry_day("nifty50", _dt(2026, 6, 4, 9, 40))
+    status = guard_status(
+        {"trades_today": 0, "daily_pnl": 0, "stream_connected": True},
+        {"max_trades_per_day": 3, "max_loss_per_day": 5000, "auto_trading_enabled": True},
+        expiry_handler=expiry,
+    )
+    assert status["can_enter"] is False
+    assert any("Expiry AM" in a for a in status["alerts"])
+    assert not any("Max trades ceiling" in a for a in status["alerts"])
+    assert status["trades_capped"] is False
+
+
+def test_expiry_restrictions_toggle_disables_blocks():
+    from trading_shared.strategies.scalping_desk.expiry_day_handler import apply_expiry_restriction_toggle
+
+    blocked = handle_expiry_day("nifty50", _dt(2026, 6, 4, 9, 30))
+    assert expiry_blocks_new_entries(blocked) is True
+    off = apply_expiry_restriction_toggle(blocked, enabled=False, default_max_trades=5)
+    assert off["restrictions_enabled"] is False
+    assert off["is_expiry"] is True
+    assert off["recommended_window"] == "full"
+    assert off["max_trades"] == 5
+    assert off["sl_multiplier"] == 1.0
+    assert expiry_blocks_new_entries(off) is False
+    assert expiry_allows_signal(off, "PUT", trend_direction="up") is True
+
+
+def test_expiry_restrictions_toggle_keeps_blocks_when_on():
+    from trading_shared.strategies.scalping_desk.expiry_day_handler import apply_expiry_restriction_toggle
+
+    blocked = handle_expiry_day("nifty50", _dt(2026, 6, 4, 14, 0))
+    on = apply_expiry_restriction_toggle(blocked, enabled=True, default_max_trades=5)
+    assert on["restrictions_enabled"] is True
+    assert expiry_blocks_new_entries(on) is True
+    assert expiry_allows_signal(on, "CALL") is False

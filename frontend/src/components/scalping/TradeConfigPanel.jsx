@@ -11,10 +11,15 @@ export default function TradeConfigPanel({
   positionSizing = null,
 }) {
   const meta = INSTRUMENT_META[instrument]
-  const lotSize = meta?.lotSize || config?.lot_size || 25
+  const lotSize = meta?.lotSize || config?.lot_size || 65
   const isIndexDesk = instrument === 'nifty50' || instrument === 'banknifty'
   const autoBroker = Boolean(config?.auto_capital_from_broker ?? true)
-  const deployable = Number(capitalInfo?.deployable_capital ?? config?.capital ?? 0)
+  const liveSession = Number(capitalInfo?.session_start_capital)
+  const liveBroker = Number(capitalInfo?.broker_available_cash)
+  const usingBroker = autoBroker && (capitalInfo?.session_capital_source === 'broker' || Number.isFinite(liveBroker))
+  const deployable = Number(
+    capitalInfo?.deployable_capital ?? (usingBroker && Number.isFinite(liveSession) ? liveSession : config?.capital ?? 0)
+  )
   const premium = Number(optionLtp || positionSizing?.option_premium || 0)
   const utilizationLots =
     premium > 0 ? Math.floor(deployable / (premium * lotSize)) : Number(computedLots || positionSizing?.lots || 0)
@@ -37,7 +42,7 @@ export default function TradeConfigPanel({
           <p className="text-amber-300 font-medium">Option buy only · CE on CALL · PE on PUT</p>
           <p>
             Entries are always long options (BUY CE or BUY PE). Exits square off the same contract — no
-            option writing. Each entry uses up to {(Number(config?.capital_utilization_pct ?? 0.95) * 100).toFixed(0)}% of deployable
+            option writing.             Each entry uses up to {(Number(config?.capital_utilization_pct ?? 1) * 100).toFixed(0)}% of deployable
             capital. Intraday profits credit T+1 — sizing keeps session-start capital minus today&apos;s losses.
           </p>
           {capitalInfo?.session_start_capital != null && (
@@ -47,7 +52,13 @@ export default function TradeConfigPanel({
                 <p className="font-mono text-slate-200">
                   ₹{Number(capitalInfo.session_start_capital).toLocaleString('en-IN')}
                 </p>
-                <p className="text-[10px] text-slate-500 capitalize">{capitalInfo.session_capital_source || 'manual'}</p>
+                <p className="text-[10px] text-slate-500 capitalize">
+                  {capitalInfo.session_capital_source === 'broker'
+                    ? 'Angel One margin'
+                    : autoBroker
+                      ? 'fallback — broker cash not received yet'
+                      : 'manual'}
+                </p>
               </div>
               <div>
                 <p className="text-slate-500">Deployable now</p>
@@ -66,7 +77,7 @@ export default function TradeConfigPanel({
       <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3 text-xs text-slate-300 space-y-1">
         <p className="text-cyan-400 font-medium">v4 adaptive — AI picks strategy per bar</p>
         <p>4 strategies: Momentum · VWAP Bounce · Trend Follow · Volume Breakout</p>
-        <p>Tighter filters: 2-bar confirm · EMA separation · session window</p>
+        <p>Battle session: 09:20–10:30 · 13:30–14:45 IST (Mon–Fri)</p>
         <p className="text-slate-500">Targets win rate over raw trade count</p>
       </div>
 
@@ -82,6 +93,24 @@ export default function TradeConfigPanel({
         </label>
       )}
 
+      {isIndexDesk && (
+        <label className="flex items-start gap-2 text-sm cursor-pointer rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+          <input
+            type="checkbox"
+            checked={Boolean(config?.expiry_restrictions_enabled ?? true)}
+            onChange={(e) => update('expiry_restrictions_enabled', e.target.checked)}
+            className="mt-0.5 rounded border-slate-600"
+          />
+          <span>
+            <span className="text-slate-200">Expiry-day restrictions</span>
+            <span className="block text-xs text-slate-500 mt-0.5">
+              When on, Nifty Thursday / Bank Nifty Wednesday expiry uses a tighter window (11:00–13:00)
+              and fewer trades. Turn off to trade expiry like a normal session.
+            </span>
+          </span>
+        </label>
+      )}
+
       <label className="block text-sm">
         <span className="text-slate-400">
           {autoBroker && isIndexDesk ? 'Fallback capital (INR)' : 'Capital Amount (INR)'}
@@ -94,7 +123,9 @@ export default function TradeConfigPanel({
         />
         {autoBroker && isIndexDesk && (
           <span className="text-xs text-slate-500 mt-1 block">
-            Used when broker is disconnected; broker available cash overrides at session open.
+            {usingBroker && Number.isFinite(liveSession)
+              ? `Live Angel One cash in use: ₹${liveSession.toLocaleString('en-IN')}. Fallback is only used if the broker is disconnected.`
+              : 'Used only if Angel One cash cannot be fetched. Save this panel to retry a live sync.'}
           </span>
         )}
       </label>
@@ -115,14 +146,16 @@ export default function TradeConfigPanel({
       </label>
 
       <label className="block text-sm">
-        <span className="text-slate-400">Max Trades Per Day (ceiling)</span>
+        <span className="text-slate-400">Max Trades Per Day (0 = unlimited)</span>
         <input
           type="number"
           value={config?.max_trades_per_day ?? 5}
           onChange={(e) => update('max_trades_per_day', Number(e.target.value))}
           className="mt-1 w-full rounded-lg bg-slate-950 border border-slate-700 px-3 py-2"
         />
-        <span className="text-xs text-slate-500 mt-1 block">Hard limit only — AI may stop earlier after 2–3 wins</span>
+        <span className="text-xs text-slate-500 mt-1 block">
+          Hard limit only. Set to 0 for no daily count cap; AI may still stop earlier after strong wins.
+        </span>
       </label>
 
       <div className="rounded-lg border border-slate-800 p-3 text-sm">

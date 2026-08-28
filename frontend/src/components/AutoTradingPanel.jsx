@@ -208,7 +208,7 @@ function EngineAutoTradingCard({ engine, meta, engineStatus, globalStatus, onRef
           value={config.max_order_amount > 0 ? `₹${Number(config.max_order_amount).toLocaleString('en-IN')}` : '—'}
         />
         <Stat label="AI approvals" value={engineStatus?.ai_approvals ?? 0} />
-        <Stat label="Mode" value={globalStatus?.trading_mode || 'paper'} />
+        <Stat label="Mode" value={globalStatus?.trading_mode || 'live'} />
         <Stat label="Last run" value={formatTime(stats.last_run_at)} />
         <Stat label="Last order" value={formatTime(stats.last_order_at)} />
       </div>
@@ -266,7 +266,7 @@ export default function AutoTradingPanel() {
         <h3 className="font-semibold text-lg">Strategy Execution Bots</h3>
         <p className="text-sm text-slate-400 mt-1">
           Enable scalping, intraday, or swing independently. Approved AI signals are placed every minute
-          in paper or live mode.
+          as live Angel One orders.
         </p>
       </div>
 

@@ -66,8 +66,8 @@ def _backtest_config_for_code(strategy_code: str, instrument_key: str) -> dict[s
         raise ValueError(f"Unknown strategy code: {strategy_code}")
     settings = default_strategy_settings(instrument_key)
     for code in list(settings.keys()):
-        settings[code] = {"enabled": False, "execution_mode": "paper"}
-    settings[strategy_code] = {"enabled": True, "execution_mode": "paper"}
+        settings[code] = {"enabled": False, "execution_mode": "live"}
+    settings[strategy_code] = {"enabled": True, "execution_mode": "live"}
     return {
         "strategy_mode": "manual",
         "fixed_strategy_code": strategy_code,
@@ -109,26 +109,72 @@ def run_strategy_backtest(
             merge_ema_crossover_params,
         )
 
-        merged = merge_ema_crossover_params(bt_params)
+        merged = merge_ema_crossover_params(bt_params, "banknifty")
         # Drop stale blocking filters from older saved desk configs.
         if float(merged.get("ema_vol_min") or 0) > 0 or float(merged.get("ema_min_separation_pct") or 0) > 0:
             merged = dict(EMA_CROSSOVER_BANK_DEFAULTS)
         bt_params = {**bt_params, "ema_crossover": merged}
 
-    if strategy_code == "SCALP-SMC-004" and instrument_key == "banknifty":
-        from trading_shared.strategies.scalping_desk.smc_fvg_ob_bos_tuning import merge_smc_fvg_ob_bos_params
+    if strategy_code == "SCALP-BT-002" and instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.orb_breakout_tuning import merge_orb_params
 
-        bt_params = merge_smc_fvg_ob_bos_params(bt_params)
+        bt_params = {**bt_params, "orb_breakout": merge_orb_params(bt_params, "banknifty")}
+
+    if strategy_code == "SCALP-BT-004" and instrument_key == "nifty50":
+        from trading_shared.strategies.scalping_desk.orb_breakout_tuning import (
+            ORB_BREAKOUT_NIFTY_DEFAULTS,
+            merge_orb_params,
+        )
+
+        merged = merge_orb_params(bt_params, "nifty50")
+        # Drop stale blocking filters from older saved desk configs (pre-v21 retune).
+        # Prior-inside + morning-only cutoff collapses the strategy to ~1 trade.
+        prior = str(merged.get("orb_prior_mode") or "").lower().strip()
+        require_inside = bool(merged.get("orb_require_inside_or", False)) or prior in (
+            "close_inside",
+            "inside",
+            "a",
+            "b",
+            "close",
+        )
+        morning_only = int(merged.get("orb_entry_cutoff_min") or 0) <= (10 * 60 + 30)
+        if require_inside or morning_only:
+            merged = dict(ORB_BREAKOUT_NIFTY_DEFAULTS)
+        bt_params = {**bt_params, "orb_breakout": merged}
+
+    if strategy_code == "SCALP-AD-005" and instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.momentum_burst_tuning import merge_momentum_burst_params
+
+        merged = merge_momentum_burst_params(bt_params)
+        bt_params = {**bt_params, "momentum_burst": merged}
+
+    if strategy_code == "SCALP-AD-006" and instrument_key == "banknifty":
+        from trading_shared.strategies.scalping_desk.vwap_bounce_tuning import merge_vwap_bounce_params
+
+        merged = merge_vwap_bounce_params(bt_params, "banknifty")
+        bt_params = {**bt_params, "vwap_bounce": merged}
+
+    if strategy_code == "SCALP-AD-002" and instrument_key == "nifty50":
+        from trading_shared.strategies.scalping_desk.vwap_bounce_tuning import merge_vwap_bounce_params
+
+        merged = merge_vwap_bounce_params(bt_params, "nifty50")
+        bt_params = {**bt_params, "vwap_bounce": merged}
 
     if strategy_code == "SCALP-SMC-006" and instrument_key == "banknifty":
         from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
 
-        bt_params = merge_smc_orb_fvg_params(bt_params)
+        bt_params = merge_smc_orb_fvg_params(bt_params, "banknifty")
+
+    if strategy_code == "SCALP-SMC-003" and instrument_key == "nifty50":
+        from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import merge_smc_orb_fvg_params
+
+        bt_params = merge_smc_orb_fvg_params(bt_params, "nifty50")
 
     if entry["family"] == "smc":
         from trading_shared.strategies.scalping_desk.smc_backtest import run_single_smc_backtest
 
-        smc_params = bt_params
+        # Live stream evaluates every bar; smc_entry_scan_every is for offline OFAT only.
+        smc_params = {**bt_params, "smc_entry_scan_every": 1}
         result = run_single_smc_backtest(
             candles,
             entry["id"],
@@ -141,6 +187,7 @@ def run_strategy_backtest(
             capital_utilization_pct=capital_utilization_pct,
             max_lots_per_trade=max_lots_per_trade,
             option_execution_mode=option_execution_mode,
+            ai_entry=ai_entry,
         )
     else:
         result = run_backtest(
@@ -224,6 +271,11 @@ def run_backtest(
     catalog_config = _backtest_config_for_code(strategy_code, instrument_key) if strategy_code else None
     code_meta = STRATEGY_CATALOG.get(strategy_code or "", {})
     filter_backtest_session = True
+    session_mask: list[bool] = []
+    if filter_backtest_session:
+        from trading_shared.strategies.scalping_desk.battle_tested_scalp import precompute_battle_session_mask
+
+        session_mask = precompute_battle_session_mask(data, instrument_key)
 
     for i in range(window, len(data)):
         row = data.iloc[i]
@@ -337,7 +389,7 @@ def run_backtest(
         daily_pnl = day_pnl.get(day, 0.0)
         trades_today = day_trades.get(day, 0)
         loss_breached = daily_pnl <= -abs(max_loss_per_day)
-        trades_capped = trades_today >= max_trades_per_day
+        trades_capped = max_trades_per_day > 0 and trades_today >= max_trades_per_day
         ai_stopped = day_stopped.get(day, False)
 
         scan_bar = (i - window) % ENTRY_SCAN_EVERY == 0
@@ -350,12 +402,9 @@ def run_backtest(
             and not ai_stopped
         ):
             if filter_backtest_session:
-                from trading_shared.strategies.scalping_desk.battle_tested_scalp import (
-                    in_battle_session,
-                    is_expiry_day,
-                )
+                from trading_shared.strategies.scalping_desk.battle_tested_scalp import is_expiry_day
 
-                if not in_battle_session(ts) or is_expiry_day(ts, instrument_key):
+                if (session_mask and not session_mask[i]) or is_expiry_day(ts, instrument_key):
                     continue
             start = max(0, i + 1 - BACKTEST_LOOKBACK)
             segment = data.iloc[start : i + 1]
@@ -368,7 +417,7 @@ def run_backtest(
                     instrument_key,
                     catalog_config,
                     params=params,
-                    skip_session=not filter_backtest_session,
+                    skip_session=True,
                     enriched=True,
                 )
             else:
@@ -382,7 +431,7 @@ def run_backtest(
                     strategy_mode=strategy_mode,
                     fixed_strategy_id=fixed_strategy_id,
                     strategy_family=strategy_family,
-                    skip_session=not filter_backtest_session,
+                    skip_session=True,
                     enriched=True,
                 )
             if signal_obj:

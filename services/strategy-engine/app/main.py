@@ -66,17 +66,6 @@ def list_scalping_strategies(
     }
 
 
-@router.get("/scalping/desk/paper-trades")
-def scalping_paper_trades(
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> dict:
-    from trading_shared.strategies.scalping_desk.service import run_desk_paper_trades
-
-    return run_desk_paper_trades(db, current_user.id, limit=limit)
-
-
 @router.get("/scalping/desk/{instrument}")
 def get_scalping_desk(
     instrument: str,
@@ -131,6 +120,24 @@ def toggle_scalping_auto_trading(
     key = _validate_desk_instrument(instrument)
     service = ScalpingDeskService(db, current_user.id, key)
     return service.toggle_auto_trading(bool(payload.get("enabled")))
+
+
+@router.post("/scalping/desk/{instrument}/close-active")
+def close_active_scalping_trade(
+    instrument: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    from trading_shared.strategies.scalping_desk.service import run_desk_emergency_close
+
+    key = _validate_desk_instrument(instrument)
+    try:
+        return run_desk_emergency_close(db, current_user.id, key)
+    except AngelOneAuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Emergency close failed for user_id=%s instrument=%s", current_user.id, key)
+        raise HTTPException(status_code=500, detail=f"Emergency close failed: {exc}") from exc
 
 
 @router.post("/scalping/desk/{instrument}/backtest")

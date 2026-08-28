@@ -1,0 +1,1004 @@
+{
+  "name": "robust_821_vwapoff_put3846",
+  "ema": [
+    8,
+    21
+  ],
+  "params": {
+    "ema_cross_lookback": 3,
+    "ema_rsi_call_min": 53,
+    "ema_rsi_call_max": 60,
+    "ema_rsi_put_min": 38,
+    "ema_rsi_put_max": 46,
+    "ema_require_vwap": false,
+    "ema_require_two_bar_momentum": true,
+    "ema_vol_min": 0.0,
+    "ema_use_vol_spike": false,
+    "ema_min_separation_pct": 0.0,
+    "ema_stop_pts": 65.0,
+    "ema_target_pts": 130.0,
+    "ema_max_hold_bars": 8
+  },
+  "metrics": {
+    "trades": 46,
+    "win_rate": 63.04,
+    "wins": 29,
+    "losses": 17,
+    "profit_factor": 2.28,
+    "expectancy": 3332.66,
+    "total_pnl": 153302.29,
+    "max_drawdown": 43830.11,
+    "avg_win": 9410.72,
+    "avg_loss": -7035.8,
+    "call_wr": 75.0,
+    "call_n": 20,
+    "put_wr": 53.85,
+    "put_n": 26,
+    "morning_wr": 54.55,
+    "morning_n": 22,
+    "afternoon_wr": 70.83,
+    "afternoon_n": 24,
+    "weekday": {
+      "mon": {
+        "wr": 66.67,
+        "n": 9
+      },
+      "tue": {
+        "wr": 46.15,
+        "n": 13
+      },
+      "wed": {
+        "wr": null,
+        "n": 0
+      },
+      "thu": {
+        "wr": 68.75,
+        "n": 16
+      },
+      "fri": {
+        "wr": 75.0,
+        "n": 8
+      }
+    },
+    "max_consec_wins": 7,
+    "max_consec_losses": 3
+  },
+  "all": [
+    {
+      "name": "vwap_off_ema821_put3545",
+      "ema": [
+        8,
+        21
+      ],
+      "metrics": {
+        "trades": 53,
+        "win_rate": 62.26,
+        "wins": 33,
+        "losses": 20,
+        "profit_factor": 2.45,
+        "expectancy": 3314.89,
+        "total_pnl": 175688.98,
+        "max_drawdown": 27261.9,
+        "avg_win": 9002.35,
+        "avg_loss": -6069.43,
+        "call_wr": 73.68,
+        "call_n": 19,
+        "put_wr": 55.88,
+        "put_n": 34,
+        "morning_wr": 52.17,
+        "morning_n": 23,
+        "afternoon_wr": 70.0,
+        "afternoon_n": 30,
+        "weekday": {
+          "mon": {
+            "wr": 60.0,
+            "n": 10
+          },
+          "tue": {
+            "wr": 38.46,
+            "n": 13
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 72.22,
+            "n": 18
+          },
+          "fri": {
+            "wr": 75.0,
+            "n": 12
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 4
+      },
+      "score": 184.48055000000002
+    },
+    {
+      "name": "ema_7_18",
+      "ema": [
+        7,
+        18
+      ],
+      "metrics": {
+        "trades": 32,
+        "win_rate": 62.5,
+        "wins": 20,
+        "losses": 12,
+        "profit_factor": 2.25,
+        "expectancy": 2723.85,
+        "total_pnl": 87163.08,
+        "max_drawdown": 21809.25,
+        "avg_win": 7839.62,
+        "avg_loss": -5802.44,
+        "call_wr": 59.09,
+        "call_n": 22,
+        "put_wr": 70.0,
+        "put_n": 10,
+        "morning_wr": 64.29,
+        "morning_n": 14,
+        "afternoon_wr": 61.11,
+        "afternoon_n": 18,
+        "weekday": {
+          "mon": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "tue": {
+            "wr": 50.0,
+            "n": 8
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 70.0,
+            "n": 10
+          },
+          "fri": {
+            "wr": 71.43,
+            "n": 7
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 3
+      },
+      "score": 176.50565217391303
+    },
+    {
+      "name": "put_35_45",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 29,
+        "win_rate": 65.52,
+        "wins": 19,
+        "losses": 10,
+        "profit_factor": 2.0,
+        "expectancy": 1677.2,
+        "total_pnl": 48638.8,
+        "max_drawdown": 13248.9,
+        "avg_win": 5128.74,
+        "avg_loss": -4880.72,
+        "call_wr": 64.71,
+        "call_n": 17,
+        "put_wr": 66.67,
+        "put_n": 12,
+        "morning_wr": 70.0,
+        "morning_n": 10,
+        "afternoon_wr": 63.16,
+        "afternoon_n": 19,
+        "weekday": {
+          "mon": {
+            "wr": 50.0,
+            "n": 4
+          },
+          "tue": {
+            "wr": 60.0,
+            "n": 10
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 62.5,
+            "n": 8
+          },
+          "fri": {
+            "wr": 85.71,
+            "n": 7
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 173.93129478260866
+    },
+    {
+      "name": "robust_821_vwapoff_put3846",
+      "ema": [
+        8,
+        21
+      ],
+      "metrics": {
+        "trades": 46,
+        "win_rate": 63.04,
+        "wins": 29,
+        "losses": 17,
+        "profit_factor": 2.28,
+        "expectancy": 3332.66,
+        "total_pnl": 153302.29,
+        "max_drawdown": 43830.11,
+        "avg_win": 9410.72,
+        "avg_loss": -7035.8,
+        "call_wr": 75.0,
+        "call_n": 20,
+        "put_wr": 53.85,
+        "put_n": 26,
+        "morning_wr": 54.55,
+        "morning_n": 22,
+        "afternoon_wr": 70.83,
+        "afternoon_n": 24,
+        "weekday": {
+          "mon": {
+            "wr": 66.67,
+            "n": 9
+          },
+          "tue": {
+            "wr": 46.15,
+            "n": 13
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 68.75,
+            "n": 16
+          },
+          "fri": {
+            "wr": 75.0,
+            "n": 8
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 3
+      },
+      "score": 170.1753
+    },
+    {
+      "name": "ema_8_21",
+      "ema": [
+        8,
+        21
+      ],
+      "metrics": {
+        "trades": 25,
+        "win_rate": 68.0,
+        "wins": 17,
+        "losses": 8,
+        "profit_factor": 1.8,
+        "expectancy": 1279.61,
+        "total_pnl": 31990.28,
+        "max_drawdown": 12302.55,
+        "avg_win": 4221.69,
+        "avg_loss": -4972.3,
+        "call_wr": 72.22,
+        "call_n": 18,
+        "put_wr": 57.14,
+        "put_n": 7,
+        "morning_wr": 70.0,
+        "morning_n": 10,
+        "afternoon_wr": 66.67,
+        "afternoon_n": 15,
+        "weekday": {
+          "mon": {
+            "wr": 60.0,
+            "n": 5
+          },
+          "tue": {
+            "wr": 62.5,
+            "n": 8
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "fri": {
+            "wr": 100.0,
+            "n": 5
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 168.3370342608696
+    },
+    {
+      "name": "ema_9_20",
+      "ema": [
+        9,
+        20
+      ],
+      "metrics": {
+        "trades": 24,
+        "win_rate": 66.67,
+        "wins": 16,
+        "losses": 8,
+        "profit_factor": 1.72,
+        "expectancy": 1191.18,
+        "total_pnl": 28588.28,
+        "max_drawdown": 12302.55,
+        "avg_win": 4272.92,
+        "avg_loss": -4972.3,
+        "call_wr": 70.59,
+        "call_n": 17,
+        "put_wr": 57.14,
+        "put_n": 7,
+        "morning_wr": 70.0,
+        "morning_n": 10,
+        "afternoon_wr": 64.29,
+        "afternoon_n": 14,
+        "weekday": {
+          "mon": {
+            "wr": 60.0,
+            "n": 5
+          },
+          "tue": {
+            "wr": 62.5,
+            "n": 8
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "fri": {
+            "wr": 100.0,
+            "n": 4
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 162.8587451304348
+    },
+    {
+      "name": "vwap_off_put3545",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 52,
+        "win_rate": 59.62,
+        "wins": 31,
+        "losses": 21,
+        "profit_factor": 1.72,
+        "expectancy": 1976.25,
+        "total_pnl": 102765.03,
+        "max_drawdown": 27732.04,
+        "avg_win": 7908.4,
+        "avg_loss": -6780.73,
+        "call_wr": 60.0,
+        "call_n": 20,
+        "put_wr": 59.38,
+        "put_n": 32,
+        "morning_wr": 55.0,
+        "morning_n": 20,
+        "afternoon_wr": 62.5,
+        "afternoon_n": 32,
+        "weekday": {
+          "mon": {
+            "wr": 50.0,
+            "n": 10
+          },
+          "tue": {
+            "wr": 35.71,
+            "n": 14
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 70.59,
+            "n": 17
+          },
+          "fri": {
+            "wr": 81.82,
+            "n": 11
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 3
+      },
+      "score": 159.42521
+    },
+    {
+      "name": "vwap_off_ema821",
+      "ema": [
+        8,
+        21
+      ],
+      "metrics": {
+        "trades": 45,
+        "win_rate": 64.44,
+        "wins": 29,
+        "losses": 16,
+        "profit_factor": 1.71,
+        "expectancy": 2392.26,
+        "total_pnl": 107651.7,
+        "max_drawdown": 62806.05,
+        "avg_win": 8912.56,
+        "avg_loss": -9425.78,
+        "call_wr": 69.57,
+        "call_n": 23,
+        "put_wr": 59.09,
+        "put_n": 22,
+        "morning_wr": 60.0,
+        "morning_n": 20,
+        "afternoon_wr": 68.0,
+        "afternoon_n": 25,
+        "weekday": {
+          "mon": {
+            "wr": 80.0,
+            "n": 10
+          },
+          "tue": {
+            "wr": 42.86,
+            "n": 14
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 71.43,
+            "n": 14
+          },
+          "fri": {
+            "wr": 71.43,
+            "n": 7
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 4
+      },
+      "score": 157.2115608695652
+    },
+    {
+      "name": "vwap_off_ema920",
+      "ema": [
+        9,
+        20
+      ],
+      "metrics": {
+        "trades": 39,
+        "win_rate": 64.1,
+        "wins": 25,
+        "losses": 14,
+        "profit_factor": 1.74,
+        "expectancy": 2516.24,
+        "total_pnl": 98133.18,
+        "max_drawdown": 51000.97,
+        "avg_win": 9257.09,
+        "avg_loss": -9521.0,
+        "call_wr": 66.67,
+        "call_n": 21,
+        "put_wr": 61.11,
+        "put_n": 18,
+        "morning_wr": 64.71,
+        "morning_n": 17,
+        "afternoon_wr": 63.64,
+        "afternoon_n": 22,
+        "weekday": {
+          "mon": {
+            "wr": 66.67,
+            "n": 9
+          },
+          "tue": {
+            "wr": 45.45,
+            "n": 11
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 71.43,
+            "n": 14
+          },
+          "fri": {
+            "wr": 80.0,
+            "n": 5
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 3
+      },
+      "score": 154.62902608695651
+    },
+    {
+      "name": "put_38_46",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 25,
+        "win_rate": 64.0,
+        "wins": 16,
+        "losses": 9,
+        "profit_factor": 1.6,
+        "expectancy": 1075.06,
+        "total_pnl": 26876.47,
+        "max_drawdown": 13248.9,
+        "avg_win": 4479.68,
+        "avg_loss": -4977.6,
+        "call_wr": 64.71,
+        "call_n": 17,
+        "put_wr": 62.5,
+        "put_n": 8,
+        "morning_wr": 66.67,
+        "morning_n": 9,
+        "afternoon_wr": 62.5,
+        "afternoon_n": 16,
+        "weekday": {
+          "mon": {
+            "wr": 50.0,
+            "n": 4
+          },
+          "tue": {
+            "wr": 66.67,
+            "n": 9
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "fri": {
+            "wr": 80.0,
+            "n": 5
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 154.54517226086958
+    },
+    {
+      "name": "auto_core_618",
+      "ema": [
+        6,
+        18
+      ],
+      "metrics": {
+        "trades": 68,
+        "win_rate": 60.29,
+        "wins": 41,
+        "losses": 27,
+        "profit_factor": 1.64,
+        "expectancy": 2020.43,
+        "total_pnl": 137389.17,
+        "max_drawdown": 48445.09,
+        "avg_win": 8583.51,
+        "avg_loss": -7945.73,
+        "call_wr": 64.29,
+        "call_n": 28,
+        "put_wr": 57.5,
+        "put_n": 40,
+        "morning_wr": 55.26,
+        "morning_n": 38,
+        "afternoon_wr": 66.67,
+        "afternoon_n": 30,
+        "weekday": {
+          "mon": {
+            "wr": 56.25,
+            "n": 16
+          },
+          "tue": {
+            "wr": 44.44,
+            "n": 18
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 63.16,
+            "n": 19
+          },
+          "fri": {
+            "wr": 80.0,
+            "n": 15
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 3
+      },
+      "score": 147.14415
+    },
+    {
+      "name": "ema_9_21_lb5",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 26,
+        "win_rate": 61.54,
+        "wins": 16,
+        "losses": 10,
+        "profit_factor": 1.61,
+        "expectancy": 1188.96,
+        "total_pnl": 30913.0,
+        "max_drawdown": 20646.23,
+        "avg_win": 5076.4,
+        "avg_loss": -5030.94,
+        "call_wr": 68.42,
+        "call_n": 19,
+        "put_wr": 42.86,
+        "put_n": 7,
+        "morning_wr": 70.0,
+        "morning_n": 10,
+        "afternoon_wr": 56.25,
+        "afternoon_n": 16,
+        "weekday": {
+          "mon": {
+            "wr": 60.0,
+            "n": 5
+          },
+          "tue": {
+            "wr": 66.67,
+            "n": 9
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 50.0,
+            "n": 8
+          },
+          "fri": {
+            "wr": 75.0,
+            "n": 4
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 144.79838739130435
+    },
+    {
+      "name": "vwap_off",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 39,
+        "win_rate": 61.54,
+        "wins": 24,
+        "losses": 15,
+        "profit_factor": 1.56,
+        "expectancy": 1926.28,
+        "total_pnl": 75124.84,
+        "max_drawdown": 52337.14,
+        "avg_win": 8734.67,
+        "avg_loss": -8967.15,
+        "call_wr": 61.9,
+        "call_n": 21,
+        "put_wr": 61.11,
+        "put_n": 18,
+        "morning_wr": 62.5,
+        "morning_n": 16,
+        "afternoon_wr": 60.87,
+        "afternoon_n": 23,
+        "weekday": {
+          "mon": {
+            "wr": 62.5,
+            "n": 8
+          },
+          "tue": {
+            "wr": 45.45,
+            "n": 11
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 71.43,
+            "n": 14
+          },
+          "fri": {
+            "wr": 66.67,
+            "n": 6
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 3
+      },
+      "score": 143.83122608695655
+    },
+    {
+      "name": "vwap_off_ema821_lb5_put3846",
+      "ema": [
+        8,
+        21
+      ],
+      "metrics": {
+        "trades": 57,
+        "win_rate": 57.89,
+        "wins": 33,
+        "losses": 24,
+        "profit_factor": 1.58,
+        "expectancy": 2059.93,
+        "total_pnl": 117415.93,
+        "max_drawdown": 52605.45,
+        "avg_win": 9661.11,
+        "avg_loss": -8391.7,
+        "call_wr": 70.37,
+        "call_n": 27,
+        "put_wr": 46.67,
+        "put_n": 30,
+        "morning_wr": 53.57,
+        "morning_n": 28,
+        "afternoon_wr": 62.07,
+        "afternoon_n": 29,
+        "weekday": {
+          "mon": {
+            "wr": 63.64,
+            "n": 11
+          },
+          "tue": {
+            "wr": 46.67,
+            "n": 15
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 61.11,
+            "n": 18
+          },
+          "fri": {
+            "wr": 61.54,
+            "n": 13
+          }
+        },
+        "max_consec_wins": 7,
+        "max_consec_losses": 4
+      },
+      "score": 141.94164999999998
+    },
+    {
+      "name": "vwap_off_lb5",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 48,
+        "win_rate": 58.33,
+        "wins": 28,
+        "losses": 20,
+        "profit_factor": 1.4,
+        "expectancy": 1508.01,
+        "total_pnl": 72384.65,
+        "max_drawdown": 67993.76,
+        "avg_win": 9078.71,
+        "avg_loss": -9090.97,
+        "call_wr": 62.96,
+        "call_n": 27,
+        "put_wr": 52.38,
+        "put_n": 21,
+        "morning_wr": 61.9,
+        "morning_n": 21,
+        "afternoon_wr": 55.56,
+        "afternoon_n": 27,
+        "weekday": {
+          "mon": {
+            "wr": 66.67,
+            "n": 9
+          },
+          "tue": {
+            "wr": 50.0,
+            "n": 12
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 62.5,
+            "n": 16
+          },
+          "fri": {
+            "wr": 54.55,
+            "n": 11
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 4
+      },
+      "score": 136.21098
+    },
+    {
+      "name": "ema_8_20",
+      "ema": [
+        8,
+        20
+      ],
+      "metrics": {
+        "trades": 24,
+        "win_rate": 66.67,
+        "wins": 16,
+        "losses": 8,
+        "profit_factor": 1.37,
+        "expectancy": 941.64,
+        "total_pnl": 22599.34,
+        "max_drawdown": 34167.82,
+        "avg_win": 5228.55,
+        "avg_loss": -7632.18,
+        "call_wr": 68.42,
+        "call_n": 19,
+        "put_wr": 60.0,
+        "put_n": 5,
+        "morning_wr": 58.33,
+        "morning_n": 12,
+        "afternoon_wr": 75.0,
+        "afternoon_n": 12,
+        "weekday": {
+          "mon": {
+            "wr": 66.67,
+            "n": 6
+          },
+          "tue": {
+            "wr": 50.0,
+            "n": 6
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "fri": {
+            "wr": 100.0,
+            "n": 5
+          }
+        },
+        "max_consec_wins": 6,
+        "max_consec_losses": 3
+      },
+      "score": 132.24798713043478
+    },
+    {
+      "name": "call_52_60",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 23,
+        "win_rate": 60.87,
+        "wins": 14,
+        "losses": 9,
+        "profit_factor": 1.24,
+        "expectancy": 451.79,
+        "total_pnl": 10391.28,
+        "max_drawdown": 17981.33,
+        "avg_win": 3808.81,
+        "avg_loss": -4770.22,
+        "call_wr": 64.71,
+        "call_n": 17,
+        "put_wr": 50.0,
+        "put_n": 6,
+        "morning_wr": 66.67,
+        "morning_n": 9,
+        "afternoon_wr": 57.14,
+        "afternoon_n": 14,
+        "weekday": {
+          "mon": {
+            "wr": 50.0,
+            "n": 4
+          },
+          "tue": {
+            "wr": 62.5,
+            "n": 8
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "fri": {
+            "wr": 75.0,
+            "n": 4
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 130.241876
+    },
+    {
+      "name": "baseline",
+      "ema": [
+        9,
+        21
+      ],
+      "metrics": {
+        "trades": 23,
+        "win_rate": 60.87,
+        "wins": 14,
+        "losses": 9,
+        "profit_factor": 1.24,
+        "expectancy": 451.79,
+        "total_pnl": 10391.28,
+        "max_drawdown": 17981.33,
+        "avg_win": 3808.81,
+        "avg_loss": -4770.22,
+        "call_wr": 64.71,
+        "call_n": 17,
+        "put_wr": 50.0,
+        "put_n": 6,
+        "morning_wr": 66.67,
+        "morning_n": 9,
+        "afternoon_wr": 57.14,
+        "afternoon_n": 14,
+        "weekday": {
+          "mon": {
+            "wr": 50.0,
+            "n": 4
+          },
+          "tue": {
+            "wr": 62.5,
+            "n": 8
+          },
+          "wed": {
+            "wr": null,
+            "n": 0
+          },
+          "thu": {
+            "wr": 57.14,
+            "n": 7
+          },
+          "fri": {
+            "wr": 75.0,
+            "n": 4
+          }
+        },
+        "max_consec_wins": 5,
+        "max_consec_losses": 2
+      },
+      "score": 130.241876
+    }
+  ]
+}

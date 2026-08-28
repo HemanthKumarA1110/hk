@@ -18,7 +18,7 @@ const SCALP_INSTRUMENTS = [
 ]
 
 /** Auto-trading hub: scalping, intraday, swing with AI / manual modes. */
-export default function LiveTradingAutoSection({ isPaper = true }) {
+export default function LiveTradingAutoSection() {
   const [deskTab, setDeskTab] = useState('scalping')
   const [scalpInstrument, setScalpInstrument] = useState('nifty50')
   const [intradayStrategies, setIntradayStrategies] = useState([])
@@ -97,16 +97,16 @@ export default function LiveTradingAutoSection({ isPaper = true }) {
               </button>
             ))}
           </div>
-          <ScalpingAutoTradingPanel instrument={scalpInstrument} isPaper={isPaper} />
+          <ScalpingAutoTradingPanel instrument={scalpInstrument} />
         </>
       )}
 
       {deskTab === 'intraday' && (
-        <IntradayAutoTradingPanel strategies={intradayStrategies} isPaper={isPaper} embedded />
+        <IntradayAutoTradingPanel strategies={intradayStrategies} embedded />
       )}
 
       {deskTab === 'swing' && (
-        <SwingAutoTradingPanel strategies={swingStrategies} isPaper={isPaper} embedded />
+        <SwingAutoTradingPanel strategies={swingStrategies} embedded />
       )}
     </div>
   )

@@ -19,7 +19,7 @@ export default function SMCDashboardBar({ stats }) {
         </div>
         <span className="text-xs rounded-full border border-slate-700 px-2 py-0.5 text-slate-400">
           {stats.strategy_family === 'smc' ? 'SMC mode' : 'Adaptive mode'}
-          {stats.paper_mode ? ' · Paper' : ' · Live'}
+          {' · Live'}
         </span>
       </div>
 

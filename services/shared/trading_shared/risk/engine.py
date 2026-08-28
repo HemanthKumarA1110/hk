@@ -116,8 +116,8 @@ class RiskEngine:
         self.state.daily_pnl += realized_pnl
         if realized_pnl < 0:
             self.state.daily_loss += abs(realized_pnl)
-        if notional > 0:
-            self.state.exposure += notional
+        if notional != 0:
+            self.state.exposure = max(0.0, self.state.exposure + notional)
         self.update_equity(self.state.equity + realized_pnl)
 
     def dynamic_stoploss(self, entry: float, side: str, atr: float = 0.0) -> float:

@@ -1,6 +1,6 @@
 /** Active trade tracker — v3 quick exit monitoring. */
 
-export default function ActiveTradeCard({ trade }) {
+export default function ActiveTradeCard({ trade, onEmergencyClose, closing = false }) {
 
   if (!trade) return null
 
@@ -62,6 +62,17 @@ export default function ActiveTradeCard({ trade }) {
 
         <span>{barsLeft} bars to time exit</span>
 
+      </div>
+
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={() => onEmergencyClose?.(trade)}
+          disabled={closing}
+          className="rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {closing ? 'Closing…' : 'Emergency Close'}
+        </button>
       </div>
 
     </div>

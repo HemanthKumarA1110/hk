@@ -90,19 +90,30 @@ docker compose exec postgres pg_dump -U trader trading > backup.sql
 
 ## 6. Security checklist
 
-- [ ] Change default admin password after first login
-- [ ] Disable public registration (`ALLOW_PUBLIC_REGISTRATION=false`)
+- [ ] Change default admin password after first login (Account → Change password)
+- [ ] Disable public registration (`ALLOW_PUBLIC_REGISTRATION=false`) — create users via **Users Admin** instead
 - [ ] Hide OpenAPI docs and service registry
 - [ ] Do not expose Postgres, Redis, or service ports publicly
 - [ ] Configure Telegram or SMTP alerts for risk halts
 - [ ] Restrict VPS firewall to 22, 80, 443
 
-## 7. Local development vs production
+### Multi-user (admin)
 
-| | Development | Production |
-|---|-------------|------------|
-| Compose files | `docker-compose.yml` only | `docker-compose.yml` + `docker-compose.prod.yml` |
-| Frontend URL | http://localhost:3000 | http://YOUR_HOST (port 80) |
-| API | http://localhost:8000 | Same origin via nginx `/api` proxy |
-| OpenAPI | Enabled at `/docs` | Disabled |
-| Registration | Allowed | Blocked (viewer role only) |
+With `ALLOW_PUBLIC_REGISTRATION=false`, only an admin can provision accounts:
+
+1. Sign in as `admin` → **Users Admin** in the sidebar
+2. Create users (role: trader / viewer / admin) with a temporary password
+3. Optionally open **Configure** on a user to set Angel One API credentials (encrypted per `user_id`)
+4. Each user changes their password under **Account**; admin can also **Reset password**
+
+Desk config, broker sessions, and trading prefs remain isolated by `user_id` (JWT).
+
+## 8. AWS (EC2 Compose)
+
+See [infra/aws/README.md](../infra/aws/README.md). Quick start:
+
+```powershell
+.\scripts\aws-deploy.ps1
+```
+
+Deploy region defaults to **eu-north-1** (your AWS CLI default) with a static Elastic IP for SmartAPI allowlisting. Use `-Region ap-south-1` for Mumbai if you want lower Angel One latency.

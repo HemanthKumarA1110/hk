@@ -72,11 +72,19 @@ def chain_pcr(chain: dict[str, Any] | None) -> float:
     return round(pe_oi / ce_oi, 2)
 
 
-def in_trading_session(now: datetime | None = None) -> bool:
-    """Battle-tested IST windows with open/close buffers."""
+def in_trading_session(
+    now: datetime | None = None,
+    *,
+    df: pd.DataFrame | None = None,
+    instrument_key: str = "nifty50",
+    tick: dict[str, Any] | None = None,
+    mtf_context: dict[str, Any] | None = None,
+    macro_inputs: dict[str, Any] | None = None,
+) -> bool:
+    """Fixed battle-tested scalp windows."""
     from trading_shared.strategies.scalping_desk.battle_tested_scalp import in_battle_session
 
-    return in_battle_session(now)
+    return in_battle_session(now, df=df, instrument_key=instrument_key, tick=tick, mtf_context=mtf_context, macro_inputs=macro_inputs)
 
 
 def build_market_context(
@@ -85,6 +93,9 @@ def build_market_context(
     tick: dict[str, Any] | None = None,
     chain: dict[str, Any] | None = None,
     underlying: str = "NIFTY",
+    instrument_key: str | None = None,
+    mtf_context: dict[str, Any] | None = None,
+    macro_inputs: dict[str, Any] | None = None,
     pre_enriched: bool = False,
 ) -> dict[str, Any]:
     """Aggregate live context for AI strategy selection."""
@@ -115,6 +126,14 @@ def build_market_context(
     prev = float(tick.get("close") or tick.get("open") or ltp) if tick else spot
     spot_change_pct = round((ltp - prev) / prev * 100, 3) if prev else 0
 
+    key = instrument_key or ("banknifty" if underlying.upper().startswith("BANK") else "nifty50")
+    from trading_shared.strategies.scalping_desk.battle_tested_scalp import evaluate_battle_session, _resolve_live_session_ts
+
+    ts = row.get("timestamp") if row is not None else None
+    if tick is not None:
+        ts = _resolve_live_session_ts(ts)
+    battle = evaluate_battle_session(ts, instrument_key=key)
+
     return {
         "regime": regime.value,
         "underlying": underlying,
@@ -127,6 +146,8 @@ def build_market_context(
         "supertrend": st_dir,
         "pcr": pcr,
         "spot_change_pct": spot_change_pct,
-        "session_ok": in_trading_session(),
+        "session_ok": battle["session_ok"],
+        "battle_session": battle,
+        "adx": round(float(row.get("adx14") or 0), 1) if row is not None else 0,
         "stream_live": tick is not None,
     }

@@ -71,6 +71,8 @@ class OptionChainResponse(BaseModel):
 
 class StreamStatusResponse(BaseModel):
     connected: bool
+    desired: bool = False
+    enabled: bool = False
     subscriptions: int
     ticks_received: int
     last_tick_at: str | None = None

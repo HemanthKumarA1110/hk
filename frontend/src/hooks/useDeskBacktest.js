@@ -8,6 +8,7 @@ export function useDeskBacktest(engine) {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const pollRef = useRef(null)
+  const launchRef = useRef(false)
 
   const stopPoll = useCallback(() => {
     if (pollRef.current) {
@@ -44,6 +45,8 @@ export function useDeskBacktest(engine) {
 
   const run = useCallback(
     async (form) => {
+      if (launchRef.current) return null
+      launchRef.current = true
       setRunning(true)
       setProgress(5)
       setError('')
@@ -90,6 +93,8 @@ export function useDeskBacktest(engine) {
         setError(typeof detail === 'string' ? detail : err.message || 'Backtest failed')
         setRunning(false)
         return null
+      } finally {
+        launchRef.current = false
       }
     },
     [engine, pollRun]

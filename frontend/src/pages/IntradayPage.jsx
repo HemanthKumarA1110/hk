@@ -5,7 +5,6 @@ import DeskBacktestModule from '../components/DeskBacktestModule'
 import IntradayAutoTradingPanel from '../components/IntradayAutoTradingPanel'
 import IntradayStrategyPanel from '../components/IntradayStrategyPanel'
 import SwingOrderCell from '../components/SwingOrderCell'
-import TradingModeToggle from '../components/TradingModeToggle'
 import TradingViewChart from '../components/TradingViewChart'
 import { useDeskBacktest } from '../hooks/useDeskBacktest'
 import { filterStrategiesForDesk } from '../utils/strategyFilters'
@@ -92,10 +91,6 @@ export default function IntradayPage() {
     return () => clearInterval(timer)
   }, [load, scanning])
 
-  const handleTradingModeChange = useCallback((status) => {
-    setOrderStatus(status)
-  }, [])
-
   const runScan = async () => {
     setScanning(true)
     setError('')
@@ -111,7 +106,6 @@ export default function IntradayPage() {
 
   const signals = payload.signals || []
   const chartSymbol = selected ? tvSymbol(selected.symbol) : 'NSE:SBIN'
-  const isPaper = orderStatus?.trading_mode === 'paper'
   const canTrade = orderStatus?.can_trade !== false
 
   return (
@@ -136,7 +130,7 @@ export default function IntradayPage() {
           )}
           {orderStatus && (
             <p className="text-xs mt-2 text-slate-500">
-              Orders use {isPaper ? 'paper' : 'live'} · Intraday · Market
+              Orders use live Angel One · Intraday · Market
             </p>
           )}
         </div>
@@ -149,10 +143,6 @@ export default function IntradayPage() {
           {scanning ? 'Scanning live universe…' : 'Scan Top 10 Picks'}
         </button>
       </header>
-
-      <div className="mb-6">
-        <TradingModeToggle onChange={handleTradingModeChange} />
-      </div>
 
       {error && <p className="text-rose-400 text-sm mb-4">{error}</p>}
 
@@ -241,7 +231,6 @@ export default function IntradayPage() {
                       <SwingOrderCell
                         signal={signal}
                         canTrade={canTrade}
-                        isPaper={isPaper}
                         product="INTRADAY"
                         productLabel="Intraday · Market"
                       />
@@ -256,7 +245,7 @@ export default function IntradayPage() {
 
       <AngelOneAccountPanel />
 
-      <IntradayAutoTradingPanel strategies={strategies} isPaper={isPaper} />
+      <IntradayAutoTradingPanel strategies={strategies} />
 
       <div className="grid gap-4 lg:grid-cols-2 mb-6">
         <IntradayStrategyPanel strategies={strategies} />

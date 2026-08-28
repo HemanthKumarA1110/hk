@@ -7,11 +7,11 @@ from trading_shared.strategies.equity_strategy_catalog import (
 )
 
 
-def test_intraday_catalog_has_three_modular_strategies():
+def test_intraday_catalog_has_modular_strategies():
     rows = catalog_for_engine("intraday")
     codes = [r["code"] for r in rows]
-    assert codes == ["INTRA-ORB", "INTRA-VWAP", "INTRA-EMA-RSI"]
-    assert len(rows) == 3
+    assert codes == ["INTRA-ORB", "INTRA-VWAP-ORB"]
+    assert len(rows) == 2
 
 
 def test_swing_catalog_has_three_modular_strategies():
@@ -23,6 +23,7 @@ def test_swing_catalog_has_three_modular_strategies():
 
 def test_confirmation_filter_returns_strategy_id():
     assert confirmation_filter_for_code("INTRA-ORB") == "orb"
+    assert confirmation_filter_for_code("INTRA-VWAP-ORB") == "vwap_orb"
     assert confirmation_filter_for_code("SWING-EMA") == "ema_trend"
     assert confirmation_filter_for_code("SWING-RSI") == "rsi_mean_reversion"
 

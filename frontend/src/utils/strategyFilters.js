@@ -19,5 +19,5 @@ export function defaultStrategyCode(engine, instrument) {
   if (engine === 'swing') return 'SWING-EMA'
   if (engine === 'intraday') return 'INTRA-ORB'
   if (instrument === 'banknifty') return 'SCALP-BT-003'
-  return 'SCALP-BT-001'
+  return 'SCALP-AD-002'
 }

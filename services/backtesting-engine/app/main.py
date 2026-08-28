@@ -32,7 +32,14 @@ def run_backtest(
         raise HTTPException(status_code=400, detail="engine must be scalping, intraday, or swing")
 
     orchestrator = BacktestOrchestrator(db)
-    run = orchestrator.create_run(user.id, payload)
+    run, created_new = orchestrator.create_run(user.id, payload)
+
+    if not created_new:
+        return {
+            "run_id": run.id,
+            "status": run.status,
+            "message": f"Reusing identical {run.status} backtest run",
+        }
 
     try:
         from app.tasks import enqueue_backtest

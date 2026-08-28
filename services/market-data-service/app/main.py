@@ -35,16 +35,29 @@ async def on_startup() -> None:
 
 
 async def _auto_start_stream() -> None:
+    """Reconnect market stream only when the user left it ON (desired=true).
+
+    Default is OFF — Live Market Engine is opt-in from the Overview toggle.
+    """
     await asyncio.sleep(5)
     manager = StreamManager.get()
     while True:
         try:
-            status = manager.status()
-            if not status.get("connected"):
+            if not manager.is_desired():
+                status = manager.status()
+                if status.get("connected"):
+                    await manager.stop()
+                    # stop() clears desired — restore OFF explicitly
+                    manager.set_desired(False)
+            elif not manager.status().get("connected"):
                 status = await manager.start()
-                logger.info("Market stream start attempt: connected=%s ticks=%s", status.get("connected"), status.get("ticks_received"))
+                logger.info(
+                    "Market stream reconnect: connected=%s ticks=%s",
+                    status.get("connected"),
+                    status.get("ticks_received"),
+                )
         except StreamStartError as exc:
             logger.warning("Market stream not started: %s", exc)
         except Exception:
-            logger.exception("Failed to start market stream")
-        await asyncio.sleep(60)
+            logger.exception("Failed to manage market stream")
+        await asyncio.sleep(30)

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from trading_shared.strategies.scalping_desk.battle_tested_scalp import battle_risk, in_battle_session
+from trading_shared.strategies.scalping_desk.battle_tested_scalp import battle_risk
 from trading_shared.strategies.scalping_desk.constants import INSTRUMENTS
 
 ENTRY_SIGNAL_VALIDATOR_PROMPT = """Entry signal validator:
@@ -95,9 +95,19 @@ def _volume_status(vol_ratio: float, min_ratio: float = 1.05) -> tuple[str, int]
     return (f"{vol_ratio:.2f}x {'≥' if ok else '<'} {min_ratio}x", 1 if ok else 0)
 
 
-def _time_status(ts: Any = None) -> tuple[str, int]:
-    ok = in_battle_session(ts)
-    return ("in session ✓" if ok else "outside 09:20–10:30 / 13:30–14:45", 1 if ok else 0)
+def _time_status(
+    ts: Any = None,
+    *,
+    df: pd.DataFrame | None = None,
+    instrument_key: str = "nifty50",
+    macro_inputs: dict[str, Any] | None = None,
+) -> tuple[str, int]:
+    from trading_shared.strategies.scalping_desk.battle_tested_scalp import evaluate_battle_session
+
+    battle = evaluate_battle_session(ts, instrument_key=instrument_key)
+    ok = battle["session_ok"]
+    detail = battle["summary"]
+    return (detail, 1 if ok else 0)
 
 
 def _verdict_from_score(score: int) -> str:

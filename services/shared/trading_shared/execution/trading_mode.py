@@ -1,12 +1,12 @@
-"""Per-user trading mode (paper vs live) stored in Redis."""
+"""Per-user trading mode. Live Angel One orders only — paper execution is retired."""
 
 from __future__ import annotations
 
 import redis
 
-MODE_PAPER = "paper"
 MODE_LIVE = "live"
-VALID_MODES = {MODE_PAPER, MODE_LIVE}
+MODE_PAPER = "paper"  # kept for legacy comparisons; store always returns live
+VALID_MODES = {MODE_LIVE}
 
 
 class TradingModeStore:
@@ -17,11 +17,10 @@ class TradingModeStore:
         return f"trading_mode:{user_id}"
 
     def get(self, user_id: int) -> str:
-        value = self.client.get(self._key(user_id))
-        return value if value in VALID_MODES else MODE_PAPER
+        self.client.set(self._key(user_id), MODE_LIVE)
+        return MODE_LIVE
 
     def set(self, user_id: int, mode: str) -> str:
-        if mode not in VALID_MODES:
-            raise ValueError(f"Invalid trading mode: {mode}")
-        self.client.set(self._key(user_id), mode)
-        return mode
+        del mode
+        self.client.set(self._key(user_id), MODE_LIVE)
+        return MODE_LIVE

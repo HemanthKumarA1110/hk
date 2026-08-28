@@ -19,9 +19,10 @@ function formatChange(change, changePct) {
 export default function IndexQuotesPanel({ brokerConnected = false, sessionValid = false }) {
   const [quotes, setQuotes] = useState([])
   const [error, setError] = useState('')
+  const liveReady = brokerConnected && sessionValid
 
   useEffect(() => {
-    if (!brokerConnected || !sessionValid) {
+    if (!liveReady) {
       setQuotes([])
       setError('')
       return undefined
@@ -42,7 +43,7 @@ export default function IndexQuotesPanel({ brokerConnected = false, sessionValid
     load()
     const timer = setInterval(load, 5000)
     return () => clearInterval(timer)
-  }, [brokerConnected, sessionValid])
+  }, [liveReady])
 
   if (!brokerConnected) {
     return (
