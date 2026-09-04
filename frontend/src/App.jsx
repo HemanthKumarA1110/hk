@@ -8,6 +8,7 @@ import OverviewPage from './pages/OverviewPage'
 import NiftyScalpingPage from './pages/NiftyScalping'
 import BankNiftyScalpingPage from './pages/BankNiftyScalping'
 import IntradayPage from './pages/IntradayPage'
+import IntradayIdeasPage from './pages/IntradayIdeasPage'
 import SwingPage from './pages/SwingPage'
 import SwingIdeasPage from './pages/SwingIdeasPage'
 import PortfolioPage from './pages/PortfolioPage'
@@ -47,6 +48,7 @@ function AppShell() {
           <Route path="scalping/nifty50" element={<NiftyScalpingPage />} />
           <Route path="scalping/banknifty" element={<BankNiftyScalpingPage />} />
           <Route path="intraday" element={<IntradayPage />} />
+          <Route path="intraday/ideas" element={<IntradayIdeasPage />} />
           <Route path="swing" element={<SwingPage />} />
           <Route path="swing/ideas" element={<SwingIdeasPage />} />
           <Route path="portfolio" element={<PortfolioPage />} />
