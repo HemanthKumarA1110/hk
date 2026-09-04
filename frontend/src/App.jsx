@@ -5,13 +5,14 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import AppLayout from './layout/AppLayout'
 import LoginPage from './components/LoginPage'
 import OverviewPage from './pages/OverviewPage'
-import ScalpingPage from './pages/ScalpingPage'
 import NiftyScalpingPage from './pages/NiftyScalping'
 import BankNiftyScalpingPage from './pages/BankNiftyScalping'
 import IntradayPage from './pages/IntradayPage'
 import SwingPage from './pages/SwingPage'
+import SwingIdeasPage from './pages/SwingIdeasPage'
 import PortfolioPage from './pages/PortfolioPage'
 import LiveTradingPage from './pages/LiveTradingPage'
+import OrdersPage from './pages/OrdersPage'
 import StrategyPage from './pages/StrategyPage'
 import BacktestPage from './pages/BacktestPage'
 import BacktestResultsPage from './pages/BacktestResultsPage'
@@ -43,13 +44,14 @@ function AppShell() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<OverviewPage />} />
-          <Route path="scalping" element={<ScalpingPage />} />
           <Route path="scalping/nifty50" element={<NiftyScalpingPage />} />
           <Route path="scalping/banknifty" element={<BankNiftyScalpingPage />} />
           <Route path="intraday" element={<IntradayPage />} />
           <Route path="swing" element={<SwingPage />} />
+          <Route path="swing/ideas" element={<SwingIdeasPage />} />
           <Route path="portfolio" element={<PortfolioPage />} />
           <Route path="live" element={<LiveTradingPage />} />
+          <Route path="orders" element={<OrdersPage />} />
           <Route path="strategy" element={<StrategyPage />} />
           <Route path="backtest" element={<BacktestPage />} />
           <Route path="backtest/results" element={<BacktestResultsPage />} />

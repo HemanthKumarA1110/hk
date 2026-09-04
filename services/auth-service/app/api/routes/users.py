@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.services.auth_service import AuthService
 from app.services.broker_service import BrokerAuthService
+from trading_shared.auth.pages import PAGE_CATALOG, default_pages_for_role
 from trading_shared.db.session import get_db
 from trading_shared.middleware.auth import get_current_user, require_roles
 from trading_shared.models import User, UserRole
@@ -12,11 +13,31 @@ from trading_shared.schemas.auth import (
     AdminCreateUserRequest,
     AdminResetPasswordRequest,
     AdminUpdateUserRequest,
+    PageCatalogItem,
     UserResponse,
 )
 from trading_shared.schemas.broker import BrokerConnectionResponse, BrokerCredentialRequest
 
 router = APIRouter()
+
+
+@router.get("/pages", response_model=List[PageCatalogItem])
+def list_controllable_pages(
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+) -> list[dict]:
+    return PAGE_CATALOG
+
+
+@router.get("/pages/defaults/{role}", response_model=List[str])
+def list_default_pages_for_role(
+    role: str,
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+) -> list[str]:
+    try:
+        user_role = UserRole(role)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role") from exc
+    return default_pages_for_role(user_role)
 
 
 @router.get("/", response_model=List[UserResponse])

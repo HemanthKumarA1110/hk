@@ -60,6 +60,8 @@ export const changePassword = (payload) =>
 
 export const listUsers = () => api.get('/users/').then((res) => res.data)
 
+export const listUserPages = () => api.get('/users/pages').then((res) => res.data)
+
 export const createUser = (payload) =>
   api.post('/users/', payload).then((res) => res.data)
 
@@ -91,6 +93,9 @@ export const fetchBrokerFunds = () =>
 export const fetchBrokerAccount = () =>
   api.get('/broker/account', { timeout: 45000 }).then((res) => res.data)
 
+export const fetchBrokerReports = () =>
+  api.get('/broker/reports', { timeout: 60000 }).then((res) => res.data)
+
 export const cancelBrokerOrder = (orderId, variety = 'NORMAL') =>
   api.delete(`/broker/orders/${orderId}`, { params: { variety } }).then((res) => res.data)
 
@@ -102,6 +107,13 @@ export const fetchServices = () => {
 export const fetchStreamStatus = () => api.get('/market/stream/status').then((res) => res.data)
 
 export const fetchIndexQuotes = () => api.get('/market/indices/live').then((res) => res.data)
+
+export const fetchLtp = (exchange, tradingsymbol, symboltoken) =>
+  api
+    .get('/market/ltp', {
+      params: { exchange, tradingsymbol, symboltoken },
+    })
+    .then((res) => res.data)
 
 export const fetchLatestScan = () => api.get('/market/scan/latest').then((res) => res.data)
 
@@ -116,8 +128,6 @@ export const fetchOptionChain = (underlying) =>
 export const startMarketStream = () => api.post('/market/stream/start').then((res) => res.data)
 
 export const stopMarketStream = () => api.post('/market/stream/stop').then((res) => res.data)
-
-export const fetchScalpingSignals = () => api.get('/strategies/scalping').then((res) => res.data)
 
 export const fetchScalpingDesk = (instrument) =>
   api.get(`/strategies/scalping/desk/${instrument}`, { timeout: 90000 }).then((res) => res.data)

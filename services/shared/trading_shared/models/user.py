@@ -22,6 +22,8 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.TRADER, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # JSON array of page keys; NULL = legacy full access (resolved in auth.pages).
+    allowed_pages_json: Mapped[str | None] = mapped_column("allowed_pages", Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -33,6 +35,12 @@ class User(Base):
     broker_sessions: Mapped[list["BrokerSession"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def allowed_pages(self) -> list[str]:
+        from trading_shared.auth.pages import resolve_allowed_pages
+
+        return resolve_allowed_pages(self.role, self.allowed_pages_json)
 
 
 class BrokerCredential(Base):

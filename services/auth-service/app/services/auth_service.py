@@ -3,6 +3,11 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from trading_shared.auth.pages import (
+    default_pages_for_role,
+    normalize_allowed_pages,
+    serialize_allowed_pages,
+)
 from trading_shared.config import get_settings
 from trading_shared.models import AuditLog, User, UserRole
 from trading_shared.schemas.auth import (
@@ -35,12 +40,14 @@ class AuthService:
         if self.settings.ENV.lower() == "production":
             role = UserRoleEnum.VIEWER
 
+        pages = normalize_allowed_pages(None, role=role.value)
         user = User(
             username=payload.username,
             email=payload.email,
             hashed_password=hash_password(payload.password),
             role=UserRole(role.value),
             is_active=True,
+            allowed_pages_json=serialize_allowed_pages(pages),
         )
         self.db.add(user)
         self.db.commit()
@@ -51,12 +58,18 @@ class AuthService:
     def create_user_as_admin(self, payload: AdminCreateUserRequest, actor: User) -> User:
         self._ensure_unique_username_email(payload.username, payload.email)
 
+        role = UserRole(payload.role.value)
+        pages = normalize_allowed_pages(
+            payload.allowed_pages if payload.allowed_pages is not None else default_pages_for_role(role),
+            role=role,
+        )
         user = User(
             username=payload.username,
             email=payload.email,
             hashed_password=hash_password(payload.password),
-            role=UserRole(payload.role.value),
+            role=role,
             is_active=payload.is_active,
+            allowed_pages_json=serialize_allowed_pages(pages),
         )
         self.db.add(user)
         self.db.commit()
@@ -65,7 +78,7 @@ class AuthService:
             actor.id,
             "admin_create_user",
             "user",
-            f"Created user {user.username} role={user.role.value}",
+            f"Created user {user.username} role={user.role.value} pages={len(pages)}",
         )
         return user
 
@@ -92,6 +105,16 @@ class AuthService:
                     detail="Cannot deactivate your own account",
                 )
             user.is_active = payload.is_active
+
+        if payload.allowed_pages is not None or payload.role is not None:
+            # Re-normalize when pages or role change so admins always get full access.
+            source_pages = (
+                payload.allowed_pages
+                if payload.allowed_pages is not None
+                else user.allowed_pages
+            )
+            pages = normalize_allowed_pages(source_pages, role=user.role)
+            user.allowed_pages_json = serialize_allowed_pages(pages)
 
         self.db.commit()
         self.db.refresh(user)

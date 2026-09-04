@@ -22,12 +22,14 @@ class AdminCreateUserRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     role: UserRoleEnum = UserRoleEnum.TRADER
     is_active: bool = True
+    allowed_pages: list[str] | None = None
 
 
 class AdminUpdateUserRequest(BaseModel):
     email: EmailStr | None = None
     role: UserRoleEnum | None = None
     is_active: bool | None = None
+    allowed_pages: list[str] | None = None
 
 
 class ChangePasswordRequest(BaseModel):
@@ -55,6 +57,12 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class PageCatalogItem(BaseModel):
+    key: str
+    path: str
+    label: str
+
+
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -63,3 +71,4 @@ class UserResponse(BaseModel):
     email: str
     role: UserRoleEnum
     is_active: bool
+    allowed_pages: list[str] = Field(default_factory=list)

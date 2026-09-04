@@ -10,6 +10,12 @@ import {
   updateUser,
 } from '../api'
 import { useAuth } from '../context/AuthContext'
+import {
+  ALL_PAGE_KEYS,
+  DEFAULT_TRADER_PAGES,
+  PAGE_CATALOG,
+  defaultPagesForRole,
+} from '../config/pages'
 
 const EMPTY_CREATE = {
   username: '',
@@ -17,6 +23,47 @@ const EMPTY_CREATE = {
   password: '',
   role: 'trader',
   is_active: true,
+  allowed_pages: [...DEFAULT_TRADER_PAGES],
+}
+
+function PageAccessChecklist({ value, onChange, disabled, lockAdmin }) {
+  const pages = lockAdmin
+    ? PAGE_CATALOG
+    : PAGE_CATALOG.filter((p) => p.key !== 'admin_users')
+
+  const toggle = (key) => {
+    if (disabled || lockAdmin) return
+    if (key === 'account') return
+    const next = value.includes(key) ? value.filter((k) => k !== key) : [...value, key]
+    if (!next.includes('account')) next.push('account')
+    onChange(next)
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-56 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/40 p-2">
+      {pages.map((page) => {
+        const checked = lockAdmin || value.includes(page.key)
+        const locked = lockAdmin || page.key === 'account'
+        return (
+          <label
+            key={page.key}
+            className={`flex min-h-[40px] items-center gap-2 rounded px-2 py-2 text-xs ${
+              locked ? 'text-slate-500' : 'text-slate-300 cursor-pointer hover:bg-slate-900'
+            }`}
+          >
+            <input
+              type="checkbox"
+              className="rounded border-slate-600"
+              checked={checked}
+              disabled={disabled || locked}
+              onChange={() => toggle(page.key)}
+            />
+            <span>{page.label}</span>
+          </label>
+        )
+      })}
+    </div>
+  )
 }
 
 const EMPTY_BROKER = {
@@ -38,6 +85,7 @@ export default function UsersAdminPage() {
   const [brokerForm, setBrokerForm] = useState(EMPTY_BROKER)
   const [brokerStatus, setBrokerStatus] = useState(null)
   const [editingBroker, setEditingBroker] = useState(false)
+  const [pageDraft, setPageDraft] = useState([])
 
   const loadUsers = useCallback(async () => {
     try {
@@ -100,9 +148,14 @@ export default function UsersAdminPage() {
   const handleRoleChange = async (row, role) => {
     setBusy(true)
     try {
-      await updateUser(row.id, { role })
+      const updated = await updateUser(row.id, { role })
       flash(`Role for ${row.username} set to ${role}`)
       await loadUsers()
+      if (selectedId === row.id) {
+        setPageDraft(
+          role === 'admin' ? [...ALL_PAGE_KEYS] : [...(updated.allowed_pages || defaultPagesForRole(role))]
+        )
+      }
     } catch (err) {
       flash(err.response?.data?.detail || 'Role update failed', true)
     } finally {
@@ -130,6 +183,11 @@ export default function UsersAdminPage() {
     setBrokerForm(EMPTY_BROKER)
     setBrokerStatus(null)
     setEditingBroker(false)
+    setPageDraft(
+      row.role === 'admin'
+        ? [...ALL_PAGE_KEYS]
+        : [...(row.allowed_pages || defaultPagesForRole(row.role))]
+    )
     try {
       const status = await fetchUserBrokerStatus(row.id)
       setBrokerStatus(status)
@@ -137,6 +195,21 @@ export default function UsersAdminPage() {
     } catch {
       setBrokerStatus(null)
       setEditingBroker(true)
+    }
+  }
+
+  const handleSavePages = async () => {
+    if (!selected) return
+    setBusy(true)
+    try {
+      const updated = await updateUser(selected.id, { allowed_pages: pageDraft })
+      setPageDraft([...(updated.allowed_pages || pageDraft)])
+      flash(`Page access updated for ${selected.username}`)
+      await loadUsers()
+    } catch (err) {
+      flash(err.response?.data?.detail || 'Page access update failed', true)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -209,9 +282,9 @@ export default function UsersAdminPage() {
     <div>
       <header className="mb-6">
         <p className="text-amber-400 text-xs uppercase tracking-widest">Admin</p>
-        <h2 className="text-3xl font-bold mt-1">Users & API Access</h2>
-        <p className="text-slate-400 mt-1">
-          Create users, activate or deactivate accounts, reset passwords, and configure Angel One credentials.
+        <h2 className="text-2xl sm:text-3xl font-bold mt-1">Users & API Access</h2>
+        <p className="text-slate-400 mt-1 text-sm sm:text-base">
+          Create users, control which pages they can open, reset passwords, and configure Angel One credentials.
         </p>
       </header>
 
@@ -228,83 +301,89 @@ export default function UsersAdminPage() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <section className="xl:col-span-2 rounded-xl border border-slate-800 bg-slate-900/60 p-4 overflow-x-auto">
+        <section className="xl:col-span-2 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
           <h3 className="font-semibold mb-3">Users</h3>
-          <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-slate-500">
-              <tr>
-                <th className="text-left p-2">ID</th>
-                <th className="text-left p-2">Username</th>
-                <th className="text-left p-2">Email</th>
-                <th className="text-left p-2">Role</th>
-                <th className="text-left p-2">Active</th>
-                <th className="text-right p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`border-t border-slate-800 ${
-                    selectedId === row.id ? 'bg-emerald-500/5' : ''
-                  }`}
-                >
-                  <td className="p-2 text-slate-500">{row.id}</td>
-                  <td className="p-2 font-medium">{row.username}</td>
-                  <td className="p-2 text-slate-400">{row.email}</td>
-                  <td className="p-2">
-                    <select
-                      value={row.role}
-                      disabled={busy}
-                      onChange={(e) => handleRoleChange(row, e.target.value)}
-                      className="rounded bg-slate-950 border border-slate-700 px-2 py-1 text-xs"
-                    >
-                      <option value="admin">admin</option>
-                      <option value="trader">trader</option>
-                      <option value="viewer">viewer</option>
-                    </select>
-                  </td>
-                  <td className="p-2">
-                    <span
-                      className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                        row.is_active
-                          ? 'bg-emerald-500/15 text-emerald-400'
-                          : 'bg-slate-700/60 text-slate-400'
-                      }`}
-                    >
-                      {row.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="p-2 text-right space-x-2 whitespace-nowrap">
-                    <button
-                      type="button"
-                      className="text-xs text-emerald-400 hover:underline"
-                      onClick={() => selectUser(row)}
-                    >
-                      Configure
-                    </button>
-                    <button
-                      type="button"
-                      className={`text-xs font-medium hover:underline disabled:opacity-40 disabled:no-underline ${
-                        row.is_active ? 'text-rose-400' : 'text-emerald-400'
-                      }`}
-                      disabled={busy || row.id === user.id}
-                      title={
-                        row.id === user.id
-                          ? 'You cannot deactivate your own account'
-                          : row.is_active
-                            ? 'Block this user from logging in'
-                            : 'Allow this user to log in again'
-                      }
-                      onClick={() => handleToggleActive(row)}
-                    >
-                      {row.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </td>
+          <div className="overflow-x-auto -mx-1 px-1">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead className="text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="text-left p-2">ID</th>
+                  <th className="text-left p-2">Username</th>
+                  <th className="text-left p-2">Email</th>
+                  <th className="text-left p-2">Role</th>
+                  <th className="text-left p-2">Active</th>
+                  <th className="text-right p-2">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {users.map((row) => (
+                  <tr
+                    key={row.id}
+                    className={`border-t border-slate-800 ${
+                      selectedId === row.id ? 'bg-emerald-500/5' : ''
+                    }`}
+                  >
+                    <td className="p-2 text-slate-500">{row.id}</td>
+                    <td className="p-2 font-medium">{row.username}</td>
+                    <td className="p-2 text-slate-400">{row.email}</td>
+                    <td className="p-2">
+                      <select
+                        value={row.role}
+                        disabled={busy}
+                        onChange={(e) => handleRoleChange(row, e.target.value)}
+                        className="min-h-[36px] rounded bg-slate-950 border border-slate-700 px-2 py-1.5 text-xs"
+                      >
+                        <option value="admin">admin</option>
+                        <option value="trader">trader</option>
+                        <option value="viewer">viewer</option>
+                      </select>
+                    </td>
+                    <td className="p-2">
+                      <span
+                        className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
+                          row.is_active
+                            ? 'bg-emerald-500/15 text-emerald-400'
+                            : 'bg-slate-700/60 text-slate-400'
+                        }`}
+                      >
+                        {row.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="p-2 text-right whitespace-nowrap">
+                      <div className="inline-flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          className="min-h-[36px] rounded-md border border-emerald-500/30 px-2.5 py-1.5 text-xs text-emerald-400 hover:bg-emerald-500/10"
+                          onClick={() => selectUser(row)}
+                        >
+                          Configure
+                        </button>
+                        <button
+                          type="button"
+                          className={`min-h-[36px] rounded-md border px-2.5 py-1.5 text-xs font-medium disabled:opacity-40 ${
+                            row.is_active
+                              ? 'border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
+                              : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                          }`}
+                          disabled={busy || row.id === user.id}
+                          title={
+                            row.id === user.id
+                              ? 'You cannot deactivate your own account'
+                              : row.is_active
+                                ? 'Block this user from logging in'
+                                : 'Allow this user to log in again'
+                          }
+                          onClick={() => handleToggleActive(row)}
+                        >
+                          {row.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
         <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
@@ -346,13 +425,48 @@ export default function UsersAdminPage() {
               <select
                 className={inputClass}
                 value={createForm.role}
-                onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}
+                onChange={(e) => {
+                  const role = e.target.value
+                  setCreateForm((p) => ({
+                    ...p,
+                    role,
+                    allowed_pages: defaultPagesForRole(role),
+                  }))
+                }}
               >
                 <option value="trader">trader</option>
                 <option value="viewer">viewer</option>
                 <option value="admin">admin</option>
               </select>
             </label>
+            <div className="block text-sm text-slate-400">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span>Allowed pages</span>
+                {createForm.role !== 'admin' && (
+                  <button
+                    type="button"
+                    className="text-xs text-emerald-400 hover:underline"
+                    onClick={() =>
+                      setCreateForm((p) => ({
+                        ...p,
+                        allowed_pages: defaultPagesForRole(p.role),
+                      }))
+                    }
+                  >
+                    Reset defaults
+                  </button>
+                )}
+              </div>
+              <PageAccessChecklist
+                value={createForm.allowed_pages}
+                disabled={busy}
+                lockAdmin={createForm.role === 'admin'}
+                onChange={(allowed_pages) => setCreateForm((p) => ({ ...p, allowed_pages }))}
+              />
+              {createForm.role === 'admin' && (
+                <p className="text-xs text-slate-500 mt-1">Admins always get every page, including Users Admin.</p>
+              )}
+            </div>
             <button
               type="submit"
               disabled={busy}
@@ -366,6 +480,57 @@ export default function UsersAdminPage() {
 
       {selected && (
         <div className="grid gap-6 lg:grid-cols-2 mt-6">
+          <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4 lg:col-span-2">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+              <div>
+                <h3 className="font-semibold mb-1">Page access · {selected.username}</h3>
+                <p className="text-slate-500 text-sm">
+                  Checked pages appear in the sidebar and can be opened directly.
+                </p>
+              </div>
+              {selected.role !== 'admin' && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="text-xs text-slate-400 hover:underline"
+                    onClick={() => setPageDraft(defaultPagesForRole(selected.role))}
+                  >
+                    Defaults
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-slate-400 hover:underline"
+                    onClick={() =>
+                      setPageDraft(
+                        PAGE_CATALOG.filter((p) => p.key !== 'admin_users').map((p) => p.key)
+                      )
+                    }
+                  >
+                    Select all
+                  </button>
+                </div>
+              )}
+            </div>
+            <PageAccessChecklist
+              value={pageDraft}
+              disabled={busy}
+              lockAdmin={selected.role === 'admin'}
+              onChange={setPageDraft}
+            />
+            {selected.role === 'admin' ? (
+              <p className="text-xs text-slate-500 mt-2">Admins always retain full page access.</p>
+            ) : (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleSavePages}
+                className="mt-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-4 py-2 text-sm font-medium"
+              >
+                Save page access
+              </button>
+            )}
+          </section>
+
           <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
             <h3 className="font-semibold mb-1">Reset password · {selected.username}</h3>
             <p className="text-slate-500 text-sm mb-3">Admin override — user can change it later on Account.</p>
