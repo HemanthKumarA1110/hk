@@ -24,6 +24,7 @@ PAGE_CATALOG: list[dict[str, str]] = [
     {"key": "backtest_results", "path": "/backtest/results", "label": "Backtest Results"},
     {"key": "journal", "path": "/journal", "label": "Journal"},
     {"key": "alerts", "path": "/alerts", "label": "Alerts"},
+    {"key": "stock_monitor", "path": "/monitor", "label": "Stock Monitor"},
     {"key": "ai", "path": "/ai", "label": "AI Monitor"},
     {"key": "notepad", "path": "/notepad", "label": "Notepad"},
     {"key": "account", "path": "/account", "label": "Account"},
@@ -47,6 +48,7 @@ DEFAULT_TRADER_PAGES: list[str] = [
     "orders",
     "strategy",
     "journal",
+    "stock_monitor",
     "account",
 ]
 

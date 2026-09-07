@@ -16,6 +16,7 @@ export const PAGE_CATALOG = [
   { key: 'backtest_results', path: '/backtest/results', label: 'Backtest Results', icon: '📊' },
   { key: 'journal', path: '/journal', label: 'Journal', icon: '☰' },
   { key: 'alerts', path: '/alerts', label: 'Alerts', icon: '◈' },
+  { key: 'stock_monitor', path: '/monitor', label: 'Stock Monitor', icon: '⊙' },
   { key: 'ai', path: '/ai', label: 'AI Monitor', icon: '✦' },
   { key: 'notepad', path: '/notepad', label: 'Notepad', icon: '📝' },
   { key: 'account', path: '/account', label: 'Account', icon: '⚙' },
@@ -34,6 +35,7 @@ export const DEFAULT_TRADER_PAGES = [
   'orders',
   'strategy',
   'journal',
+  'stock_monitor',
   'account',
 ]
 

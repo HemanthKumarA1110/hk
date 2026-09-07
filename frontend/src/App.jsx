@@ -18,6 +18,7 @@ import StrategyPage from './pages/StrategyPage'
 import BacktestPage from './pages/BacktestPage'
 import BacktestResultsPage from './pages/BacktestResultsPage'
 import NotepadPage from './pages/NotepadPage'
+import StockMonitorPage from './pages/StockMonitorPage'
 import JournalPage from './pages/JournalPage'
 import AlertsPage from './pages/AlertsPage'
 import AIPage from './pages/AIPage'
@@ -59,6 +60,7 @@ function AppShell() {
           <Route path="backtest/results" element={<BacktestResultsPage />} />
           <Route path="journal" element={<JournalPage />} />
           <Route path="alerts" element={<AlertsPage />} />
+          <Route path="monitor" element={<StockMonitorPage />} />
           <Route path="ai" element={<AIPage />} />
           <Route path="notepad" element={<NotepadPage />} />
           <Route path="account" element={<AccountPage />} />

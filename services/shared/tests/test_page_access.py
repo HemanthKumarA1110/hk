@@ -82,6 +82,7 @@ def test_path_matching_prefers_specific_routes():
     assert path_to_page_key("/swing") == "swing"
     assert path_to_page_key("/intraday/ideas") == "intraday_ideas"
     assert path_to_page_key("/intraday") == "intraday"
+    assert path_to_page_key("/monitor") == "stock_monitor"
     assert path_to_page_key("/orders") == "orders"
     assert path_to_page_key("/admin/users") == "admin_users"
 
