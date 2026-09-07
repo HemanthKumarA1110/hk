@@ -5,8 +5,11 @@ from trading_shared.strategies.scalping_desk.capital_utilization import compute_
 from trading_shared.strategies.scalping_desk.entry_guard import (
     entry_cooldown_active,
     entry_lock_key,
+    option_strike_key,
+    range_bound_same_strike_blocked,
     release_lock,
     set_entry_cooldown,
+    set_same_strike_cooldown,
     try_acquire_lock,
 )
 from trading_shared.strategies.scalping_desk.service import _entered_this_cycle
@@ -143,6 +146,52 @@ def test_entry_cooldown_flag():
     assert entry_cooldown_active(redis, 1, "banknifty") is True
 
 
+def test_option_strike_key_normalizes_right():
+    assert option_strike_key("NIFTY08SEP2623850PE") == "23850PE"
+    assert option_strike_key("BANKNIFTY08SEP2652500CE") == "52500CE"
+
+
+def test_range_bound_same_strike_cooldown_blocks_repeat():
+    redis = _FakeRedis()
+    symbol = "NIFTY08SEP2623850PE"
+    set_same_strike_cooldown(redis, 1, "nifty50", symbol)
+    blocked, reason = range_bound_same_strike_blocked(
+        regime={"regime": "RANGE_BOUND"},
+        option_symbol=symbol,
+        redis_client=redis,
+        user_id=1,
+        instrument_key="nifty50",
+    )
+    assert blocked is True
+    assert "23850PE" in reason
+
+    ok, _ = range_bound_same_strike_blocked(
+        regime={"regime": "TRENDING_BEAR"},
+        option_symbol=symbol,
+        redis_client=redis,
+        user_id=1,
+        instrument_key="nifty50",
+    )
+    assert ok is False
+
+
+def test_range_bound_same_strike_uses_trade_history():
+    from datetime import datetime, timezone
+
+    history = [
+        {
+            "option_symbol": "NIFTY08SEP2623850PE",
+            "entry_time": datetime.now(timezone.utc).isoformat(),
+        }
+    ]
+    blocked, _ = range_bound_same_strike_blocked(
+        regime="RANGE_BOUND",
+        option_symbol="NIFTY08SEP2623850PE",
+        trade_history=history,
+    )
+    assert blocked is True
+
+
 def test_entered_this_cycle_uses_entry_time():
     from datetime import datetime, timedelta, timezone
 
@@ -219,10 +268,11 @@ def test_live_net_qty_ignores_expired_symbols():
 
     monkey_today = date(2026, 8, 21)
 
-    def _expired(symbol, *, as_of=None):
-        return eg.option_symbol_is_expired(symbol, as_of=as_of or monkey_today)
-
     original = eg.option_symbol_is_expired
+
+    def _expired(symbol, *, as_of=None):
+        return original(symbol, as_of=as_of or monkey_today)
+
     eg.option_symbol_is_expired = _expired
     try:
         assert eg.live_underlying_net_qty(_DB(), 1, "NIFTY") == 0

@@ -38,8 +38,10 @@ from trading_shared.strategies.scalping_desk.entry_guard import (
     entry_lock_key,
     live_net_qty,
     live_underlying_net_qty,
+    range_bound_same_strike_blocked,
     release_lock,
     set_entry_cooldown,
+    set_same_strike_cooldown,
     try_acquire_lock,
 )
 from trading_shared.market.redis_bus import MarketRedisBus
@@ -126,6 +128,7 @@ from trading_shared.strategies.scalping_desk.option_execution import ensure_buy_
 from trading_shared.strategies.scalping_desk.guards import guard_status
 from trading_shared.strategies.scalping_desk.entry_signal_validator import verdict_allows_entry
 from trading_shared.strategies.scalping_desk.capital_utilization import (
+    apply_broker_capital_to_config,
     compute_utilization_lots,
     ensure_session_capital,
     is_index_scalp_desk,
@@ -467,6 +470,7 @@ def default_config(instrument_key: str) -> dict[str, Any]:
         "capital": 100000,
         "max_loss_per_day": 5000,
         "max_trades_per_day": 3,
+        "ai_daily_stop_enabled": True,
         "timeframe": "1m",
         "auto_trading_enabled": False,
         "lot_size": meta["lot_size"],
@@ -551,7 +555,12 @@ class ScalpingDeskService:
     def resolve_execution_mode(self, strategy_mode: str) -> str:
         return "live"
 
-    async def _fetch_broker_available_cash(self) -> float | None:
+    async def _fetch_broker_available_cash(
+        self,
+        *,
+        timeout: float | None = None,
+        retries: int | None = None,
+    ) -> float | None:
         config = self.get_config()
         if not config.get("auto_capital_from_broker", True):
             return None
@@ -561,13 +570,18 @@ class ScalpingDeskService:
             if not manager.get_connection_status(self.user_id).get("connected"):
                 return None
             client = await manager.get_client_for_user(self.user_id)
-            raw = await client.get_rms_limits()
+            kwargs: dict[str, Any] = {}
+            if timeout is not None:
+                kwargs["timeout"] = float(timeout)
+            if retries is not None:
+                kwargs["retries"] = int(retries)
+            raw = await client.get_rms_limits(**kwargs)
             parsed = parse_rms_funds(raw)
             if not parsed.get("status"):
                 return None
             cash = (parsed.get("data") or {}).get("availablecash")
             return float(cash) if cash not in (None, "") else None
-        except (AngelOneAuthError, AngelOneAPIError, TypeError, ValueError):
+        except (AngelOneAuthError, AngelOneAPIError, TypeError, ValueError, asyncio.TimeoutError):
             return None
         except Exception:
             logger.debug("Broker cash fetch failed for user=%s", self.user_id, exc_info=True)
@@ -586,7 +600,28 @@ class ScalpingDeskService:
             return state, {}
         state, info = ensure_session_capital(state, config, broker_cash=broker_cash)
         self._save_state(state)
+        # Keep config.capital aligned with live Angel One cash so the Trade Settings
+        # capital field (Fallback / Session capital) shows the amount actually used.
+        if apply_broker_capital_to_config(config, info):
+            self.save_config(config)
         return state, info
+
+    def invalidate_broker_cash_cache(self) -> None:
+        state = self.get_state()
+        state.pop("broker_cash_cached", None)
+        state.pop("broker_cash_fetched_at", None)
+        self._save_state(state)
+
+    async def refresh_session_capital(self) -> dict[str, Any]:
+        """Force a live RMS read and sync session + config capital (index desks)."""
+        config = self.get_config()
+        if not is_index_scalp_desk(self.instrument_key):
+            return config
+        self.invalidate_broker_cash_cache()
+        state = self.get_state()
+        broker_cash = await self._resolve_broker_cash(state, stream_cycle=False)
+        state, _info = self._sync_capital_context(state, config, broker_cash=broker_cash)
+        return self.get_config()
 
     def get_config(self) -> dict[str, Any]:
         raw = self.redis.get(self.config_key)
@@ -798,7 +833,14 @@ class ScalpingDeskService:
                 valid_ohlc += 1
         return valid_ohlc >= min_bars
 
-    async def _fetch_angel_candles(self, token: str, timeframe: str) -> pd.DataFrame:
+    async def _fetch_angel_candles(
+        self,
+        token: str,
+        timeframe: str,
+        *,
+        timeout: float | None = None,
+        retries: int | None = None,
+    ) -> pd.DataFrame:
         cooldown_key = f"angel:candle_cooldown:{self.user_id}:{token}:{timeframe}"
         if self.redis.get(cooldown_key):
             return pd.DataFrame()
@@ -815,18 +857,25 @@ class ScalpingDeskService:
             if window is None:
                 return pd.DataFrame()
             from_str, to_str = window
+            candle_retries = 4 if retries is None else max(0, int(retries))
+            request = CandleRequest(
+                exchange="NSE",
+                symboltoken=token,
+                interval=interval,
+                fromdate=from_str,
+                todate=to_str,
+            )
             response = await client.get_candles(
-                CandleRequest(
-                    exchange="NSE",
-                    symboltoken=token,
-                    interval=interval,
-                    fromdate=from_str,
-                    todate=to_str,
-                )
+                request,
+                retries=candle_retries,
+                timeout=float(timeout) if timeout is not None else None,
             )
         except AngelOneAPIError as exc:
             if "rate limit" in str(exc).lower():
                 self.redis.setex(cooldown_key, 300, "1")
+            return pd.DataFrame()
+        except Exception:
+            logger.debug("Angel candle fetch failed token=%s", token, exc_info=True)
             return pd.DataFrame()
         finally:
             db.close()
@@ -878,8 +927,15 @@ class ScalpingDeskService:
         config = self.get_config()
         state = self.get_state()
         state["stream_connected"] = self._stream_connected()
-        broker_cash = await self._resolve_broker_cash(state, stream_cycle=True)
+        # Force a live RMS read until session capital is broker-sourced; afterwards cache.
+        need_live_cash = (
+            is_index_scalp_desk(self.instrument_key)
+            and bool(config.get("auto_capital_from_broker", True))
+            and state.get("session_capital_source") != "broker"
+        )
+        broker_cash = await self._resolve_broker_cash(state, stream_cycle=not need_live_cash)
         state, capital_info = self._sync_capital_context(state, config, broker_cash=broker_cash)
+        config = self.get_config()
 
         timeframe = config.get("timeframe", "1m")
         candles = await self._fetch_redis_candles_only(timeframe)
@@ -965,6 +1021,7 @@ class ScalpingDeskService:
             "capital_info": capital_info,
             "snapshot": True,
             "last_stream_eval_at": state.get("last_stream_eval_at"),
+            "last_stream_eval_started_at": state.get("last_stream_eval_started_at"),
             "stream_status": stream_status,
             "last_live_entry_attempt": state.get("last_live_entry_attempt"),
             "last_live_entry_failure": state.get("last_live_entry_failure"),
@@ -1060,11 +1117,41 @@ class ScalpingDeskService:
             except ValueError:
                 use_cache = False
 
-        candles = list(cached) if use_cache and isinstance(cached, list) and self._candles_look_valid(cached) else await self.fetch_candles(timeframe, bars)
-        if not self._candles_look_valid(candles):
-            candles = await self.fetch_candles(timeframe, bars)
-        if not candles:
+        candles: list[dict[str, Any]] = []
+        if use_cache and isinstance(cached, list) and self._candles_look_valid(cached):
+            candles = list(cached)
+        else:
+            # Prefer Redis/tick. Only one short Angel candle attempt — never the multi-retry
+            # REST path that can block evaluate_desk for minutes and trip stall alarms.
             candles = await self._fetch_redis_candles_only(timeframe, bars)
+            if not self._candles_look_valid(candles):
+                hot_timeout = float(getattr(self.settings, "SCALPING_ANGEL_HOT_TIMEOUT_SEC", 3.0))
+                inst = self.scrip.index_token(self.meta["underlying"])
+                if inst:
+                    try:
+                        df = await asyncio.wait_for(
+                            self._fetch_angel_candles(
+                                inst.token,
+                                timeframe,
+                                timeout=hot_timeout,
+                                retries=0,
+                            ),
+                            timeout=hot_timeout + 0.5,
+                        )
+                        if not df.empty:
+                            candles = df.to_dict(orient="records")
+                    except asyncio.TimeoutError:
+                        logger.warning(
+                            "Angel candles timed out (%.1fs) during stream eval instrument=%s — using tick fallback",
+                            hot_timeout,
+                            self.instrument_key,
+                        )
+                    except Exception:
+                        logger.debug(
+                            "Angel candles failed during stream eval instrument=%s",
+                            self.instrument_key,
+                            exc_info=True,
+                        )
 
         inst = self.scrip.index_token(self.meta["underlying"])
         tick = self.bus.get_tick(1, inst.token) if inst else None
@@ -1073,7 +1160,7 @@ class ScalpingDeskService:
         elif tick and not candles:
             candles = self._tick_to_candles(tick, min(bars, 40))
 
-        state["_stream_candles_cache"] = candles[-bars:]
+        state["_stream_candles_cache"] = candles[-bars:] if candles else []
         state["_stream_candles_at"] = datetime.now(timezone.utc).isoformat()
         return candles
 
@@ -1084,9 +1171,9 @@ class ScalpingDeskService:
         stream_cycle: bool,
     ) -> float | None:
         refresh_sec = int(getattr(self.settings, "SCALPING_BROKER_CASH_REFRESH_SEC", 60))
+        cached_at = state.get("broker_cash_fetched_at")
+        cached_cash = state.get("broker_cash_cached")
         if stream_cycle:
-            cached_at = state.get("broker_cash_fetched_at")
-            cached_cash = state.get("broker_cash_cached")
             if cached_at is not None and cached_cash is not None:
                 try:
                     ts = datetime.fromisoformat(str(cached_at))
@@ -1096,6 +1183,31 @@ class ScalpingDeskService:
                         return float(cached_cash)
                 except (ValueError, TypeError):
                     pass
+            hot_timeout = float(getattr(self.settings, "SCALPING_ANGEL_HOT_TIMEOUT_SEC", 3.0))
+            try:
+                cash = await asyncio.wait_for(
+                    self._fetch_broker_available_cash(timeout=hot_timeout, retries=0),
+                    timeout=hot_timeout + 0.5,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "Angel getRMS timed out (%.1fs) during stream eval instrument=%s — using cached cash",
+                    hot_timeout,
+                    self.instrument_key,
+                )
+                cash = None
+            if cash is not None:
+                state["broker_cash_cached"] = cash
+                state["broker_cash_fetched_at"] = datetime.now(timezone.utc).isoformat()
+                return cash
+            # Prefer last-good RMS over blocking; sizing still uses session capital / guards.
+            if cached_cash is not None:
+                try:
+                    return float(cached_cash)
+                except (TypeError, ValueError):
+                    return None
+            return None
+
         cash = await self._fetch_broker_available_cash()
         if cash is not None:
             state["broker_cash_cached"] = cash
@@ -1107,13 +1219,21 @@ class ScalpingDeskService:
         config = self.get_config()
         state = self.get_state()
         state["stream_connected"] = self._stream_connected()
-        state = await self._hydrate_live_open_trades(state)
+        if stream_cycle:
+            # Persist cycle-start activity immediately so UI stall clocks see progress
+            # even when Angel REST (getRMS / getPosition / placeOrder) is slow.
+            self._mark_stream_eval_started(state)
+            self._save_state(state)
+        state = await self._hydrate_live_open_trades(state, stream_cycle=stream_cycle)
+        if stream_cycle:
+            self._touch_stream_eval_activity(state, persist=True)
         broker_cash = await self._resolve_broker_cash(state, stream_cycle=stream_cycle)
         state, capital_info = self._sync_capital_context(state, config, broker_cash=broker_cash)
 
         timeframe = config.get("timeframe", "1m")
         if stream_cycle:
             candles = await self._fetch_stream_candles(timeframe, state)
+            self._touch_stream_eval_activity(state, persist=True)
         else:
             candles = await self.fetch_candles(timeframe)
         df = pd.DataFrame(candles) if candles else pd.DataFrame()
@@ -1203,7 +1323,7 @@ class ScalpingDeskService:
 
         daily_stop = evaluate_ai_daily_stop(state, config, market_ctx)
         if daily_stop.get("stop_trading"):
-            state = apply_daily_stop(state, daily_stop)
+            state = apply_daily_stop(state, daily_stop, config)
             self._save_state(state)
 
         guards = guard_status(state, config, daily_stop=daily_stop, expiry_handler=expiry_handler)
@@ -1308,6 +1428,17 @@ class ScalpingDeskService:
                 skip_reasons.append("orb_not_confirmed")
             if not expiry_ok:
                 skip_reasons.append("expiry_block")
+            same_strike_blocked, same_strike_reason = range_bound_same_strike_blocked(
+                regime=market_regime,
+                option_symbol=str(signal.get("option_symbol") or ""),
+                redis_client=self.redis,
+                user_id=self.user_id,
+                instrument_key=self.instrument_key,
+                trade_history=list(state.get("trade_history") or []),
+            )
+            if same_strike_blocked:
+                approved = False
+                skip_reasons.append(same_strike_reason or "range_bound_same_strike")
             signal["skip_reasons"] = skip_reasons
             signal["status"] = "approved" if approved else "skipped"
             memory = load_pattern_memory(self.redis, self.user_id, self.instrument_key)
@@ -1450,6 +1581,7 @@ class ScalpingDeskService:
             "snapshot": False,
             "stream_cycle": stream_cycle,
             "last_stream_eval_at": state.get("last_stream_eval_at"),
+            "last_stream_eval_started_at": state.get("last_stream_eval_started_at"),
             "stream_status": stream_status,
             "last_live_entry_attempt": state.get("last_live_entry_attempt"),
             "last_live_entry_failure": state.get("last_live_entry_failure"),
@@ -1465,6 +1597,34 @@ class ScalpingDeskService:
             return max(0.0, (datetime.now(timezone.utc) - ts).total_seconds())
         except ValueError:
             return None
+
+    def _mark_stream_eval_started(self, state: dict[str, Any]) -> None:
+        """Record that a stream eval cycle began (before Angel REST / signal work)."""
+        state["last_stream_eval_started_at"] = datetime.now(timezone.utc).isoformat()
+
+    def _touch_stream_eval_activity(self, state: dict[str, Any], *, persist: bool = False) -> None:
+        """Refresh in-progress activity so long Angel waits do not look like a dead worker."""
+        state["last_stream_eval_started_at"] = datetime.now(timezone.utc).isoformat()
+        if persist:
+            self._save_state(state)
+
+    @staticmethod
+    def _newer_iso(*values: Any) -> str | None:
+        best: datetime | None = None
+        best_raw: str | None = None
+        for raw in values:
+            if not raw:
+                continue
+            try:
+                ts = datetime.fromisoformat(str(raw))
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+            except ValueError:
+                continue
+            if best is None or ts > best:
+                best = ts
+                best_raw = str(raw)
+        return best_raw
 
     def _record_stream_eval(self, state: dict[str, Any]) -> None:
         now = datetime.now(timezone.utc)
@@ -1572,7 +1732,12 @@ class ScalpingDeskService:
         tick = self.bus.get_tick(1, inst.token) if inst else None
         last_tick_at = stream.get("last_tick_at")
         last_eval = state.get("last_stream_eval_at")
-        eval_age = self._age_seconds(last_eval)
+        last_started = state.get("last_stream_eval_started_at")
+        # Stall detection uses cycle *activity* (start or completion), not completion alone.
+        # A desk blocked on Angel still counts as working once evaluate_desk has started.
+        last_activity = self._newer_iso(last_eval, last_started)
+        eval_age = self._age_seconds(last_activity)
+        completion_age = self._age_seconds(last_eval)
         tick_age = self._age_seconds(last_tick_at)
         interval = max(float(getattr(self.settings, "SCALPING_STREAM_INTERVAL_SEC", 1.0)), 0.5)
         market_connected = bool(stream.get("connected"))
@@ -1583,8 +1748,7 @@ class ScalpingDeskService:
         worker_alive = hb_age is not None and hb_age <= 15
         market_session_open = bool(heartbeat.get("market_session")) if heartbeat else None
         enabled_desks = max(1, int(heartbeat.get("enabled_desks") or 1))
-        # Each evaluate_desk cycle fetches Angel LTP/options and can take several seconds.
-        # With multiple auto desks the runner loop is serialized per interval, so allow a
+        # Each evaluate_desk cycle may touch Angel REST; with multiple auto desks allow a
         # generous stall window instead of treating normal API latency as "stalled".
         stall_threshold_sec = max(20.0, interval * enabled_desks * 10)
         expected_cycle_sec = max(interval + 4.0 * enabled_desks, interval * 2)
@@ -1622,7 +1786,10 @@ class ScalpingDeskService:
             "last_tick_at": last_tick_at,
             "tick_age_sec": round(tick_age, 1) if tick_age is not None else None,
             "last_stream_eval_at": last_eval,
+            "last_stream_eval_started_at": last_started,
+            "last_stream_eval_activity_at": last_activity,
             "eval_age_sec": round(eval_age, 1) if eval_age is not None else None,
+            "eval_completion_age_sec": round(completion_age, 1) if completion_age is not None else None,
             "evals_per_minute": self._evals_per_minute(state),
             "target_evals_per_minute": max(1, int(round(60 / expected_cycle_sec))),
             "eval_stall_threshold_sec": round(stall_threshold_sec, 1),
@@ -1818,7 +1985,7 @@ class ScalpingDeskService:
                     "trend_strength": 0,
                 }
                 stop_decision = evaluate_ai_daily_stop(state, config, market_ctx)
-                apply_daily_stop(state, stop_decision)
+                apply_daily_stop(state, stop_decision, config)
             else:
                 unrealized = self._option_pnl(trade, option_ltp)
                 trade["current_ltp"] = round(option_ltp, 2)
@@ -2569,12 +2736,27 @@ class ScalpingDeskService:
             product="INTRADAY",
         )
         try:
-            order = await executor.place_order(
-                payload,
-                desk=f"scalping:{self.instrument_key}",
-                lot_size=lot_size,
-                strategy_code=str(signal.get("strategy_code") or ""),
+            order = await asyncio.wait_for(
+                executor.place_order(
+                    payload,
+                    desk=f"scalping:{self.instrument_key}",
+                    lot_size=lot_size,
+                    strategy_code=str(signal.get("strategy_code") or ""),
+                ),
+                timeout=float(getattr(self.settings, "SCALPING_PLACE_ORDER_TIMEOUT_SEC", 8.0)),
             )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Scalping placeOrder timed out instrument=%s symbol=%s qty=%s",
+                self.instrument_key,
+                symbol,
+                qty,
+            )
+            return {
+                "ok": False,
+                "reason": ["Angel placeOrder timed out"],
+                "error_type": "TimeoutError",
+            }
         except OrderRejectedError as exc:
             return {"ok": False, "reason": [str(exc)]}
         except AngelOneAPIError as exc:
@@ -2612,6 +2794,7 @@ class ScalpingDeskService:
             return True
 
         executor = OrderExecutor(self.db, self.user_id)
+        place_timeout = float(getattr(self.settings, "SCALPING_PLACE_ORDER_TIMEOUT_SEC", 8.0))
         try:
             for chunk in chunk_order_qty(qty, lot_size):
                 payload = OrderCreateRequest(
@@ -2624,11 +2807,14 @@ class ScalpingDeskService:
                     price=float(exit_premium or trade.get("entry") or 0),
                     product="INTRADAY",
                 )
-                await executor.place_order(
-                    payload,
-                    desk=f"scalping:{self.instrument_key}",
-                    lot_size=lot_size,
-                    is_closing_order=True,
+                await asyncio.wait_for(
+                    executor.place_order(
+                        payload,
+                        desk=f"scalping:{self.instrument_key}",
+                        lot_size=lot_size,
+                        is_closing_order=True,
+                    ),
+                    timeout=place_timeout,
                 )
                 logger.info(
                     "Scalping live close sent instrument=%s symbol=%s qty=%s reason=%s",
@@ -2637,6 +2823,9 @@ class ScalpingDeskService:
                     chunk,
                     reason,
                 )
+        except asyncio.TimeoutError:
+            logger.warning("Scalping live close timed out symbol=%s", symbol)
+            return False
         except (OrderRejectedError, AngelOneAPIError) as exc:
             logger.warning("Scalping live close rejected symbol=%s error=%s", symbol, exc)
             return False
@@ -2741,15 +2930,28 @@ class ScalpingDeskService:
         qty, _looked_up = await self._broker_net_qty_lookup(symbol)
         return qty
 
-    async def _broker_net_qty_lookup(self, symbol: str) -> tuple[int, bool]:
+    async def _broker_net_qty_lookup(
+        self,
+        symbol: str,
+        *,
+        timeout: float | None = None,
+        retries: int | None = None,
+        book: dict[str, Any] | None = None,
+    ) -> tuple[int, bool]:
         if not symbol:
             return 0, False
-        try:
-            client = await AngelOneSessionManager(self.db, self.redis).get_client_for_user(self.user_id)
-            book = await client.get_positions()
-        except Exception:
-            logger.debug("Broker position lookup failed for %s", symbol, exc_info=True)
-            return 0, False
+        if book is None:
+            try:
+                client = await AngelOneSessionManager(self.db, self.redis).get_client_for_user(self.user_id)
+                kwargs: dict[str, Any] = {}
+                if timeout is not None:
+                    kwargs["timeout"] = float(timeout)
+                if retries is not None:
+                    kwargs["retries"] = int(retries)
+                book = await client.get_positions(**kwargs)
+            except Exception:
+                logger.debug("Broker position lookup failed for %s", symbol, exc_info=True)
+                return 0, False
         want = symbol.upper()
         for row in book.get("data") or []:
             if str(row.get("tradingsymbol") or "").upper() != want:
@@ -2757,7 +2959,32 @@ class ScalpingDeskService:
             return max(0, int(float(row.get("netqty") or 0))), True
         return 0, True
 
-    async def _hydrate_live_open_trades(self, state: dict[str, Any]) -> dict[str, Any]:
+    async def _fetch_position_book(
+        self,
+        *,
+        stream_cycle: bool = False,
+    ) -> dict[str, Any] | None:
+        hot_timeout = float(getattr(self.settings, "SCALPING_ANGEL_HOT_TIMEOUT_SEC", 3.0))
+        timeout = hot_timeout if stream_cycle else 15.0
+        retries = 0 if stream_cycle else 2
+        try:
+            client = await AngelOneSessionManager(self.db, self.redis).get_client_for_user(self.user_id)
+            return await client.get_positions(timeout=timeout, retries=retries)
+        except Exception:
+            logger.debug(
+                "Angel getPosition failed instrument=%s stream_cycle=%s",
+                self.instrument_key,
+                stream_cycle,
+                exc_info=True,
+            )
+            return None
+
+    async def _hydrate_live_open_trades(
+        self,
+        state: dict[str, Any],
+        *,
+        stream_cycle: bool = False,
+    ) -> dict[str, Any]:
         """Recover lost Redis opens from Angel, and prune ghost opens with netqty=0."""
         last_at = state.get("_live_hydrate_at")
         if last_at:
@@ -2769,7 +2996,12 @@ class ScalpingDeskService:
                     return state
             except ValueError:
                 pass
+        # Stamp before the broker call so a hung getPosition cannot re-fire every cycle.
         state["_live_hydrate_at"] = datetime.now(timezone.utc).isoformat()
+
+        book = await self._fetch_position_book(stream_cycle=stream_cycle)
+        if book is None:
+            return state
 
         active = list(state.get("active_trades") or [])
         if active:
@@ -2780,7 +3012,7 @@ class ScalpingDeskService:
                     pruned.append(trade)
                     continue
                 symbol = str(trade.get("option_symbol") or "")
-                net, looked_up = await self._broker_net_qty_lookup(symbol)
+                net, looked_up = await self._broker_net_qty_lookup(symbol, book=book)
                 if not looked_up:
                     pruned.append(trade)
                     continue
@@ -2813,13 +3045,6 @@ class ScalpingDeskService:
             return state
 
         prefix = str(self.meta.get("underlying") or "").upper()
-        try:
-            client = await AngelOneSessionManager(self.db, self.redis).get_client_for_user(self.user_id)
-            book = await client.get_positions()
-        except Exception:
-            logger.debug("Live position hydrate skipped instrument=%s", self.instrument_key, exc_info=True)
-            return state
-
         recovered: list[dict[str, Any]] = []
         lot_size = max(1, int(self.meta["lot_size"]))
         for row in book.get("data") or []:
@@ -2897,6 +3122,16 @@ class ScalpingDeskService:
                 return {"ok": False, "reason": guards["alerts"]}
 
             symbol = str(signal.get("option_symbol") or "")
+            same_strike_blocked, same_strike_reason = range_bound_same_strike_blocked(
+                regime=desk_state.get("last_market_regime") or desk_state.get("last_market_context"),
+                option_symbol=symbol,
+                redis_client=self.redis,
+                user_id=self.user_id,
+                instrument_key=self.instrument_key,
+                trade_history=list(desk_state.get("trade_history") or []),
+            )
+            if same_strike_blocked:
+                return {"ok": False, "reason": [same_strike_reason or "RANGE_BOUND same-strike cooldown"]}
             if live_net_qty(self.db, self.user_id, symbol) > 0:
                 return {
                     "ok": False,
@@ -2961,6 +3196,7 @@ class ScalpingDeskService:
 
             desk_state["active_trades"] = list(desk_state.get("active_trades") or []) + [trade]
             desk_state["last_trade_at"] = datetime.now(timezone.utc).isoformat()
+            set_same_strike_cooldown(self.redis, self.user_id, self.instrument_key, symbol)
             self._save_state(desk_state)
             return {"ok": True, "trade": trade, "execution_mode": execution_mode}
         finally:

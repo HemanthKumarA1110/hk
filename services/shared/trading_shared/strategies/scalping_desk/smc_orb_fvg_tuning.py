@@ -14,7 +14,8 @@ from trading_shared.strategies.scalping_desk.smc_scalping_engine import DEFAULT_
 # ATR stop/target/trail were largely insensitive on this sample; values kept from OFAT lock.
 SMC_ORB_FVG_NIFTY_DEFAULTS: dict[str, Any] = {
     **DEFAULT_SMC_PARAMS,
-    "volume_min": 0.0,
+    # Harder volume + tradeable OR floor (Sep 2026 RANGE_BOUND chop review).
+    "volume_min": 1.15,
     "orb_minutes": 15,
     "fvg_min_gap_pct": 0.008,
     "entry_buffer_pct": 0.0,
@@ -22,7 +23,7 @@ SMC_ORB_FVG_NIFTY_DEFAULTS: dict[str, Any] = {
     "target_atr_mult": 1.0,
     "trailing_atr_mult": 0.0,
     "max_hold_bars": 6,
-    "smc_orb_range_min": 0.0,
+    "smc_orb_range_min": 40.0,
     "smc_orb_range_max": 99999.0,
     "smc_orb_skip_wide_or": False,
     "smc_orb_pad_pct": 0.002,
@@ -101,7 +102,7 @@ SMC_ORB_FVG_NIFTY_LEGACY: dict[str, Any] = {
 # 1-bar momentum, min bars between 5. Flag: sample shows 100% WR / 0 DD — forward-test carefully.
 SMC_ORB_FVG_BANK_DEFAULTS: dict[str, Any] = {
     **DEFAULT_SMC_PARAMS,
-    "volume_min": 0.0,
+    "volume_min": 1.15,
     "orb_minutes": 15,
     "fvg_min_gap_pct": 0.005,
     "entry_buffer_pct": 0.10,

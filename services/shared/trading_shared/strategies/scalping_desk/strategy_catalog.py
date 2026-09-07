@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-CATALOG_VERSION = 25
+CATALOG_VERSION = 27
 
 STRATEGY_CATALOG: dict[str, dict[str, Any]] = {
     "SCALP-BT-002": {
@@ -49,15 +49,6 @@ STRATEGY_CATALOG: dict[str, dict[str, Any]] = {
         "instruments": ["nifty50"],
         "best_regimes": ["RANGING", "LOW_VOLATILITY"],
     },
-    "SCALP-AD-005": {
-        "code": "SCALP-AD-005",
-        "id": "momentum_burst",
-        "family": "adaptive",
-        "label": "Momentum Burst (Bank Nifty)",
-        "description": "Bank Nifty momentum burst — VWAP≤1.0%, ST off, hold 5 (60d retuned)",
-        "instruments": ["banknifty"],
-        "best_regimes": ["TRENDING_UP", "TRENDING_DOWN", "HIGH_VOLATILITY"],
-    },
     "SCALP-AD-006": {
         "code": "SCALP-AD-006",
         "id": "vwap_bounce",
@@ -73,29 +64,22 @@ STRATEGY_CATALOG: dict[str, dict[str, Any]] = {
         "id": "smc_orb_fvg",
         "family": "smc",
         "label": "SMC ORB + FVG",
-        "description": "Nifty 50 · ORB+FVG · pad 0.20% · RSI/vol soft-off · scan 2 · hold 6 (v23 retuned)",
+        "description": "Nifty 50 · ORB+FVG · OR≥40 · vol≥1.15x · pad 0.20% · scan 2 · hold 6 (v27)",
         "instruments": ["nifty50"],
         "best_regimes": ["TRENDING_UP", "TRENDING_DOWN", "HIGH_VOLATILITY"],
-    },
-    "SCALP-SMC-006": {
-        "code": "SCALP-SMC-006",
-        "id": "smc_orb_fvg",
-        "family": "smc",
-        "label": "SMC ORB + FVG (Bank Nifty)",
-        "description": "Bank Nifty ORB+FVG — scan 1, cutoff 11:00, PUT RSI 32–48, 1-bar mom (60d retuned)",
-        "instruments": ["banknifty"],
-        "best_regimes": ["TRENDING_UP", "TRENDING_DOWN", "HIGH_VOLATILITY"],
-        "clone_of": "SCALP-SMC-003",
     },
 }
 
 # Legacy shared codes saved on Bank Nifty desks before catalog v2.
-# Mappings to removed Bank Nifty clones (AD-007/008, SMC-004/005) are intentionally omitted.
+# Mappings to removed Bank Nifty clones (AD-005/007/008, SMC-004/005/006) are intentionally omitted
+# or remapped to remaining Bank strategies.
 BANK_NIFTY_LEGACY_CODE_MAP: dict[str, str] = {
     "SCALP-BT-001": "SCALP-BT-003",
-    "SCALP-AD-001": "SCALP-AD-005",
+    "SCALP-AD-001": "SCALP-AD-006",
     "SCALP-AD-002": "SCALP-AD-006",
-    "SCALP-SMC-003": "SCALP-SMC-006",
+    "SCALP-AD-005": "SCALP-AD-006",
+    "SCALP-SMC-003": "SCALP-BT-003",
+    "SCALP-SMC-006": "SCALP-BT-003",
 }
 
 # Removed Nifty catalog codes → remaining default on that desk.
@@ -198,13 +182,11 @@ def normalize_desk_config(config: dict[str, Any], instrument_key: str) -> dict[s
         ORB_BREAKOUT_NIFTY_DEFAULTS,
     )
     from trading_shared.strategies.scalping_desk.ema_crossover_tuning import EMA_CROSSOVER_BANK_DEFAULTS
-    from trading_shared.strategies.scalping_desk.momentum_burst_tuning import MOMENTUM_BURST_BANK_DEFAULTS
     from trading_shared.strategies.scalping_desk.vwap_bounce_tuning import (
         VWAP_BOUNCE_BANK_DEFAULTS,
         VWAP_BOUNCE_NIFTY_DEFAULTS,
     )
     from trading_shared.strategies.scalping_desk.smc_orb_fvg_tuning import (
-        SMC_ORB_FVG_BANK_DEFAULTS,
         SMC_ORB_FVG_NIFTY_DEFAULTS,
     )
 
@@ -214,10 +196,8 @@ def normalize_desk_config(config: dict[str, Any], instrument_key: str) -> dict[s
 
     def _force_enable_all() -> None:
         defaults = default_strategy_settings(instrument_key)
-        prev_settings = cfg.get("strategy_settings") or {}
         refreshed: dict[str, dict[str, Any]] = {}
         for code, dflt in defaults.items():
-            prev = prev_settings.get(code) if isinstance(prev_settings.get(code), dict) else {}
             refreshed[code] = {
                 "enabled": True,
                 "execution_mode": "live",
@@ -228,25 +208,22 @@ def normalize_desk_config(config: dict[str, Any], instrument_key: str) -> dict[s
         params = dict(cfg.get("params") or {})
         saved_orb = params.get("orb_breakout") if isinstance(params.get("orb_breakout"), dict) else {}
         saved_ema = params.get("ema_crossover") if isinstance(params.get("ema_crossover"), dict) else {}
-        saved_mb = params.get("momentum_burst") if isinstance(params.get("momentum_burst"), dict) else {}
         saved_vb = params.get("vwap_bounce") if isinstance(params.get("vwap_bounce"), dict) else {}
-        saved_smc = cfg.get("smc_params") if isinstance(cfg.get("smc_params"), dict) else {}
         if prev_version < CATALOG_VERSION:
             # Reset stale tuned params saved under older catalog versions.
             params["orb_breakout"] = dict(ORB_BREAKOUT_BANK_DEFAULTS)
             params["ema_crossover"] = dict(EMA_CROSSOVER_BANK_DEFAULTS)
-            params["momentum_burst"] = dict(MOMENTUM_BURST_BANK_DEFAULTS)
             params["vwap_bounce"] = dict(VWAP_BOUNCE_BANK_DEFAULTS)
-            cfg["smc_params"] = dict(SMC_ORB_FVG_BANK_DEFAULTS)
             # v17+: enable all Bank Nifty strategies for continuous multi-monitor.
-            if prev_version < 17:
+            # v26: drop AD-005 / SMC-006 — re-enable remaining bank set.
+            if prev_version < 26:
                 _force_enable_all()
         else:
             params["orb_breakout"] = {**ORB_BREAKOUT_BANK_DEFAULTS, **saved_orb}
             params["ema_crossover"] = {**EMA_CROSSOVER_BANK_DEFAULTS, **saved_ema}
-            params["momentum_burst"] = {**MOMENTUM_BURST_BANK_DEFAULTS, **saved_mb}
             params["vwap_bounce"] = {**VWAP_BOUNCE_BANK_DEFAULTS, **saved_vb}
-            cfg["smc_params"] = {**SMC_ORB_FVG_BANK_DEFAULTS, **saved_smc}
+        params.pop("momentum_burst", None)  # AD-005 removed
+        cfg.pop("smc_params", None)  # Bank SMC-006 removed — Nifty still uses smc_params
         cfg["params"] = params
     elif instrument_key == "nifty50":
         params = dict(cfg.get("params") or {})
@@ -273,7 +250,7 @@ def normalize_desk_config(config: dict[str, Any], instrument_key: str) -> dict[s
     if fixed_code:
         fixed_code = migrate_bank_strategy_code(str(fixed_code), instrument_key)
         cfg["fixed_strategy_code"] = fixed_code
-    # Drop removed / invalid fixed strategies (Bank AD-007/008/SMC-004/005; Nifty BT-001/AD-001/003/004/SMC-001/002).
+    # Drop removed / invalid fixed strategies (Bank AD-005/007/008/SMC-004/005/006; Nifty BT-001/AD-001/003/004/SMC-001/002).
     if fixed_code and (
         fixed_code not in STRATEGY_CATALOG
         or instrument_key not in STRATEGY_CATALOG[fixed_code].get("instruments", [])
@@ -310,6 +287,8 @@ def normalize_desk_config(config: dict[str, Any], instrument_key: str) -> dict[s
     cfg["option_execution_policy"] = "buy_only"
     if "expiry_restrictions_enabled" not in cfg:
         cfg["expiry_restrictions_enabled"] = True
+    if "ai_daily_stop_enabled" not in cfg:
+        cfg["ai_daily_stop_enabled"] = True
     # Full-capital sizing: drop legacy 2-lot / 95% caps on catalog migrate.
     if prev_version < 25:
         cfg["max_lots_per_trade"] = 0

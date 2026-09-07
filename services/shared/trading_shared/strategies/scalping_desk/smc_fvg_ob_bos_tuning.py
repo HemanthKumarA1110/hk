@@ -10,7 +10,7 @@ from trading_shared.strategies.scalping_desk.smc_scalping_engine import DEFAULT_
 # Bank Nifty FVG+OB+BOS — tuned on 60d Angel One 1m sample.
 SMC_FVG_OB_BOS_BANK_DEFAULTS: dict[str, Any] = {
     **DEFAULT_SMC_PARAMS,
-    "volume_min": 0.0,
+    "volume_min": 1.15,
     "fvg_min_gap_pct": 0.006,
     "entry_buffer_pct": 0.08,
     "ob_impulse_atr": 0.85,
