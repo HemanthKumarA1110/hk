@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchIndexQuotes, fetchLtp, searchSymbols } from '../api'
+import SwingLivePicksPanel from '../components/SwingLivePicksPanel'
 import {
   BACKTEST_FRAMEWORK,
   MARKET_CONTEXT,
@@ -153,8 +154,8 @@ export default function SwingIdeasPage() {
           <p className="text-violet-400 text-xs uppercase tracking-widest">Research Desk</p>
           <h2 className="text-2xl sm:text-3xl font-bold mt-1">Swing Ideas</h2>
           <p className="text-slate-400 mt-1 text-sm sm:text-base max-w-2xl">
-            Top-5 high-conviction Indian swing setups for ~5% in 1–2 months. Thesis seeded{' '}
-            {SWING_DESK_META.asOfLabel}; use Refresh for live index and stock quotes.
+            Live scan ranks today&apos;s Nifty 50 swing candidates. Below it, the hand-written thesis board
+            seeded {SWING_DESK_META.asOfLabel} — use Refresh for live index and stock quotes.
           </p>
         </div>
         <div className="flex flex-col items-stretch sm:items-end gap-2">
@@ -193,6 +194,8 @@ export default function SwingIdeasPage() {
           {error}
         </div>
       ) : null}
+
+      <SwingLivePicksPanel />
 
       <section className="mb-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
         <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -259,6 +262,11 @@ export default function SwingIdeasPage() {
           ))}
         </div>
       </section>
+
+      <div className="mb-2 flex items-baseline gap-2">
+        <h3 className="text-lg font-semibold text-slate-100">Research board</h3>
+        <span className="text-xs text-slate-500">seeded {SWING_DESK_META.asOfLabel}</span>
+      </div>
 
       <section className="mb-6 overflow-x-auto rounded-xl border border-slate-800">
         <table className="min-w-full text-sm">
